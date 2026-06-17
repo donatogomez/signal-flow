@@ -46,7 +46,7 @@ let package = Package(
 
         .target(name: "NetworkingKit", dependencies: ["CoreKit"], swiftSettings: swift6),
         .target(name: "PersistenceKit", dependencies: ["CoreKit"], swiftSettings: swift6),
-        .target(name: "SimulationKit", dependencies: ["CoreKit"], swiftSettings: swift6),
+        .target(name: "SimulationKit", dependencies: ["CoreKit", "DomainKit"], swiftSettings: swift6),
 
         // DataKit is the aggregator that implements DomainKit's ports on top of the data sources.
         .target(
@@ -96,7 +96,7 @@ let package = Package(
         // A single smoke test target proving the test stack + TestingSupportKit link and run.
         .testTarget(
             name: "SignalFlowKitTests",
-            dependencies: ["DomainKit", "TestingSupportKit"],
+            dependencies: ["DomainKit", "TestingSupportKit", "CoreKit", "SimulationKit"],
             swiftSettings: swift6
         )
     ]

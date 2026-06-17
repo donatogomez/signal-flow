@@ -50,6 +50,7 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 12. [Scaffolding](docs/12-scaffolding.md) — the SPM module graph as built, and why each edge exists
 13. [Domain Implementation](docs/13-domain-implementation.md) — `DomainKit` as built, and why it's senior-level
 14. [Git Workflow & CI](docs/14-git-workflow-and-ci.md) — branching, commits, PR & CI policy
+15. [SimulationKit](docs/15-simulation-kit.md) — actor-based deterministic telemetry simulation
 
 Architecture Decision Records: [`/docs/adr`](docs/adr).
 
@@ -110,7 +111,8 @@ is what makes the system testable, modular, and able to "evolve for years."
 
 ## Current implementation status
 
-**Phase: domain layer implemented.** First real production code has landed; outer layers still to come.
+**Phase: domain + simulation data source implemented.** The app can now be driven by realistic,
+deterministic telemetry; persistence, features, and UI still to come.
 
 - ✅ Full design & product documentation suite ([`/docs`](docs)) + ADRs.
 - ✅ `SignalFlowKit` Swift Package — 14 targets wiring the Clean Architecture graph
@@ -120,16 +122,21 @@ is what makes the system testable, modular, and able to "evolve for years."
   ([`Scripts/check-boundaries.sh`](Scripts/check-boundaries.sh)).
 - ✅ **`DomainKit` implemented** — type-safe identifiers, validated value objects, entities, pure
   policies, typed errors, repository/insight **ports**, and use cases. Pure Swift + `Foundation`
-  only, fully `Sendable`. **36 Swift Testing tests** pass. See
-  [Domain Implementation](docs/13-domain-implementation.md).
-- ⬜️ Data layer (repositories, SwiftData store, gateways, simulator).
+  only, fully `Sendable`. See [Domain Implementation](docs/13-domain-implementation.md).
+- ✅ **`SimulationKit` implemented** — actor-based, deterministic telemetry simulation for a
+  10-device fleet (greenhouses, refrigerated trucks, warehouses, environmental stations) exposed as
+  cancellation-correct `AsyncStream`s, plus a seeded RNG in `CoreKit`. See
+  [SimulationKit](docs/15-simulation-kit.md).
+- ✅ **60 Swift Testing tests** pass (DomainKit + SimulationKit + CoreKit).
+- ⬜️ `DataKit` repository implementations (adapting simulation/live sources to the domain ports).
+- ⬜️ SwiftData persistence, offline & sync.
 - ⬜️ Feature UIs, composition-root DI & navigation.
 - ⬜️ Foundation Models insight integration.
 - ⬜️ Xcode iOS app shell (`@main`) wrapping the `SignalFlowApp` composition root.
 
 ```bash
 swift build                    # compiles all 14 targets (Swift 6, strict concurrency)
-swift test                     # Swift Testing suite — 36 tests, 7 suites
+swift test                     # Swift Testing suite — 60 tests, 13 suites
 ./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
 ```
 

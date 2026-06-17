@@ -30,6 +30,12 @@ for feature in Sources/Feature*; do
     fi
 done
 
+# Rule 3 — SimulationKit is a leaf data source: it may import only DomainKit and CoreKit.
+if grep -REn '^\s*import\s+(DataKit|PersistenceKit|NetworkingKit|DesignSystemKit|Feature[A-Za-z]+|SignalFlowApp)\b' \
+        Sources/SimulationKit 2>/dev/null; then
+    report "SimulationKit may depend only on DomainKit and CoreKit"
+fi
+
 if [ "$fail" -eq 0 ]; then
     echo "✅ architecture boundaries respected"
 fi
