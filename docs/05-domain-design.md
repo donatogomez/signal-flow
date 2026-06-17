@@ -1,9 +1,15 @@
 # 5. Domain Design
 
+> **Status note.** This document is the original design *exploration*. `DomainKit` is now
+> implemented; the **as-built model is documented in [docs/13](13-domain-implementation.md)**, which
+> supersedes the specifics here wherever they differ. The naming and shape evolved during
+> implementation — the notable deltas and their rationale are listed in
+> [§5.7](#57-implementation-reconciliation-as-built). The *principles* below all still hold.
+
 The Domain (`DomainKit`) is **pure Swift**: value types, protocols, and pure functions, all
-`Sendable`, with **zero framework imports**. If a type here imported SwiftData or SwiftUI, the design
-would be wrong. Everything in this document compiles without Foundation's networking, without UIKit,
-and without a device.
+`Sendable`, with **zero framework imports** beyond `Foundation` for `Date`/`UUID`/`Codable`. If a
+type here imported SwiftData or SwiftUI, the design would be wrong. Everything in this document
+compiles without Foundation's networking, without UIKit, and without a device.
 
 ## 5.1 Modeling philosophy
 
@@ -223,3 +229,26 @@ public enum DomainError: Error, Sendable, Equatable {
 Errors are **typed and exhaustive at the Domain boundary**. The Presentation layer maps them to
 localized, user-facing copy; raw `NSError`s and gateway-specific errors are translated in `DataKit`
 and never surface to the UI. This keeps error handling a first-class, testable part of the design.
+
+## 5.7 Implementation reconciliation (as built)
+
+The implemented `DomainKit` (see [docs/13](13-domain-implementation.md)) keeps every principle above
+but evolved several specifics. The deltas, and why:
+
+| Original sketch | As built | Why it changed |
+| --- | --- | --- |
+| `DeviceID { raw: String }` (per-type structs) | `Identifier<Scope>` phantom type + `typealias DeviceID = Identifier<Device>` | One tiny, type-safe id type instead of six near-identical structs; wraps `UUID` for free uniqueness. |
+| `Metric` enum incl. `.custom(key:unit:)` | `MetricKind` (incl. `.custom(String)`) + `MeasurementUnit` separated out | Clearer separation of *what is measured* (`MetricKind`) from *the unit* (`MeasurementUnit`); definition-level spec lives in `MetricDefinition`. |
+| `MeasuredValue` as enum (`scalar`/`boolean`/`coordinate`) | `MeasuredValue` as a validated `{ magnitude, unit }` struct | Booleans/coordinates are modeled where they belong — `DeviceEvent` (door/power) and `Location`/`ConnectivityStatus` — so `MeasuredValue` stays a clean numeric quantity. |
+| `Reading` | `TelemetryReading` | Explicit domain language. |
+| `DeviceSnapshot` aggregate + `StatusPolicy` + staleness | `DeviceHealthPolicy` (pure) + `DeviceSummary`/`DeviceDetail` use-case results | Status is derived in a pure policy from connectivity + active alerts. Staleness/`Clock`-based "offline" derivation is **deferred** to where live time actually flows (data layer). |
+| `ThresholdSet` on `Device` | `Threshold` carried by each `AlertRule` | Thresholds are a property of *rules*, not devices; keeps `Device` about identity/last-known-state. |
+| Ports returning `AsyncStream` (`snapshots`, `fleet`) | `async throws` query ports (`latestReadings`, `activeAlerts`, …) | v1 ports are request/response; **live streaming is introduced with the data layer**, not invented in the Domain before there's a producer. |
+| `InsightService` + `TrendContext`/`TrendSummary` | `InsightsProviding` + `TelemetryInsight` | Single, self-contained result value type; matches the required use-case naming. |
+| Use cases `SummarizeTrend`, `ObserveFleet`, … | `GenerateTelemetryInsightUseCase`, `FetchFleetOverviewUseCase`, … | Aligned to the agreed v1 use-case names. |
+
+Two intentional **deferrals**, recorded so they're not mistaken for omissions:
+1. **Live streams** (`AsyncStream`-based ports) arrive with `DataKit`/`CoreTelemetry`, where there's a
+   real producer and back-pressure to model.
+2. **Staleness-based offline detection** (the injected-`Clock` `StatusPolicy`) lands when live time
+   flows through the system; today `DeviceHealthPolicy` derives status from explicit connectivity.
