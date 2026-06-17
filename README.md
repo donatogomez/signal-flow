@@ -48,6 +48,7 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 10. [Documentation Strategy](docs/10-documentation-strategy.md) — ADRs, DocC, diagrams
 11. [Portfolio Value Analysis](docs/11-portfolio-value.md) — what each part signals to reviewers
 12. [Scaffolding](docs/12-scaffolding.md) — the SPM module graph as built, and why each edge exists
+13. [Domain Implementation](docs/13-domain-implementation.md) — `DomainKit` as built, and why it's senior-level
 14. [Git Workflow & CI](docs/14-git-workflow-and-ci.md) — branching, commits, PR & CI policy
 
 Architecture Decision Records: [`/docs/adr`](docs/adr).
@@ -109,7 +110,7 @@ is what makes the system testable, modular, and able to "evolve for years."
 
 ## Current implementation status
 
-**Phase: architecture skeleton (compile-ready, no business logic yet).**
+**Phase: domain layer implemented.** First real production code has landed; outer layers still to come.
 
 - ✅ Full design & product documentation suite ([`/docs`](docs)) + ADRs.
 - ✅ `SignalFlowKit` Swift Package — 14 targets wiring the Clean Architecture graph
@@ -117,8 +118,10 @@ is what makes the system testable, modular, and able to "evolve for years."
   concurrency, **zero third-party dependencies**. See [Scaffolding](docs/12-scaffolding.md).
 - ✅ Architecture boundaries enforced by the dependency graph **and** a CI check
   ([`Scripts/check-boundaries.sh`](Scripts/check-boundaries.sh)).
-- ✅ Swift Testing wired with passing smoke tests.
-- ⬜️ Domain entities, value objects & ports — *next.*
+- ✅ **`DomainKit` implemented** — type-safe identifiers, validated value objects, entities, pure
+  policies, typed errors, repository/insight **ports**, and use cases. Pure Swift + `Foundation`
+  only, fully `Sendable`. **36 Swift Testing tests** pass. See
+  [Domain Implementation](docs/13-domain-implementation.md).
 - ⬜️ Data layer (repositories, SwiftData store, gateways, simulator).
 - ⬜️ Feature UIs, composition-root DI & navigation.
 - ⬜️ Foundation Models insight integration.
@@ -126,11 +129,11 @@ is what makes the system testable, modular, and able to "evolve for years."
 
 ```bash
 swift build                    # compiles all 14 targets (Swift 6, strict concurrency)
-swift test                     # Swift Testing smoke suite
+swift test                     # Swift Testing suite — 36 tests, 7 suites
 ./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
 ```
 
-Each target currently holds a single placeholder namespace so the graph compiles; these are deleted
+The outer targets still hold a single placeholder namespace so the graph compiles; these are deleted
 as real types land. See [Functional Requirements](docs/02-functional-requirements.md) for MVP scope
 and roadmap.
 
