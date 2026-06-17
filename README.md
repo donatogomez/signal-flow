@@ -48,6 +48,7 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 10. [Documentation Strategy](docs/10-documentation-strategy.md) — ADRs, DocC, diagrams
 11. [Portfolio Value Analysis](docs/11-portfolio-value.md) — what each part signals to reviewers
 12. [Scaffolding](docs/12-scaffolding.md) — the SPM module graph as built, and why each edge exists
+14. [Git Workflow & CI](docs/14-git-workflow-and-ci.md) — branching, commits, PR & CI policy
 
 Architecture Decision Records: [`/docs/adr`](docs/adr).
 
@@ -132,6 +133,45 @@ swift test                     # Swift Testing smoke suite
 Each target currently holds a single placeholder namespace so the graph compiles; these are deleted
 as real types land. See [Functional Requirements](docs/02-functional-requirements.md) for MVP scope
 and roadmap.
+
+## Workflow & CI
+
+Full policy: [docs/14 — Git Workflow & CI](docs/14-git-workflow-and-ci.md).
+
+**Workflow status — bootstrap.** Documentation and the empty package skeleton land directly on
+`main` because there is no behavior to break yet. **This ends with the first line of real `DomainKit`
+code**, after which every change goes through a `feature/*` branch and a pull request — even with a
+single developer.
+
+**Branching policy.** Trunk-based: a permanent `main` plus short-lived, single-purpose topic
+branches (`type/short-kebab-summary`).
+
+| Branch | Purpose |
+| --- | --- |
+| `main` | Stable, always buildable, always green — integration only |
+| `feature/*` | Production code, e.g. `feature/domain-kit`, `feature/data-simulation`, `feature/swiftdata-persistence`, `feature/dashboard`, `feature/insights-foundation-models` |
+| `docs/*` | Documentation-only changes |
+| `chore/*` | Maintenance with no behavior change |
+| `ci/*` | CI / tooling changes |
+
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/); PRs use the
+[PR template](.github/pull_request_template.md) and must be green before squash-merge.
+
+**CI status.** [GitHub Actions](.github/workflows/ci.yml) runs on **pull requests targeting `main`**
+and **pushes to `main`**, executing — in order — `./Scripts/check-boundaries.sh` → `swift build` →
+`swift test`. The same three commands run locally, so a green local run means a green CI run.
+
+### Fastlane — intentionally deferred
+
+There is **no Fastlane setup yet, by design.** Fastlane automates *app delivery* (signing, build
+numbers, TestFlight/App Store uploads, screenshots, release lanes), but SignalFlow is currently a
+**Swift Package** — an architecture/demo layer with no Xcode app target, no bundle ID, and nothing to
+sign or ship. Adding it now would be configuration for a pipeline with no destination.
+
+Fastlane will be introduced once SignalFlow has an **Xcode app target**, **app signing**, **build-number
+automation**, **TestFlight deployment**, **screenshot automation**, and **release lanes** — at which
+point it arrives in a dedicated `ci/add-fastlane` PR. See
+[docs/14](docs/14-git-workflow-and-ci.md#fastlane--intentionally-deferred) for the full rationale.
 
 ## License
 

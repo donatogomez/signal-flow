@@ -1,24 +1,29 @@
 name: CI
 
+# Enforces the `main` contract from docs/14-git-workflow-and-ci.md:
+# every commit on main builds, passes tests, and respects the architecture boundaries.
 on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build-test:
+  verify:
     name: Build, test & enforce boundaries
-    runs-on: macos-15
+    runs-on: macos-26 # ships Xcode 26 / Swift 6.2 / iOS 26 SDK by default
     steps:
       - uses: actions/checkout@v4
-
-      - name: Select Xcode 26
-        run: sudo xcode-select -s /Applications/Xcode_26.app || true
 
       - name: Swift version
         run: swift --version
 
-      # Closes SwiftPM's shared-module-cache gap; see docs/12-scaffolding.md.
+      # Fail fast on architecture violations before spending build time.
+      # Closes SwiftPM's shared-module-cache gap; see docs/12-scaffolding.md §12.3.
       - name: Enforce architecture boundaries
         run: ./Scripts/check-boundaries.sh
 
