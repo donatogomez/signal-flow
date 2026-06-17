@@ -1,0 +1,55 @@
+# ──────────────────────────────────────────────────────────────────────────
+# macOS
+# ──────────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# ──────────────────────────────────────────────────────────────────────────
+# Swift Package Manager
+# ──────────────────────────────────────────────────────────────────────────
+.build/
+.swiftpm/
+Package.resolved
+# Keep the manifest; ignore SPM's local working state.
+
+# ──────────────────────────────────────────────────────────────────────────
+# Xcode
+# ──────────────────────────────────────────────────────────────────────────
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+
+# User-specific Xcode state
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
+# Build products & derived data
+build/
+DerivedData/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# ──────────────────────────────────────────────────────────────────────────
+# Tooling / misc
+# ──────────────────────────────────────────────────────────────────────────
+*.log
+.netrc
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png

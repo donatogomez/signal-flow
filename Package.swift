@@ -1,0 +1,103 @@
+// swift-tools-version: 6.2
+//
+// SignalFlowKit — modular Swift Package for the SignalFlow IoT monitoring platform.
+//
+// This manifest is where Clean Architecture stops being a diagram and becomes a build constraint.
+// A target can only see the targets it explicitly declares as dependencies, so the layering rules
+// in docs/03-technical-architecture.md and docs/12-scaffolding.md are enforced by the compiler:
+// e.g. a Feature target literally cannot `import DataKit`.
+//
+// Strict concurrency: every target builds in the Swift 6 language mode (see `swiftLanguageModes`),
+// under which complete strict-concurrency checking is the default. No `@unchecked Sendable` allowed.
+
+import PackageDescription
+
+// All first-party code builds in Swift 6 mode → data-race safety enforced at compile time.
+let swift6: [SwiftSetting] = [
+    .swiftLanguageMode(.v6)
+]
+
+let package = Package(
+    name: "SignalFlowKit",
+    platforms: [
+        .iOS(.v26),
+        .macOS(.v26) // host platform, so `swift build` / `swift test` run from the CLI
+    ],
+    products: [
+        // The composition root is the only product an external app shell needs to link;
+        // it transitively pulls in every feature and concrete data module.
+        .library(name: "SignalFlowApp", targets: ["SignalFlowApp"]),
+        // Exposed for previews / design work without booting the whole app.
+        .library(name: "DesignSystemKit", targets: ["DesignSystemKit"]),
+        .library(name: "DomainKit", targets: ["DomainKit"])
+    ],
+    targets: [
+
+        // MARK: - Core (feature-agnostic foundations)
+
+        .target(name: "CoreKit", swiftSettings: swift6),
+        .target(name: "DesignSystemKit", swiftSettings: swift6),
+
+        // MARK: - Domain (pure business core — depends on NOTHING)
+
+        .target(name: "DomainKit", swiftSettings: swift6),
+
+        // MARK: - Data sources (concrete infrastructure)
+
+        .target(name: "NetworkingKit", dependencies: ["CoreKit"], swiftSettings: swift6),
+        .target(name: "PersistenceKit", dependencies: ["CoreKit"], swiftSettings: swift6),
+        .target(name: "SimulationKit", dependencies: ["CoreKit"], swiftSettings: swift6),
+
+        // DataKit is the aggregator that implements DomainKit's ports on top of the data sources.
+        .target(
+            name: "DataKit",
+            dependencies: ["DomainKit", "PersistenceKit", "NetworkingKit", "SimulationKit"],
+            swiftSettings: swift6
+        ),
+
+        // MARK: - Features (vertical slices — Domain + DesignSystem only, never Data)
+
+        .target(name: "FeatureDashboard", dependencies: ["DomainKit", "DesignSystemKit"], swiftSettings: swift6),
+        .target(name: "FeatureFleet", dependencies: ["DomainKit", "DesignSystemKit"], swiftSettings: swift6),
+        .target(name: "FeatureDeviceDetail", dependencies: ["DomainKit", "DesignSystemKit"], swiftSettings: swift6),
+        .target(name: "FeatureAlerts", dependencies: ["DomainKit", "DesignSystemKit"], swiftSettings: swift6),
+        .target(name: "FeatureInsights", dependencies: ["DomainKit", "DesignSystemKit"], swiftSettings: swift6),
+        .target(name: "FeatureSettings", dependencies: ["DomainKit", "DesignSystemKit"], swiftSettings: swift6),
+
+        // MARK: - App (composition root — the ONLY target allowed to know concretes)
+
+        .target(
+            name: "SignalFlowApp",
+            dependencies: [
+                "CoreKit",
+                "DomainKit",
+                "DesignSystemKit",
+                // concrete data modules — wired here, invisible to features
+                "DataKit",
+                "PersistenceKit",
+                "NetworkingKit",
+                "SimulationKit",
+                // every feature
+                "FeatureDashboard",
+                "FeatureFleet",
+                "FeatureDeviceDetail",
+                "FeatureAlerts",
+                "FeatureInsights",
+                "FeatureSettings"
+            ],
+            swiftSettings: swift6
+        ),
+
+        // MARK: - Testing
+
+        // Shared test utilities (fakes, builders, fixtures). Intentionally empty for now.
+        .target(name: "TestingSupportKit", dependencies: ["DomainKit"], swiftSettings: swift6),
+
+        // A single smoke test target proving the test stack + TestingSupportKit link and run.
+        .testTarget(
+            name: "SignalFlowKitTests",
+            dependencies: ["DomainKit", "TestingSupportKit"],
+            swiftSettings: swift6
+        )
+    ]
+)

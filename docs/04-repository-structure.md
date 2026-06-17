@@ -101,7 +101,9 @@ feature-specific use-case compositions. Crucially, **features depend on `DomainK
 ### Why features can't see the data layer
 
 If `FeatureFleet` could `import DataKit`, a tired engineer at 6 p.m. would `LiveTelemetryRepository()`
-directly in a view and the architecture would rot. By making it a **compile error**, the only way to
+directly in a view and the architecture would rot. Because the feature target doesn't declare that
+dependency, the import fails to build (and a CI boundary check catches the SwiftPM full-build edge
+case — see [§12.3](12-scaffolding.md#123-how-the-boundaries-are-actually-enforced)). The only way to
 get a repository into a feature is through an injected protocol. The boundary defends itself.
 
 ## 4.5 Dependency injection

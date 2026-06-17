@@ -137,10 +137,14 @@ Feature*             → DomainKit, ApplicationKit, DesignSystem   (NOT DataKit)
 App                  → everything           (composition root only)
 ```
 
-Because `FeatureFleet` cannot list `DataKit` as a dependency, it is **physically impossible** for a
-view to import a repository implementation or a SwiftData model. The compiler enforces Clean
-Architecture. This is the single most important structural decision in the project and is recorded
-in [ADR-0001](adr/0001-clean-architecture-with-spm-modules.md).
+Because `FeatureFleet` does not list `DataKit` as a dependency, a view cannot import a repository
+implementation or a SwiftData model: on a clean/isolated build the undeclared import fails with
+`no such module 'DataKit'`. (SwiftPM's shared module cache means a *full* build can let an accidental
+undeclared import slip through locally, so a CI boundary check closes that gap — the honest details
+are in [§12.3](12-scaffolding.md#123-how-the-boundaries-are-actually-enforced).) The dependency graph
+defines the architecture and CI guarantees it holds. This is the single most important structural
+decision in the project and is recorded in
+[ADR-0001](adr/0001-clean-architecture-with-spm-modules.md).
 
 ### What flows across each boundary
 

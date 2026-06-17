@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    name: Build, test & enforce boundaries
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.app || true
+
+      - name: Swift version
+        run: swift --version
+
+      # Closes SwiftPM's shared-module-cache gap; see docs/12-scaffolding.md.
+      - name: Enforce architecture boundaries
+        run: ./Scripts/check-boundaries.sh
+
+      - name: Build (Swift 6, strict concurrency)
+        run: swift build
+
+      - name: Test (Swift Testing)
+        run: swift test

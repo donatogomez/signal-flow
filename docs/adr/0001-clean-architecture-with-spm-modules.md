@@ -34,8 +34,10 @@ Key constraints encoded in the build graph:
 ## Consequences
 
 ### Positive
-- The Dependency Rule becomes a **compile error**, not a code-review note. A view *cannot* import a
-  repository implementation or a SwiftData model.
+- The Dependency Rule lives in the build graph, not a code-review note: an undeclared `import` fails
+  on a clean/isolated build, and a CI boundary check guarantees it on full builds too (SwiftPM's
+  shared module cache makes the static check necessary — see
+  [docs/12-scaffolding.md §12.3](../12-scaffolding.md#123-how-the-boundaries-are-actually-enforced)).
 - Business logic (Domain) is pure and tested with zero infrastructure.
 - Fast incremental builds; clear ownership; the roadmap slots into existing seams.
 - Isolation boundaries (actors, `@MainActor`) align with module boundaries.

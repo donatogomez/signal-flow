@@ -19,11 +19,14 @@ strong signal:
 ## 11.2 The high-signal components (ranked)
 
 ### 1. Compiler-enforced Clean Architecture (`★★★★★`)
-**What it shows:** the author understands that architecture is only real if it's *enforced*. Making
-features physically unable to import the data layer (SPM target boundaries) is a level above "I put
-things in folders." **Why it lands:** tech leads have all seen MVVM rot into massive view models;
-this directly addresses their scar tissue. See [Architecture §3.4](03-technical-architecture.md#34-dependency-rules-enforced-not-aspirational)
-and [ADR-0001](adr/0001-clean-architecture-with-spm-modules.md).
+**What it shows:** the author understands that architecture is only real if it's *enforced* — and is
+honest about *how*. Feature targets don't declare the data layer as a dependency (so the import fails
+to build), and a CI boundary check closes SwiftPM's full-build shared-module gap. Knowing that sharp
+edge and engineering around it is a level above both "I put things in folders" and "the compiler
+magically prevents it." **Why it lands:** tech leads have all seen MVVM rot into massive view models;
+this directly addresses their scar tissue. See [Architecture §3.4](03-technical-architecture.md#34-dependency-rules-enforced-not-aspirational),
+[Scaffolding §12.3](12-scaffolding.md#123-how-the-boundaries-are-actually-enforced) and
+[ADR-0001](adr/0001-clean-architecture-with-spm-modules.md).
 
 ### 2. Swift 6 strict-concurrency isolation model (`★★★★★`)
 **What it shows:** mastery of the single hardest, most current iOS topic. A coherent **isolation map**

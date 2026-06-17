@@ -47,6 +47,7 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 9. [Testing Strategy](docs/09-testing-strategy.md) — Swift Testing, mocking, concurrency tests
 10. [Documentation Strategy](docs/10-documentation-strategy.md) — ADRs, DocC, diagrams
 11. [Portfolio Value Analysis](docs/11-portfolio-value.md) — what each part signals to reviewers
+12. [Scaffolding](docs/12-scaffolding.md) — the SPM module graph as built, and why each edge exists
 
 Architecture Decision Records: [`/docs/adr`](docs/adr).
 
@@ -105,11 +106,32 @@ is what makes the system testable, modular, and able to "evolve for years."
 | Modularization | Local Swift Package, many targets | Enforced boundaries without multi-repo overhead |
 | 3rd-party deps | **None** | Everything is a deliberate, owned decision |
 
-## Status
+## Current implementation status
 
-Design phase. This repository currently contains the architecture and product documentation that
-precedes implementation. See [Functional Requirements](docs/02-functional-requirements.md) for the
-MVP scope and roadmap.
+**Phase: architecture skeleton (compile-ready, no business logic yet).**
+
+- ✅ Full design & product documentation suite ([`/docs`](docs)) + ADRs.
+- ✅ `SignalFlowKit` Swift Package — 14 targets wiring the Clean Architecture graph
+  (Core · Domain · Data · Features · App · Testing). Builds in **Swift 6 mode** with strict
+  concurrency, **zero third-party dependencies**. See [Scaffolding](docs/12-scaffolding.md).
+- ✅ Architecture boundaries enforced by the dependency graph **and** a CI check
+  ([`Scripts/check-boundaries.sh`](Scripts/check-boundaries.sh)).
+- ✅ Swift Testing wired with passing smoke tests.
+- ⬜️ Domain entities, value objects & ports — *next.*
+- ⬜️ Data layer (repositories, SwiftData store, gateways, simulator).
+- ⬜️ Feature UIs, composition-root DI & navigation.
+- ⬜️ Foundation Models insight integration.
+- ⬜️ Xcode iOS app shell (`@main`) wrapping the `SignalFlowApp` composition root.
+
+```bash
+swift build                    # compiles all 14 targets (Swift 6, strict concurrency)
+swift test                     # Swift Testing smoke suite
+./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
+```
+
+Each target currently holds a single placeholder namespace so the graph compiles; these are deleted
+as real types land. See [Functional Requirements](docs/02-functional-requirements.md) for MVP scope
+and roadmap.
 
 ## License
 
