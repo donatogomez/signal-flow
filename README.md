@@ -53,6 +53,7 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 15. [SimulationKit](docs/15-simulation-kit.md) — actor-based deterministic telemetry simulation
 16. [DataKit](docs/16-data-kit.md) — adapting simulation streams into the domain repository ports
 17. [Feature Layer](docs/17-feature-dashboard-fleet.md) — Dashboard, Fleet & Device Detail (SwiftUI + Charts)
+18. [App Shell](docs/18-app-shell.md) — `@main`, composition root, lifecycle & navigation bootstrap
 
 Architecture Decision Records: [`/docs/adr`](docs/adr).
 
@@ -113,9 +114,9 @@ is what makes the system testable, modular, and able to "evolve for years."
 
 ## Current implementation status
 
-**Phase: first user-facing experience implemented.** The full path — simulated telemetry → in-memory
-store → domain repositories → use cases → SwiftUI screens — works end-to-end; persistence and the
-`@main` app shell still to come.
+**Phase: runnable app shell.** The full path — `@main` → composition root → simulated telemetry →
+in-memory store → domain repositories → use cases → SwiftUI screens — runs end-to-end. Persistence and
+a live gateway are the remaining backend swaps.
 
 - ✅ Full design & product documentation suite ([`/docs`](docs)) + ADRs.
 - ✅ `SignalFlowKit` Swift Package — 14 targets wiring the Clean Architecture graph
@@ -136,18 +137,21 @@ store → domain repositories → use cases → SwiftUI screens — works end-to
   past the ports. See [DataKit](docs/16-data-kit.md).
 - ✅ **Feature UI implemented** — `FeatureDashboard`, `FeatureFleet`, and `FeatureDeviceDetail` (with
   Swift Charts), built on modern Observation (`@Observable`/`@MainActor`, no Combine), plus a
-  domain-aware `DesignSystemKit`. Features see **only DomainKit contracts**; `SignalFlowApp`'s
-  `RootView` is the composition root wiring DataKit into the screens. See
+  domain-aware `DesignSystemKit`. Features see **only DomainKit contracts**. See
   [Feature Layer](docs/17-feature-dashboard-fleet.md).
-- ✅ **93 Swift Testing tests** pass (Domain + Simulation + Data + Core + feature models).
+- ✅ **Runnable app shell** — `@main SignalFlowApp` + `AppContainer` composition root + `RootView`
+  navigation. `swift run SignalFlow` launches it; the same files host an Xcode iOS target unchanged.
+  See [App Shell](docs/18-app-shell.md).
+- ✅ **96 Swift Testing tests** pass (Domain + Simulation + Data + Core + feature models + app shell).
 - ⬜️ SwiftData persistence, offline & sync (behind the existing store seam).
 - ⬜️ Live `WebSocketGateway` networking (behind the existing gateway seam).
 - ⬜️ Foundation Models insight integration (replacing the deterministic placeholder).
-- ⬜️ Xcode iOS app shell (`@main`) hosting the `RootView` composition root.
+- ⬜️ Xcode iOS app target hosting the `@main` shell for on-device/simulator runs.
 
 ```bash
-swift build                    # compiles all 14 targets (Swift 6, strict concurrency)
-swift test                     # Swift Testing suite — 93 tests, 21 suites
+swift build                    # compiles all 15 targets (Swift 6, strict concurrency)
+swift run SignalFlow           # launches the host build of the app
+swift test                     # Swift Testing suite — 96 tests, 22 suites
 ./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
 ```
 
