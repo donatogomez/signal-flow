@@ -1,84 +1,99 @@
+<div align="center">
+
 # SignalFlow
 
-> An on-device, offline-first IoT telemetry monitoring platform for iOS 26 — built to demonstrate
-> senior-level Swift 6, SwiftUI, and product architecture, not just to "do IoT".
+### An offline-first IoT telemetry monitoring app for iOS 26 — built to demonstrate senior-level Swift 6, SwiftUI & app architecture.
 
+[![CI](https://github.com/donatogomez/signal-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/donatogomez/signal-flow/actions/workflows/ci.yml)
 [![Platform](https://img.shields.io/badge/platform-iOS%2026%2B-black)](#)
-[![Swift](https://img.shields.io/badge/Swift-6.0-orange)](#)
-[![Concurrency](https://img.shields.io/badge/strict%20concurrency-complete-green)](#)
+[![Swift](https://img.shields.io/badge/Swift-6-orange)](#)
+[![Strict Concurrency](https://img.shields.io/badge/strict%20concurrency-complete-green)](#)
 [![UI](https://img.shields.io/badge/UI-SwiftUI%20only-blue)](#)
-[![Dependencies](https://img.shields.io/badge/3rd%20party%20deps-0-lightgrey)](#)
+[![Tests](https://img.shields.io/badge/tests-96%20passing-success)](#how-to-run-the-tests)
+[![3rd-party deps](https://img.shields.io/badge/3rd--party%20deps-0-lightgrey)](#)
+[![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
-SignalFlow ingests live telemetry (temperature, humidity, CO₂, GPS, battery, door state,
-connectivity) from remote assets — greenhouses, refrigerated trucks, cold-chain shipments,
-warehouses, industrial equipment — and turns it into **real-time situational awareness**,
-**offline-resilient history**, and **on-device AI insight** using Apple's Foundation Models.
+SignalFlow monitors a fleet of remote IoT devices — greenhouses, refrigerated trucks, warehouses,
+environmental stations — turning a firehose of sensor telemetry into **real-time situational
+awareness**, **offline-resilient history**, and **on-device insight**.
+
+<br/>
+
+<img src="Assets/README/signalflow-demo.gif" alt="SignalFlow demo — Dashboard, Fleet and Device Detail" width="320" />
+
+</div>
 
 ---
 
-## Why this repository exists
+## What it is
 
-This is a **portfolio project**. Its primary product is the *engineering*: the architecture,
-the concurrency model, the testing strategy, and the documentation you are reading. The IoT
-domain was chosen deliberately because it forces every hard problem a senior iOS engineer should
-be able to solve in their sleep:
+SignalFlow ingests live telemetry (temperature, humidity, CO₂, GPS, battery, door state,
+connectivity) from many devices at once and presents it as a calm, native monitoring console: a
+**Dashboard** of fleet health, a searchable/sortable/filterable **Fleet** list, and a **Device
+Detail** screen with Swift Charts trends, active alerts, and a recent-events feed.
 
-| Hard problem the domain forces | What it lets the codebase demonstrate |
+The IoT domain was chosen deliberately — it forces every hard problem a senior iOS engineer should be
+able to solve, and the **real product is the engineering**: the architecture, the Swift 6 concurrency
+model, the testing strategy, and the documentation.
+
+| Hard problem the domain forces | What the codebase demonstrates |
 | --- | --- |
 | High-frequency, unbounded event streams | `AsyncSequence`, back-pressure, actor buffering |
-| Unreliable connectivity in the field | Offline-first persistence, sync reconciliation, outbox |
+| Unreliable connectivity in the field | Offline-first store, cancellation-safe ingestion |
 | Many devices, parallel work | Structured concurrency, `TaskGroup`, cancellation |
 | Shared mutable state under load | Actors, isolation boundaries, `Sendable` |
-| Numeric trends humans must interpret | Swift Charts + on-device Foundation Models |
-| "Is this number bad?" decisions | Domain rules, anomaly detection, explainability |
+| Numeric trends humans must interpret | Swift Charts + a pluggable insight provider |
+| "Is this number bad?" decisions | Pure domain rules, alert lifecycle, explainability |
 
-## Documentation map
+## Screenshots
 
-The full design lives in [`/docs`](docs). Read in order, or jump to what you care about:
+| Dashboard | Fleet | Device Detail |
+| :---: | :---: | :---: |
+| <img src="Assets/README/dashboard.png" alt="Dashboard" width="250" /> | <img src="Assets/README/fleet.png" alt="Fleet" width="250" /> | <img src="Assets/README/device-detail.png" alt="Device Detail" width="250" /> |
 
-1. [Product Vision](docs/01-product-vision.md) — what it is, who it's for, business value
-2. [Functional Requirements](docs/02-functional-requirements.md) — MVP, roadmap, nice-to-haves
-3. [Technical Architecture](docs/03-technical-architecture.md) — Clean Architecture, data flow, dependency rules
-4. [Repository Structure](docs/04-repository-structure.md) — SPM modularization, feature & core modules
-5. [Domain Design](docs/05-domain-design.md) — entities, aggregates, use cases, repository contracts
-6. [Data Layer Design](docs/06-data-layer.md) — remote sources, SwiftData, offline & sync strategy
-7. [Concurrency Design](docs/07-concurrency.md) — actors, task groups, cancellation, isolation
-8. [Foundation Models Integration](docs/08-foundation-models.md) — on-device AI insight
-9. [Testing Strategy](docs/09-testing-strategy.md) — Swift Testing, mocking, concurrency tests
-10. [Documentation Strategy](docs/10-documentation-strategy.md) — ADRs, DocC, diagrams
-11. [Portfolio Value Analysis](docs/11-portfolio-value.md) — what each part signals to reviewers
-12. [Scaffolding](docs/12-scaffolding.md) — the SPM module graph as built, and why each edge exists
-13. [Domain Implementation](docs/13-domain-implementation.md) — `DomainKit` as built, and why it's senior-level
-14. [Git Workflow & CI](docs/14-git-workflow-and-ci.md) — branching, commits, PR & CI policy
-15. [SimulationKit](docs/15-simulation-kit.md) — actor-based deterministic telemetry simulation
-16. [DataKit](docs/16-data-kit.md) — adapting simulation streams into the domain repository ports
-17. [Feature Layer](docs/17-feature-dashboard-fleet.md) — Dashboard, Fleet & Device Detail (SwiftUI + Charts)
-18. [App Shell](docs/18-app-shell.md) — `@main`, composition root, lifecycle & navigation bootstrap
-19. [Xcode iOS Target](docs/19-xcode-ios-target.md) — the thin app target that runs SignalFlow on iOS
+## What this project demonstrates
 
-Architecture Decision Records: [`/docs/adr`](docs/adr).
+Each capability maps to a concrete place in the codebase — the point of the project is that these are
+*built and tested*, not asserted.
 
-## Architecture at a glance
+| Senior competency | Where it lives |
+| --- | --- |
+| **Swift 6 strict concurrency** — a deliberate actor/isolation model, zero `@unchecked Sendable` | [`SimulationKit`](docs/15-simulation-kit.md), [`DataKit`](docs/16-data-kit.md) |
+| **Clean Architecture, enforced** — features physically can't import the data layer | [Architecture](docs/03-technical-architecture.md) · [`check-boundaries.sh`](Scripts/check-boundaries.sh) |
+| **Actor-based systems** — device simulators, an in-memory store, an ingestion adapter | [Concurrency](docs/07-concurrency.md) |
+| **`AsyncSequence` end-to-end** — cancellation-correct telemetry streams | [`SimulationKit`](docs/15-simulation-kit.md) |
+| **Deterministic, reproducible simulation** — seeded RNG + virtual clock | [`SimulationKit`](docs/15-simulation-kit.md) |
+| **Domain modeling** — type-safe IDs, validated value objects, pure policies | [`DomainKit`](docs/13-domain-implementation.md) |
+| **Modern SwiftUI** — `@Observable`/`@MainActor`, no Combine, Swift Charts | [Feature Layer](docs/17-feature-dashboard-fleet.md) |
+| **Dependency injection** — one composition root owns all concretes | [App Shell](docs/18-app-shell.md) |
+| **Testing rigor** — Swift Testing, deterministic concurrency tests, port fakes | [Testing Strategy](docs/09-testing-strategy.md) |
+| **Engineering process** — ADRs, enforced CI, trunk-based PR workflow | [Git Workflow & CI](docs/14-git-workflow-and-ci.md) |
+
+## Architecture overview
+
+Layered Clean Architecture. **The one rule that governs everything: dependencies point _inward_.** The
+Domain layer imports nothing — not SwiftUI, not SwiftData, not networking. Everything else depends on
+the Domain through protocols, and concrete implementations are injected at the composition root.
 
 ```mermaid
 flowchart TB
     subgraph Presentation["Presentation — SwiftUI + @Observable (@MainActor)"]
-        V[Views]
+        V[Screens]
         PM[Presentation Models]
     end
     subgraph Domain["Domain — pure Swift, zero framework imports"]
         UC[Use Cases]
         E[Entities / Value Objects]
-        RP[Repository Protocols]
+        RP[Repository Ports]
     end
     subgraph Data["Data — implements Domain contracts"]
-        REPO[Repository Implementations]
-        GW[Telemetry Gateway<br/>live + simulated]
-        STORE[(SwiftData Store<br/>ModelActor)]
+        REPO[Repositories]
+        GW["Telemetry source<br/>simulated · live (planned)"]
+        STORE[("In-memory store · actor<br/>SwiftData (planned)")]
     end
-    subgraph Platform["Platform / Composition Root"]
-        DI[DI Container]
-        FM[Foundation Models]
+    subgraph Platform["Composition Root"]
+        DI["AppContainer (DI)"]
+        FM["Insight provider<br/>deterministic · Foundation Models (planned)"]
     end
 
     V --> PM --> UC
@@ -94,116 +109,181 @@ flowchart TB
     class UC,E,RP domain;
 ```
 
-**The one rule that governs everything:** dependencies point *inward*. The Domain layer imports
-nothing — not SwiftUI, not SwiftData, not Foundation networking. Everything else depends on the
-Domain through protocols, and concrete implementations are injected at the composition root. This
-is what makes the system testable, modular, and able to "evolve for years."
+| Layer | Knows about | Concurrency |
+| --- | --- | --- |
+| Presentation | Application + Domain | `@MainActor` |
+| Application (use cases) | Domain | `nonisolated` / `async` |
+| Domain | nothing | `Sendable` value types |
+| Data | Domain (implements ports) | actors |
+| Composition root | everything (wires it) | `@MainActor` |
 
-## Technology choices
+Details: [Technical Architecture](docs/03-technical-architecture.md) · [Concurrency Design](docs/07-concurrency.md).
+
+## Module graph
+
+A single local Swift Package (`SignalFlowKit`) with **16 build targets + a test target**. Boundaries
+are enforced by the build graph *and* a CI check — a feature target cannot even name the data layer.
+
+```mermaid
+flowchart TD
+    subgraph AppLayer["App / composition root"]
+        HOST["SignalFlowHost · Xcode iOS app"]
+        APPLIB["SignalFlowApp<br/>AppContainer · RootView"]
+    end
+    subgraph FeatureLayer["Features"]
+        F1[FeatureDashboard]
+        F2[FeatureFleet]
+        F3[FeatureDeviceDetail]
+    end
+    DS[DesignSystemKit]
+    subgraph DataLayer["Data"]
+        DK[DataKit]
+        SIM[SimulationKit]
+        CORE[CoreKit]
+    end
+    DOM[DomainKit]
+
+    HOST --> APPLIB
+    APPLIB --> F1 & F2 & F3
+    APPLIB --> DK
+    F1 & F2 & F3 --> DOM
+    F1 & F2 & F3 --> DS
+    DS --> DOM
+    DK --> DOM
+    DK --> SIM
+    SIM --> DOM
+    SIM --> CORE
+
+    classDef domain fill:#1d3b2a,stroke:#2ecc71,color:#fff;
+    class DOM domain;
+```
+
+The thin Xcode app target ([`App/SignalFlow.xcodeproj`](App/SignalFlow.xcodeproj)) hosts the package's
+composition root and adds nothing but the bundle, asset catalog, and a synthesized Info.plist.
+See [Scaffolding](docs/12-scaffolding.md) and [Xcode iOS Target](docs/19-xcode-ios-target.md).
+
+## Tech stack
 
 | Concern | Choice | Rationale |
 | --- | --- | --- |
 | Language | Swift 6, strict concurrency = complete | Compile-time data-race safety is the headline |
-| UI | SwiftUI only, no UIKit | Modern, declarative, demonstrates `@Observable` |
-| State | Observation framework (`@Observable`) | Replaces `ObservableObject`; finer-grained updates |
-| Persistence | SwiftData (`@Model`, `ModelActor`) | First-party, integrates with Observation |
+| UI | SwiftUI only, no UIKit | Modern, declarative, `@Observable`-driven |
+| State | Observation (`@Observable`) | Replaces `ObservableObject`; fine-grained updates |
 | Charts | Swift Charts | First-party time-series visualization |
-| AI | Foundation Models (on-device) | Privacy, offline, no backend, no API keys |
+| Concurrency | actors, `AsyncSequence`, `TaskGroup` | Structured, cancellation-safe |
+| Insight | Deterministic provider behind a port (Foundation Models planned) | Offline, no keys; AI swaps in behind the same contract |
+| Persistence | In-memory actor store (SwiftData planned) | Same store seam; swap is local |
 | Testing | Swift Testing (`@Test`, `#expect`) | Modern, parameterized, async-native |
 | Modularization | Local Swift Package, many targets | Enforced boundaries without multi-repo overhead |
+| Tooling | SwiftPM + Xcode + GitHub Actions | `swift build`/`swift test` + `xcodebuild` in CI |
 | 3rd-party deps | **None** | Everything is a deliberate, owned decision |
 
-## Current implementation status
+## How to run the app
 
-**Phase: runnable iOS app.** SignalFlow builds and runs on the iOS Simulator/device via a thin Xcode
-app target over the SwiftPM package. The full path — `@main` → composition root → simulated telemetry
-→ in-memory store → domain repositories → use cases → SwiftUI screens — runs end-to-end. Persistence
-and a live gateway are the remaining backend swaps.
-
-- ✅ Full design & product documentation suite ([`/docs`](docs)) + ADRs.
-- ✅ `SignalFlowKit` Swift Package — 14 targets wiring the Clean Architecture graph
-  (Core · Domain · Data · Features · App · Testing). Builds in **Swift 6 mode** with strict
-  concurrency, **zero third-party dependencies**. See [Scaffolding](docs/12-scaffolding.md).
-- ✅ Architecture boundaries enforced by the dependency graph **and** a CI check
-  ([`Scripts/check-boundaries.sh`](Scripts/check-boundaries.sh)).
-- ✅ **`DomainKit` implemented** — type-safe identifiers, validated value objects, entities, pure
-  policies, typed errors, repository/insight **ports**, and use cases. Pure Swift + `Foundation`
-  only, fully `Sendable`. See [Domain Implementation](docs/13-domain-implementation.md).
-- ✅ **`SimulationKit` implemented** — actor-based, deterministic telemetry simulation for a
-  10-device fleet (greenhouses, refrigerated trucks, warehouses, environmental stations) exposed as
-  cancellation-correct `AsyncStream`s, plus a seeded RNG in `CoreKit`. See
-  [SimulationKit](docs/15-simulation-kit.md).
-- ✅ **`DataKit` implemented** — an actor-based in-memory store ingests the simulation streams and
-  serves the `DomainKit` ports (assets, devices, telemetry history, alerts, events, deterministic
-  insights), with leak-free `AsyncStream` ingestion and cancellation. No SimulationKit concept leaks
-  past the ports. See [DataKit](docs/16-data-kit.md).
-- ✅ **Feature UI implemented** — `FeatureDashboard`, `FeatureFleet`, and `FeatureDeviceDetail` (with
-  Swift Charts), built on modern Observation (`@Observable`/`@MainActor`, no Combine), plus a
-  domain-aware `DesignSystemKit`. Features see **only DomainKit contracts**. See
-  [Feature Layer](docs/17-feature-dashboard-fleet.md).
-- ✅ **Runnable app shell** — `@main SignalFlowApp` + `AppContainer` composition root + `RootView`
-  navigation. See [App Shell](docs/18-app-shell.md).
-- ✅ **Xcode iOS app target** — a thin host (`App/SignalFlow.xcodeproj`) that runs SignalFlow on the
-  simulator/device, hosting the package's composition root with zero duplicated logic and a shared
-  scheme for CI. Builds green via `xcodebuild`. See [Xcode iOS Target](docs/19-xcode-ios-target.md).
-- ✅ **96 Swift Testing tests** pass (Domain + Simulation + Data + Core + feature models + app shell).
-- ⬜️ SwiftData persistence, offline & sync (behind the existing store seam).
-- ⬜️ Live `WebSocketGateway` networking (behind the existing gateway seam).
-- ⬜️ Foundation Models insight integration (replacing the deterministic placeholder).
-- ⬜️ App icon, UI-test/screenshot target & Fastlane release lanes.
+Requires **Xcode 26** (iOS 26 SDK).
 
 ```bash
-swift build                    # compiles all 15 targets (Swift 6, strict concurrency)
-swift run SignalFlowHost       # launches the host build of the app from the CLI
-swift test                     # Swift Testing suite — 96 tests, 22 suites
-./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
-
-# Build & run the iOS app:
-open App/SignalFlow.xcodeproj  # select the SignalFlow scheme + a simulator, then Run
+open App/SignalFlow.xcodeproj
 ```
 
-The outer targets still hold a single placeholder namespace so the graph compiles; these are deleted
-as real types land. See [Functional Requirements](docs/02-functional-requirements.md) for MVP scope
-and roadmap.
+Select the **SignalFlow** scheme and an iOS Simulator, then Run (⌘R). The app launches into the
+Dashboard/Fleet tabs with live simulated telemetry; tap a device to push Device Detail.
 
-## Workflow & CI
+From the command line (what CI runs):
 
-Full policy: [docs/14 — Git Workflow & CI](docs/14-git-workflow-and-ci.md).
+```bash
+xcodebuild build \
+  -project App/SignalFlow.xcodeproj \
+  -scheme SignalFlow \
+  -sdk iphonesimulator \
+  -destination 'generic/platform=iOS Simulator' \
+  CODE_SIGNING_ALLOWED=NO
+```
 
-**Workflow status — bootstrap.** Documentation and the empty package skeleton land directly on
-`main` because there is no behavior to break yet. **This ends with the first line of real `DomainKit`
-code**, after which every change goes through a `feature/*` branch and a pull request — even with a
-single developer.
+Or launch the package's host runner without Xcode:
 
-**Branching policy.** Trunk-based: a permanent `main` plus short-lived, single-purpose topic
-branches (`type/short-kebab-summary`).
+```bash
+swift run SignalFlowHost
+```
 
-| Branch | Purpose |
-| --- | --- |
-| `main` | Stable, always buildable, always green — integration only |
-| `feature/*` | Production code, e.g. `feature/domain-kit`, `feature/data-simulation`, `feature/swiftdata-persistence`, `feature/dashboard`, `feature/insights-foundation-models` |
-| `docs/*` | Documentation-only changes |
-| `chore/*` | Maintenance with no behavior change |
-| `ci/*` | CI / tooling changes |
+## How to run the tests
 
-Commits follow [Conventional Commits](https://www.conventionalcommits.org/); PRs use the
-[PR template](.github/pull_request_template.md) and must be green before squash-merge.
+```bash
+swift build                    # compiles all 16 build targets (Swift 6, strict concurrency)
+swift test                     # Swift Testing suite — 96 tests, 22 suites
+./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
+```
 
-**CI status.** [GitHub Actions](.github/workflows/ci.yml) runs on **pull requests targeting `main`**
-and **pushes to `main`**, executing — in order — `./Scripts/check-boundaries.sh` → `swift build` →
-`swift test`. The same three commands run locally, so a green local run means a green CI run.
+The same three commands run locally and in CI, so a green local run means a green CI run.
 
-### Fastlane — intentionally deferred
+## CI status
 
-There is **no Fastlane setup yet, by design.** Fastlane automates *app delivery* (signing, build
-numbers, TestFlight/App Store uploads, screenshots, release lanes), but SignalFlow is currently a
-**Swift Package** — an architecture/demo layer with no Xcode app target, no bundle ID, and nothing to
-sign or ship. Adding it now would be configuration for a pipeline with no destination.
+[![CI](https://github.com/donatogomez/signal-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/donatogomez/signal-flow/actions/workflows/ci.yml)
 
-Fastlane will be introduced once SignalFlow has an **Xcode app target**, **app signing**, **build-number
-automation**, **TestFlight deployment**, **screenshot automation**, and **release lanes** — at which
-point it arrives in a dedicated `ci/add-fastlane` PR. See
-[docs/14](docs/14-git-workflow-and-ci.md#fastlane--intentionally-deferred) for the full rationale.
+[GitHub Actions](.github/workflows/ci.yml) runs on **pull requests to `main`** and **pushes to
+`main`**, with two jobs on a `macos-26` runner:
+
+- **`verify`** — `./Scripts/check-boundaries.sh` → `swift build` → `swift test`.
+- **`ios-app`** — `xcodebuild` builds `SignalFlow.app` for the iOS Simulator.
+
+`main` is always green and always buildable; full policy in
+[Git Workflow & CI](docs/14-git-workflow-and-ci.md).
+
+## Roadmap
+
+**Built**
+- ✅ `DomainKit` — type-safe IDs, validated value objects, pure policies, typed errors, repository/insight **ports**, use cases. Pure Swift + `Foundation`, fully `Sendable`.
+- ✅ `SimulationKit` — actor-based, deterministic telemetry simulation for a 10-device fleet, exposed as cancellation-correct `AsyncStream`s (seeded RNG in `CoreKit`).
+- ✅ `DataKit` — actor-based in-memory store + ingestion adapter serving the Domain ports; leak-free, cancellation-safe. No simulation concept leaks past the ports.
+- ✅ Feature UI — `FeatureDashboard`, `FeatureFleet`, `FeatureDeviceDetail` (Swift Charts) on `@Observable`/`@MainActor`; domain-aware `DesignSystemKit`. Features see only Domain contracts.
+- ✅ App shell + composition root (`AppContainer` / `RootView`) and a thin **Xcode iOS app target**.
+- ✅ Architecture boundaries enforced by a CI check; **96 Swift Testing tests** passing.
+
+**Upcoming**
+- ⬜️ `PersistenceKit` — SwiftData store, offline & sync (behind the existing store seam).
+- ⬜️ `NetworkingKit` — live `WebSocketGateway` (behind the existing gateway seam).
+- ⬜️ Foundation Models insight integration (replacing the deterministic provider, same port).
+- ⬜️ `FeatureAlerts` / `FeatureInsights` / `FeatureSettings` surfaces.
+- ⬜️ App icon, UI-test/screenshot target & Fastlane release lanes.
+
+See [Functional Requirements](docs/02-functional-requirements.md) for the full scope.
+
+## Documentation
+
+The full design lives in [`/docs`](docs). Read in order, or jump to what you care about:
+
+| # | Document | # | Document |
+| --- | --- | --- | --- |
+| 01 | [Product Vision](docs/01-product-vision.md) | 11 | [Portfolio Value Analysis](docs/11-portfolio-value.md) |
+| 02 | [Functional Requirements](docs/02-functional-requirements.md) | 12 | [Scaffolding](docs/12-scaffolding.md) |
+| 03 | [Technical Architecture](docs/03-technical-architecture.md) | 13 | [Domain Implementation](docs/13-domain-implementation.md) |
+| 04 | [Repository Structure](docs/04-repository-structure.md) | 14 | [Git Workflow & CI](docs/14-git-workflow-and-ci.md) |
+| 05 | [Domain Design](docs/05-domain-design.md) | 15 | [SimulationKit](docs/15-simulation-kit.md) |
+| 06 | [Data Layer Design](docs/06-data-layer.md) | 16 | [DataKit](docs/16-data-kit.md) |
+| 07 | [Concurrency Design](docs/07-concurrency.md) | 17 | [Feature Layer](docs/17-feature-dashboard-fleet.md) |
+| 08 | [Foundation Models](docs/08-foundation-models.md) | 18 | [App Shell](docs/18-app-shell.md) |
+| 09 | [Testing Strategy](docs/09-testing-strategy.md) | 19 | [Xcode iOS Target](docs/19-xcode-ios-target.md) |
+| 10 | [Documentation Strategy](docs/10-documentation-strategy.md) | | [Architecture Decision Records](docs/adr) |
+
+## Portfolio value
+
+> SignalFlow is an iOS 26 IoT monitoring app built to demonstrate senior iOS engineering: Swift 6
+> strict concurrency with a deliberate actor/isolation model, Clean Architecture enforced at the
+> Swift-Package boundary so the UI literally cannot reach the data layer, an offline-first store with
+> cancellation-safe `AsyncSequence` ingestion, modern SwiftUI (`@Observable` + Swift Charts), and a
+> Swift Testing suite that tests concurrent code deterministically with injected clocks and seeds. It
+> runs end-to-end on a fresh checkout via a built-in telemetry simulator — no backend, no keys — and
+> every significant decision is recorded as an ADR with the alternatives I rejected and why.
+
+A full breakdown of what each part signals to reviewers — and the project's honestly-named
+limitations — is in [Portfolio Value Analysis](docs/11-portfolio-value.md).
+
+## Project workflow
+
+Trunk-based: a permanent, always-green `main` plus short-lived `feature/*`, `docs/*`, `chore/*`, and
+`ci/*` branches. Commits follow [Conventional Commits](https://www.conventionalcommits.org/); every
+change merges through a reviewed, CI-green pull request — even as a solo developer. Rationale and
+branch strategy: [Git Workflow & CI](docs/14-git-workflow-and-ci.md).
 
 ## License
 
