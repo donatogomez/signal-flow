@@ -52,3 +52,15 @@ public struct StoreAlertRepository: AlertRepository {
         try await store.acknowledgeAlert(id, at: date)
     }
 }
+
+public struct StoreEventRepository: EventRepository {
+    private let store: InMemoryTelemetryStore
+    public init(store: InMemoryTelemetryStore) { self.store = store }
+
+    public func recentEvents(forDevice deviceID: DeviceID, limit: Int) async throws -> [DeviceEvent] {
+        try await store.recentEvents(forDevice: deviceID, limit: limit)
+    }
+    public func recentEvents(limit: Int) async throws -> [DeviceEvent] {
+        await store.recentEvents(limit: limit)
+    }
+}
