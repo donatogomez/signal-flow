@@ -17,11 +17,11 @@ trivial:
 | Target | Kind | Contents |
 | --- | --- | --- |
 | `SignalFlowApp` | library | The **composition root**: `AppContainer` (DI + lifecycle) and `RootView` (navigation). Depends on DataKit + every feature. Importable by tests. |
-| `SignalFlow` | executable | The `@main` entry point only — `SignalFlowApp.swift`. A few lines over `AppContainer`/`RootView`. |
+| `SignalFlowHost` | executable | The `@main` entry point only (host runner; the iOS app target reuses the same file) — `SignalFlowApp.swift`. A few lines over `AppContainer`/`RootView`. |
 
 > **Why an executable target?** SwiftPM cannot emit an iOS `.app` bundle — only Xcode can. Making the
 > entry point a SwiftPM `executableTarget` means `swift build` compiles *and links* the real `@main`
-> shell (verified in CI), and `swift run SignalFlow` launches it on the host. The **identical**
+> shell (verified in CI), and `swift run SignalFlowHost` launches it on the host. The **identical**
 > `SignalFlowApp.swift` / `AppContainer` / `RootView` files host an Xcode iOS app target unchanged —
 > the only thing Xcode adds is the bundle, `Info.plist`, and signing. Keeping the code in the package
 > means it stays inside the `swift build` / `swift test` / boundary-check loop rather than drifting in
@@ -144,7 +144,7 @@ This is the meaningful seam to test — the `@main` shell itself is a handful of
 ## 18.8 Running it
 
 ```bash
-swift run SignalFlow        # launches the host build of the app
+swift run SignalFlowHost        # launches the host build of the app
 ```
 
 To ship to iOS: add an Xcode app target whose sources are `Sources/SignalFlow/SignalFlowApp.swift`

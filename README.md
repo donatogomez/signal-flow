@@ -54,6 +54,7 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 16. [DataKit](docs/16-data-kit.md) — adapting simulation streams into the domain repository ports
 17. [Feature Layer](docs/17-feature-dashboard-fleet.md) — Dashboard, Fleet & Device Detail (SwiftUI + Charts)
 18. [App Shell](docs/18-app-shell.md) — `@main`, composition root, lifecycle & navigation bootstrap
+19. [Xcode iOS Target](docs/19-xcode-ios-target.md) — the thin app target that runs SignalFlow on iOS
 
 Architecture Decision Records: [`/docs/adr`](docs/adr).
 
@@ -114,9 +115,10 @@ is what makes the system testable, modular, and able to "evolve for years."
 
 ## Current implementation status
 
-**Phase: runnable app shell.** The full path — `@main` → composition root → simulated telemetry →
-in-memory store → domain repositories → use cases → SwiftUI screens — runs end-to-end. Persistence and
-a live gateway are the remaining backend swaps.
+**Phase: runnable iOS app.** SignalFlow builds and runs on the iOS Simulator/device via a thin Xcode
+app target over the SwiftPM package. The full path — `@main` → composition root → simulated telemetry
+→ in-memory store → domain repositories → use cases → SwiftUI screens — runs end-to-end. Persistence
+and a live gateway are the remaining backend swaps.
 
 - ✅ Full design & product documentation suite ([`/docs`](docs)) + ADRs.
 - ✅ `SignalFlowKit` Swift Package — 14 targets wiring the Clean Architecture graph
@@ -140,19 +142,24 @@ a live gateway are the remaining backend swaps.
   domain-aware `DesignSystemKit`. Features see **only DomainKit contracts**. See
   [Feature Layer](docs/17-feature-dashboard-fleet.md).
 - ✅ **Runnable app shell** — `@main SignalFlowApp` + `AppContainer` composition root + `RootView`
-  navigation. `swift run SignalFlow` launches it; the same files host an Xcode iOS target unchanged.
-  See [App Shell](docs/18-app-shell.md).
+  navigation. See [App Shell](docs/18-app-shell.md).
+- ✅ **Xcode iOS app target** — a thin host (`App/SignalFlow.xcodeproj`) that runs SignalFlow on the
+  simulator/device, hosting the package's composition root with zero duplicated logic and a shared
+  scheme for CI. Builds green via `xcodebuild`. See [Xcode iOS Target](docs/19-xcode-ios-target.md).
 - ✅ **96 Swift Testing tests** pass (Domain + Simulation + Data + Core + feature models + app shell).
 - ⬜️ SwiftData persistence, offline & sync (behind the existing store seam).
 - ⬜️ Live `WebSocketGateway` networking (behind the existing gateway seam).
 - ⬜️ Foundation Models insight integration (replacing the deterministic placeholder).
-- ⬜️ Xcode iOS app target hosting the `@main` shell for on-device/simulator runs.
+- ⬜️ App icon, UI-test/screenshot target & Fastlane release lanes.
 
 ```bash
 swift build                    # compiles all 15 targets (Swift 6, strict concurrency)
-swift run SignalFlow           # launches the host build of the app
+swift run SignalFlowHost       # launches the host build of the app from the CLI
 swift test                     # Swift Testing suite — 96 tests, 22 suites
 ./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
+
+# Build & run the iOS app:
+open App/SignalFlow.xcodeproj  # select the SignalFlow scheme + a simulator, then Run
 ```
 
 The outer targets still hold a single placeholder namespace so the graph compiles; these are deleted
