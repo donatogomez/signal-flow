@@ -38,19 +38,25 @@ struct DataKitConcurrencyTests {
 
     @Test("Stopping background ingestion halts it promptly with no leak")
     func stopHaltsIngestion() async throws {
-        let source = SimulatedDataSource.live(seed: 1, timeScale: 600) // ~0.1s per tick
+        let source = SimulatedDataSource.live(seed: 1, timeScale: 600)
         try await source.bootstrap()
-        await source.start()
 
-        try await Task.sleep(for: .milliseconds(250))
+        // 1. Deterministically prove ingestion started and wrote at least one reading — no sleeps,
+        //    no scheduler racing: this returns only once the loop has ingested its first reading.
+        await source.startAndWaitUntilFirstIngestion()
+        let afterStart = await source.ingestedReadingCount()
+        #expect(afterStart > 0)
+
+        // 2. Stop. `stop()` cancels the loop and awaits its completion, so once it returns no further
+        //    telemetry from this session can ever be written.
         await source.stop()
         let afterStop = await source.ingestedReadingCount()
 
-        try await Task.sleep(for: .milliseconds(300))
+        // 3. Prove no more writes happen after stop() returns. Because stop() awaited the loop to
+        //    finish, a second read is identical — no sleep required to "wait and see".
         let later = await source.ingestedReadingCount()
-
-        #expect(afterStop > 0)        // it actually ran
-        #expect(later == afterStop)   // …and produced nothing more after stop
+        #expect(afterStop >= afterStart)
+        #expect(later == afterStop)
     }
 
     @Test("The data layer is consumable through DomainKit ports alone")

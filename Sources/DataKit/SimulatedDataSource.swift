@@ -131,6 +131,13 @@ public struct SimulatedDataSource: Sendable {
         await coordinator?.startPeriodicFlush()
     }
 
+    /// Begins background ingestion and returns only once the first reading has been ingested, then
+    /// starts periodic persistence flushing. Deterministic startup — no polling, no sleeps.
+    public func startAndWaitUntilFirstIngestion() async {
+        await adapter.startAndWaitUntilFirstIngestion()
+        await coordinator?.startPeriodicFlush()
+    }
+
     /// Stops background ingestion and performs a final persistence flush.
     public func stop() async {
         await adapter.stop()

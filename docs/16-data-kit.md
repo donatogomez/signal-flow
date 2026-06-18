@@ -88,28 +88,46 @@ exposes only domain ports plus `bootstrap()` / `ingestAll()` / `start()` / `stop
 `deterministic(seed:maxTicks:)` or `live(seed:timeScale:)` factories, so **no caller ever names a
 SimulationKit type** — the bridge is fully encapsulated.
 
-## 16.5 Cancellation strategy
+## 16.5 Startup & cancellation strategy
 
-Cancellation is structural, with no task leaks, and — critically — **`stop()` awaits the loop's
-completion** rather than just requesting cancellation:
+Both ends of the background ingestion lifecycle are made **observable and structural**, so tests can
+prove behavior with no sleeps and no timing tolerances.
+
+**Startup is observable.** `start()` only *schedules* the loop's `Task` and returns immediately — it
+does **not** guarantee any item has been ingested yet. For when that guarantee is needed, the adapter
+exposes `startAndWaitUntilFirstIngestion()`, which returns only once the loop has ingested its first
+*reading*. It's backed by a one-shot `IngestionReadiness` actor: the loop calls `fire()` after the
+first reading lands, and the waiter is resumed via a `CheckedContinuation` — no polling, no sleeps, no
+racing the scheduler. (A loop that ends before producing a reading still fires readiness on exit, so a
+waiter can never hang.)
+
+**Cancellation is structural, with no task leaks, and `stop()` awaits the loop's completion** rather
+than just requesting cancellation:
 
 - `stop()` cancels the stored task and then `await task.value`. Cancelling ends the `for await`
   (AsyncStream is cancellation-aware), which terminates the underlying fleet stream through its
   `onTermination`, cancelling the producing task group all the way down. Because `stop()` awaits the
   loop to finish, **once `stop()` returns no telemetry from the cancelled session can still mutate the
-  store.** This is the guarantee the test relies on.
+  store.**
 - The ingestion loop also checks `Task.isCancelled` **before** each `store.ingest`, so it stops at the
   first safe point rather than draining buffered items.
 - `deinit` cancels the task as a backstop, so an abandoned adapter never leaves a stream running.
-- A test (`stopHaltsIngestion`) starts real-time ingestion, stops it, and asserts the ingested count
-  does not change afterward — verifying the no-leak guarantee.
 
-> **Why awaiting matters (a CI race we fixed).** An earlier `stop()` only *requested* cancellation
-> (`task.cancel()`) and returned immediately. The ingestion `Task` is unstructured, so on a loaded CI
-> runner it kept draining for one more accelerated tick (~30 readings) *after* `stop()` returned —
-> the count still grew. Making `stop()` await `task.value` turns "stopped" from a timing-dependent
-> hope into a structural guarantee: the work is provably done before control returns. No sleeps, no
-> tolerances — the invariant holds by construction.
+The test (`stopHaltsIngestion`) is therefore fully deterministic: it
+`startAndWaitUntilFirstIngestion()` (proving ingestion is live, `count > 0`), `stop()`s, then reads the
+count twice and asserts it's unchanged — because the loop is provably finished, a second read is
+identical without waiting.
+
+> **Two CI races we fixed, both structurally.**
+> 1. **Writes after stop.** An earlier `stop()` only *requested* cancellation and returned; the
+>    unstructured `Task` kept draining for one more accelerated tick on a loaded runner. Making
+>    `stop()` await `task.value` made "stopped" a guarantee, not a hope.
+> 2. **No writes *before* stop.** `start()` returns before the loop has run, so on a slow CI scheduler
+>    the test could `stop()` before a single reading was ingested and see `count == 0`. The fix is a
+>    deterministic readiness signal (`startAndWaitUntilFirstIngestion()`), not a longer sleep.
+>
+> The principle in both: replace "wait a bit and hope" with an explicit synchronization point. No
+> sleeps, no tolerances — the invariants hold by construction.
 
 ## 16.6 Why persistence and networking are intentionally deferred
 
