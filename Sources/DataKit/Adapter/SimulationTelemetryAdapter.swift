@@ -8,8 +8,9 @@ import SimulationKit
 /// - **Structured** ingestion (`ingestAll`) runs under the caller's task — ideal for bounded,
 ///   deterministic test runs.
 /// - **Managed** ingestion (`start`/`stop`) owns a single background `Task`, stored here so it can be
-///   cancelled. The closure captures only the two actors (not `self`), so there is no retain cycle,
-///   and `deinit` cancels the task to guarantee it never leaks.
+///   cancelled. The closure captures only the two actors (not `self`), so there is no retain cycle.
+/// - **`stop()` awaits the loop's completion** after cancelling, so once it returns the cancelled
+///   session is provably finished and can no longer mutate the store. `deinit` cancels as a backstop.
 public actor SimulationTelemetryAdapter {
     private let engine: SimulationEngineActor
     private let store: InMemoryTelemetryStore
@@ -23,9 +24,7 @@ public actor SimulationTelemetryAdapter {
     /// Drains the fleet stream to completion (or until the surrounding task is cancelled). Use with a
     /// bounded clock (`maxTicks`) for deterministic runs.
     public func ingestAll() async {
-        for await item in await engine.makeFleetStream() {
-            await store.ingest(item)
-        }
+        await ingestLoop(engine: engine, store: store)
     }
 
     /// Starts background ingestion. Idempotent — a second call while running is a no-op.
@@ -33,21 +32,33 @@ public actor SimulationTelemetryAdapter {
         guard task == nil else { return }
         let engine = self.engine
         let store = self.store
-        task = Task {
-            for await item in await engine.makeFleetStream() {
-                await store.ingest(item)
-            }
-        }
+        task = Task { await ingestLoop(engine: engine, store: store) }
     }
 
-    /// Stops background ingestion promptly. Cancelling the task ends the `for await` (AsyncStream is
-    /// cancellation-aware), which terminates the underlying fleet stream via `onTermination`.
-    public func stop() {
-        task?.cancel()
-        task = nil
+    /// Stops background ingestion and **waits for the loop to finish**.
+    ///
+    /// Cancelling the task ends the `for await` (AsyncStream is cancellation-aware), which terminates
+    /// the underlying fleet stream via `onTermination`. Awaiting `task.value` then guarantees that no
+    /// further telemetry from this session can be written once `stop()` returns — the property the
+    /// CI-stable cancellation test relies on. Concurrent/duplicate calls are safe and idempotent.
+    public func stop() async {
+        guard let task else { return }
+        task.cancel()
+        await task.value
+        self.task = nil
     }
 
     public var isRunning: Bool { task != nil }
 
     deinit { task?.cancel() }
+}
+
+/// The ingestion loop, file-private so the background `Task` captures only the two actors (no `self`)
+/// — avoiding a retain cycle and keeping the loop off the adapter's executor. It checks for
+/// cancellation **before** each store mutation, and exits when the stream terminates on cancellation.
+private func ingestLoop(engine: SimulationEngineActor, store: InMemoryTelemetryStore) async {
+    for await item in await engine.makeFleetStream() {
+        if Task.isCancelled { break }
+        await store.ingest(item)
+    }
 }

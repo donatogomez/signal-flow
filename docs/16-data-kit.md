@@ -90,13 +90,26 @@ SimulationKit type** — the bridge is fully encapsulated.
 
 ## 16.5 Cancellation strategy
 
-Cancellation is structural, with no task leaks:
-- `stop()` cancels the stored task; cancelling it ends the `for await` (AsyncStream is
-  cancellation-aware), which terminates the underlying fleet stream through its `onTermination`,
-  which cancels the producing task group — promptly and all the way down.
+Cancellation is structural, with no task leaks, and — critically — **`stop()` awaits the loop's
+completion** rather than just requesting cancellation:
+
+- `stop()` cancels the stored task and then `await task.value`. Cancelling ends the `for await`
+  (AsyncStream is cancellation-aware), which terminates the underlying fleet stream through its
+  `onTermination`, cancelling the producing task group all the way down. Because `stop()` awaits the
+  loop to finish, **once `stop()` returns no telemetry from the cancelled session can still mutate the
+  store.** This is the guarantee the test relies on.
+- The ingestion loop also checks `Task.isCancelled` **before** each `store.ingest`, so it stops at the
+  first safe point rather than draining buffered items.
 - `deinit` cancels the task as a backstop, so an abandoned adapter never leaves a stream running.
 - A test (`stopHaltsIngestion`) starts real-time ingestion, stops it, and asserts the ingested count
-  stops growing — verifying both promptness and the absence of a leak.
+  does not change afterward — verifying the no-leak guarantee.
+
+> **Why awaiting matters (a CI race we fixed).** An earlier `stop()` only *requested* cancellation
+> (`task.cancel()`) and returned immediately. The ingestion `Task` is unstructured, so on a loaded CI
+> runner it kept draining for one more accelerated tick (~30 readings) *after* `stop()` returned —
+> the count still grew. Making `stop()` await `task.value` turns "stopped" from a timing-dependent
+> hope into a structural guarantee: the work is provably done before control returns. No sleeps, no
+> tolerances — the invariant holds by construction.
 
 ## 16.6 Why persistence and networking are intentionally deferred
 
