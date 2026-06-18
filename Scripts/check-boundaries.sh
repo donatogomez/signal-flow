@@ -49,6 +49,19 @@ if grep -REn '^\s*import\s+(DataKit|PersistenceKit|NetworkingKit|SimulationKit|D
     report "IntelligenceKit may depend only on DomainKit (and FoundationModels)"
 fi
 
+# Rule 6 — SwiftData is owned exclusively by PersistenceKit. No other module may import it.
+swiftdata_violators=$(grep -REln '^\s*import\s+SwiftData\b' Sources 2>/dev/null | grep -v '^Sources/PersistenceKit/' || true)
+if [ -n "$swiftdata_violators" ]; then
+    report "SwiftData may only be imported by PersistenceKit (found: $swiftdata_violators)"
+fi
+
+# Rule 7 — PersistenceKit adapts SwiftData to DomainKit: it may import DomainKit and SwiftData only,
+# never another first-party module or UI.
+if grep -REn '^\s*import\s+(CoreKit|DataKit|NetworkingKit|SimulationKit|IntelligenceKit|DesignSystemKit|Feature[A-Za-z]+|SignalFlowApp|SwiftUI|UIKit)\b' \
+        Sources/PersistenceKit 2>/dev/null; then
+    report "PersistenceKit may depend only on DomainKit (and SwiftData)"
+fi
+
 if [ "$fail" -eq 0 ]; then
     echo "✅ architecture boundaries respected"
 fi

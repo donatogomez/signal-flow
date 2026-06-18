@@ -49,12 +49,15 @@ public actor InMemoryTelemetryStore {
     private var devices: [DeviceID: DeviceRecord] = [:]
     private var assets: [AssetID: AssetRecord] = [:]
     private var assetOrder: [AssetID] = []
+    private var insightHistory: [DeviceID: [InsightRecord]] = [:]
     private let historyLimit: Int
     private let eventLimit: Int
+    private let insightLimit: Int
 
-    public init(historyLimit: Int = 10_000, eventLimit: Int = 500) {
+    public init(historyLimit: Int = 10_000, eventLimit: Int = 500, insightLimit: Int = 100) {
         self.historyLimit = historyLimit
         self.eventLimit = eventLimit
+        self.insightLimit = insightLimit
     }
 
     // MARK: Catalog
@@ -77,6 +80,82 @@ public actor InMemoryTelemetryStore {
                 assets[descriptor.assetID]?.deviceIDs.append(descriptor.id)
             }
         }
+    }
+
+    /// Loads a restored snapshot into the store **without** re-evaluating rules or emitting events —
+    /// these facts were already decided in a previous session. Devices are expected to already exist
+    /// (via `register`); any missing one is created with no rules as a defensive fallback.
+    public func loadRestoredState(
+        assets restoredAssets: [Asset],
+        devices restoredDevices: [Device],
+        latestReadings: [TelemetryReading],
+        events restoredEvents: [DeviceEvent],
+        alerts restoredAlerts: [Alert],
+        insights restoredInsights: [InsightRecord]
+    ) {
+        var kindByAsset: [AssetID: AssetKind] = [:]
+        for asset in restoredAssets {
+            kindByAsset[asset.id] = asset.kind
+            if assets[asset.id] == nil {
+                assets[asset.id] = AssetRecord(id: asset.id, name: asset.name, kind: asset.kind,
+                                               deviceIDs: asset.deviceIDs, location: asset.location)
+                assetOrder.append(asset.id)
+            } else {
+                assets[asset.id]?.location = asset.location
+            }
+        }
+
+        // Read-modify-write throughout to avoid overlapping access to the `devices` dictionary.
+        for device in restoredDevices {
+            var record = devices[device.id] ?? DeviceRecord(
+                descriptor: DeviceDescriptor(
+                    id: device.id, assetID: device.assetID, name: device.name,
+                    assetKind: kindByAsset[device.assetID] ?? .warehouse
+                ),
+                rules: []
+            )
+            record.connectivity = device.connectivity.state
+            record.lastSignal = device.connectivity.signalStrength
+            record.lastSeenAt = device.connectivity.lastSeenAt
+            record.lastLocation = device.lastKnownLocation
+            devices[device.id] = record
+        }
+
+        for reading in latestReadings {
+            guard var record = devices[reading.deviceID] else { continue }
+            record.latestByMetric[reading.metric] = reading
+            record.lastSeenAt = latest(record.lastSeenAt, reading.recordedAt)
+            devices[reading.deviceID] = record
+        }
+
+        for (deviceID, deviceEvents) in Dictionary(grouping: restoredEvents, by: \.deviceID) {
+            guard var record = devices[deviceID] else { continue }
+            record.events = Array(deviceEvents.sorted { $0.occurredAt < $1.occurredAt }.suffix(eventLimit))
+            devices[deviceID] = record
+        }
+
+        for alert in restoredAlerts {
+            guard var record = devices[alert.deviceID] else { continue }
+            record.activeAlerts[alert.id] = alert
+            record.alertByRule[alert.ruleID] = alert.id
+            devices[alert.deviceID] = record
+        }
+
+        for (deviceID, records) in Dictionary(grouping: restoredInsights, by: \.deviceID) {
+            insightHistory[deviceID] = Array(records.sorted { $0.createdAt < $1.createdAt }.suffix(insightLimit))
+        }
+    }
+
+    /// Records a generated insight in the in-memory history (bounded).
+    public func recordInsight(_ record: InsightRecord) {
+        var list = insightHistory[record.deviceID, default: []]
+        list.append(record)
+        if list.count > insightLimit { list.removeFirst(list.count - insightLimit) }
+        insightHistory[record.deviceID] = list
+    }
+
+    public func insightHistory(forDevice id: DeviceID) -> [InsightRecord] {
+        (insightHistory[id] ?? []).sorted { $0.createdAt > $1.createdAt }
     }
 
     // MARK: Ingestion

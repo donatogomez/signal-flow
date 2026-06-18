@@ -14,6 +14,7 @@ struct DeterministicInsightsProviderTests {
             average: 4, trend: trend, sampleCount: sampleCount
         )
         return InsightContext(
+            deviceID: DeviceID(),
             deviceName: "Reefer 12", assetKind: .refrigeratedTruck, statistics: stats,
             activeAlertCount: activeAlerts, recentEventCount: 3, range: try DataKitFixtures.wideRange()
         )

@@ -2,6 +2,7 @@ import Observation
 import DomainKit
 import DataKit
 import IntelligenceKit
+import PersistenceKit
 
 /// The dependency composition root.
 ///
@@ -41,7 +42,10 @@ public final class AppContainer {
         let insights: any InsightsProviding = FoundationModelsInsightProvider.systemModelAvailable
             ? FoundationModelsInsightProvider(fallback: deterministic)
             : deterministic
-        return AppContainer(source: .live(seed: 42, timeScale: 600, insights: insights))
+        // On-disk SwiftData persistence. If the container can't be created, the app degrades to
+        // in-memory only rather than failing to launch.
+        let persistence = (try? PersistenceController.makeContainer()).map(PersistenceStore.init(modelContainer:))
+        return AppContainer(source: .live(seed: 42, timeScale: 600, insights: insights, persistence: persistence))
     }
 
     /// A deterministic configuration for previews and tests.

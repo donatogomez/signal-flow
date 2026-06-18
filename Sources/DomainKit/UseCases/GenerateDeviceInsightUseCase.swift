@@ -45,6 +45,7 @@ public struct GenerateDeviceInsightUseCase: Sendable {
         async let eventsTask = events.recentEvents(forDevice: deviceID, limit: 50)
 
         let context = InsightContext(
+            deviceID: deviceID,
             deviceName: device.name,
             assetKind: try await assetTask.kind,
             statistics: statistics,
