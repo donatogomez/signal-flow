@@ -6,6 +6,7 @@
 /// alert evaluation has already happened deterministically elsewhere; the model only ever sees the
 /// resulting count, never the thresholds.
 public struct InsightContext: Sendable, Hashable {
+    public let deviceID: DeviceID
     public let deviceName: String
     public let assetKind: AssetKind
     public let statistics: InsightStatistics
@@ -14,6 +15,7 @@ public struct InsightContext: Sendable, Hashable {
     public let range: TimeRange
 
     public init(
+        deviceID: DeviceID,
         deviceName: String,
         assetKind: AssetKind,
         statistics: InsightStatistics,
@@ -21,6 +23,7 @@ public struct InsightContext: Sendable, Hashable {
         recentEventCount: Int,
         range: TimeRange
     ) {
+        self.deviceID = deviceID
         self.deviceName = deviceName
         self.assetKind = assetKind
         self.statistics = statistics

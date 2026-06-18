@@ -31,14 +31,22 @@ public enum SimulationFleet {
             (.environmentalStation, "Station Beta"),
         ]
 
+        // Device and asset identities are derived from the seed (not random), so the same fleet —
+        // same ids — is reproduced on every launch. That stable identity is what lets persisted
+        // telemetry line up with the regenerated fleet, and keeps persistence idempotent.
         var rng = SeededRandomNumberGenerator(seed: seed)
         let devices = blueprint.map { entry in
-            SimulatedDeviceActor(
+            let assetID = AssetID(rng.nextUUID())
+            let deviceID = DeviceID(rng.nextUUID())
+            let deviceSeed = rng.next()
+            return SimulatedDeviceActor(
+                id: deviceID,
+                assetID: assetID,
                 name: entry.name,
                 assetKind: entry.kind,
                 profile: .make(for: entry.kind),
                 clock: clock,
-                seed: rng.next()
+                seed: deviceSeed
             )
         }
 

@@ -15,6 +15,7 @@ struct FoundationModelsInsightProviderTests {
             average: 4, trend: .stable, sampleCount: 12
         )
         return InsightContext(
+            deviceID: DeviceID(),
             deviceName: "Reefer 12", assetKind: .refrigeratedTruck, statistics: stats,
             activeAlertCount: 0, recentEventCount: 0,
             range: try TimeRange(start: Date(timeIntervalSince1970: 0), end: Date(timeIntervalSince1970: 1000))

@@ -51,7 +51,9 @@ let package = Package(
         // MARK: - Data sources (concrete infrastructure)
 
         .target(name: "NetworkingKit", dependencies: ["CoreKit"], swiftSettings: swift6),
-        .target(name: "PersistenceKit", dependencies: ["CoreKit"], swiftSettings: swift6),
+        // The only target that imports SwiftData. Maps SwiftData @Model records to/from DomainKit
+        // entities behind a ModelActor; depends on DomainKit alone.
+        .target(name: "PersistenceKit", dependencies: ["DomainKit"], swiftSettings: swift6),
         .target(name: "SimulationKit", dependencies: ["CoreKit", "DomainKit"], swiftSettings: swift6),
 
         // DataKit is the aggregator that implements DomainKit's ports on top of the data sources.
@@ -117,8 +119,8 @@ let package = Package(
             name: "SignalFlowKitTests",
             dependencies: [
                 "DomainKit", "TestingSupportKit", "CoreKit", "SimulationKit", "DataKit",
-                "IntelligenceKit", "DesignSystemKit", "FeatureDashboard", "FeatureFleet",
-                "FeatureDeviceDetail", "FeatureInsights", "SignalFlowApp",
+                "PersistenceKit", "IntelligenceKit", "DesignSystemKit", "FeatureDashboard",
+                "FeatureFleet", "FeatureDeviceDetail", "FeatureInsights", "SignalFlowApp",
             ],
             swiftSettings: swift6
         )
