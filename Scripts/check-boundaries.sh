@@ -36,6 +36,12 @@ if grep -REn '^\s*import\s+(DataKit|PersistenceKit|NetworkingKit|DesignSystemKit
     report "SimulationKit may depend only on DomainKit and CoreKit"
 fi
 
+# Rule 4 — DataKit is a data-layer module: it must not reach up into UI/features/app.
+if grep -REn '^\s*import\s+(DesignSystemKit|Feature[A-Za-z]+|SignalFlowApp|SwiftUI|UIKit)\b' \
+        Sources/DataKit 2>/dev/null; then
+    report "DataKit must not import UI, feature, or app modules"
+fi
+
 if [ "$fail" -eq 0 ]; then
     echo "✅ architecture boundaries respected"
 fi

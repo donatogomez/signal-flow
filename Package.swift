@@ -96,7 +96,7 @@ let package = Package(
         // A single smoke test target proving the test stack + TestingSupportKit link and run.
         .testTarget(
             name: "SignalFlowKitTests",
-            dependencies: ["DomainKit", "TestingSupportKit", "CoreKit", "SimulationKit"],
+            dependencies: ["DomainKit", "TestingSupportKit", "CoreKit", "SimulationKit", "DataKit"],
             swiftSettings: swift6
         )
     ]
