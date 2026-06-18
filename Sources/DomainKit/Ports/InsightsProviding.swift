@@ -1,11 +1,8 @@
-/// Produces a ``TelemetryInsight`` from a window of readings.
+/// Produces a ``DeviceInsight`` from a fully-grounded ``InsightContext``.
 ///
-/// Defined with plain domain value types only, so the Foundation Models implementation lives
-/// entirely in `IntelligenceKit` and the Domain stays framework-free and testable with a fake.
+/// Defined with plain domain value types only, so a Foundation Models implementation lives entirely
+/// outside the Domain and the deterministic provider can stand in for it — they're interchangeable
+/// behind this one port. The composition root chooses which to inject.
 public protocol InsightsProviding: Sendable {
-    func summarize(
-        _ readings: [TelemetryReading],
-        for metric: MetricKind,
-        over range: TimeRange
-    ) async throws -> TelemetryInsight
+    func insight(for context: InsightContext) async throws -> DeviceInsight
 }

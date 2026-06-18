@@ -61,6 +61,10 @@ let package = Package(
             swiftSettings: swift6
         ),
 
+        // The only target that imports Apple's FoundationModels framework. Implements the DomainKit
+        // InsightsProviding port with on-device guided generation; depends on DomainKit alone.
+        .target(name: "IntelligenceKit", dependencies: ["DomainKit"], swiftSettings: swift6),
+
         // MARK: - Features (vertical slices — Domain + DesignSystem only, never Data)
 
         .target(name: "FeatureDashboard", dependencies: ["DomainKit", "DesignSystemKit"], swiftSettings: swift6),
@@ -80,6 +84,7 @@ let package = Package(
                 "DesignSystemKit",
                 // concrete data modules — wired here, invisible to features
                 "DataKit",
+                "IntelligenceKit",
                 "PersistenceKit",
                 "NetworkingKit",
                 "SimulationKit",
@@ -112,8 +117,8 @@ let package = Package(
             name: "SignalFlowKitTests",
             dependencies: [
                 "DomainKit", "TestingSupportKit", "CoreKit", "SimulationKit", "DataKit",
-                "DesignSystemKit", "FeatureDashboard", "FeatureFleet", "FeatureDeviceDetail",
-                "SignalFlowApp",
+                "IntelligenceKit", "DesignSystemKit", "FeatureDashboard", "FeatureFleet",
+                "FeatureDeviceDetail", "FeatureInsights", "SignalFlowApp",
             ],
             swiftSettings: swift6
         )

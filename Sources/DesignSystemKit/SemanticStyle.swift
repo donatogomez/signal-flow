@@ -109,6 +109,41 @@ public extension AssetKind {
     }
 }
 
+public extension InsightSeverity {
+    /// Advisory tint for an insight's noteworthiness — distinct from safety-status colors.
+    var tint: Color {
+        switch self {
+        case .nominal: .green
+        case .watch: .orange
+        case .concern: .red
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .nominal: "Nominal"
+        case .watch: "Watch"
+        case .concern: "Concern"
+        }
+    }
+}
+
+public extension InsightSource {
+    var label: String {
+        switch self {
+        case .foundationModel: "On-device AI"
+        case .deterministic: "Deterministic"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .foundationModel: "sparkles"
+        case .deterministic: "function"
+        }
+    }
+}
+
 public extension DeviceEvent.Kind {
     var title: String {
         switch self {

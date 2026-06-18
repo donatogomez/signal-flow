@@ -1,6 +1,7 @@
 import Observation
 import DomainKit
 import DataKit
+import IntelligenceKit
 
 /// The dependency composition root.
 ///
@@ -30,8 +31,17 @@ public final class AppContainer {
     }
 
     /// The real app configuration: a real-time simulated source playing telemetry at 600× wall speed.
+    ///
+    /// The composition root decides the insight provider here: if Apple's on-device model is
+    /// available, use the Foundation Models provider (with the deterministic one as its runtime
+    /// fallback); otherwise use the deterministic provider directly. Either way features see only the
+    /// `InsightsProviding` port.
     public static func live() -> AppContainer {
-        AppContainer(source: .live(seed: 42, timeScale: 600))
+        let deterministic = DeterministicInsightsProvider()
+        let insights: any InsightsProviding = FoundationModelsInsightProvider.systemModelAvailable
+            ? FoundationModelsInsightProvider(fallback: deterministic)
+            : deterministic
+        return AppContainer(source: .live(seed: 42, timeScale: 600, insights: insights))
     }
 
     /// A deterministic configuration for previews and tests.

@@ -22,11 +22,11 @@ if grep -REn '^\s*import\s+(CoreKit|DesignSystemKit|DataKit|PersistenceKit|Netwo
     report "DomainKit must not depend on any other SignalFlow target"
 fi
 
-# Rule 2 — Feature modules must not reach into the data layer.
+# Rule 2 — Feature modules must not reach into the data/infrastructure layer.
 for feature in Sources/Feature*; do
     [ -d "$feature" ] || continue
-    if grep -REn '^\s*import\s+(DataKit|PersistenceKit|NetworkingKit|SimulationKit)\b' "$feature" 2>/dev/null; then
-        report "$(basename "$feature") must not import a concrete data module"
+    if grep -REn '^\s*import\s+(DataKit|PersistenceKit|NetworkingKit|SimulationKit|IntelligenceKit|FoundationModels)\b' "$feature" 2>/dev/null; then
+        report "$(basename "$feature") must not import a concrete data/intelligence module"
     fi
 done
 
@@ -40,6 +40,13 @@ fi
 if grep -REn '^\s*import\s+(DesignSystemKit|Feature[A-Za-z]+|SignalFlowApp|SwiftUI|UIKit)\b' \
         Sources/DataKit 2>/dev/null; then
     report "DataKit must not import UI, feature, or app modules"
+fi
+
+# Rule 5 — IntelligenceKit implements a Domain port with FoundationModels: DomainKit only, no other
+# first-party modules and no UI.
+if grep -REn '^\s*import\s+(DataKit|PersistenceKit|NetworkingKit|SimulationKit|DesignSystemKit|Feature[A-Za-z]+|SignalFlowApp|SwiftUI|UIKit)\b' \
+        Sources/IntelligenceKit 2>/dev/null; then
+    report "IntelligenceKit may depend only on DomainKit (and FoundationModels)"
 fi
 
 if [ "$fail" -eq 0 ]; then
