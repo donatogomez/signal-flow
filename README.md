@@ -51,6 +51,7 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 13. [Domain Implementation](docs/13-domain-implementation.md) — `DomainKit` as built, and why it's senior-level
 14. [Git Workflow & CI](docs/14-git-workflow-and-ci.md) — branching, commits, PR & CI policy
 15. [SimulationKit](docs/15-simulation-kit.md) — actor-based deterministic telemetry simulation
+16. [DataKit](docs/16-data-kit.md) — adapting simulation streams into the domain repository ports
 
 Architecture Decision Records: [`/docs/adr`](docs/adr).
 
@@ -111,8 +112,9 @@ is what makes the system testable, modular, and able to "evolve for years."
 
 ## Current implementation status
 
-**Phase: domain + simulation data source implemented.** The app can now be driven by realistic,
-deterministic telemetry; persistence, features, and UI still to come.
+**Phase: domain + simulation + data layer implemented.** The full data path — simulated telemetry
+→ in-memory store → domain repositories → use cases — works end-to-end; persistence, features, and UI
+still to come.
 
 - ✅ Full design & product documentation suite ([`/docs`](docs)) + ADRs.
 - ✅ `SignalFlowKit` Swift Package — 14 targets wiring the Clean Architecture graph
@@ -127,16 +129,20 @@ deterministic telemetry; persistence, features, and UI still to come.
   10-device fleet (greenhouses, refrigerated trucks, warehouses, environmental stations) exposed as
   cancellation-correct `AsyncStream`s, plus a seeded RNG in `CoreKit`. See
   [SimulationKit](docs/15-simulation-kit.md).
-- ✅ **60 Swift Testing tests** pass (DomainKit + SimulationKit + CoreKit).
-- ⬜️ `DataKit` repository implementations (adapting simulation/live sources to the domain ports).
-- ⬜️ SwiftData persistence, offline & sync.
+- ✅ **`DataKit` implemented** — an actor-based in-memory store ingests the simulation streams and
+  serves the `DomainKit` ports (assets, devices, telemetry history, alerts, deterministic insights),
+  with leak-free `AsyncStream` ingestion and cancellation. No SimulationKit concept leaks past the
+  ports. See [DataKit](docs/16-data-kit.md).
+- ✅ **82 Swift Testing tests** pass (DomainKit + SimulationKit + DataKit + CoreKit).
+- ⬜️ SwiftData persistence, offline & sync (behind the existing store seam).
+- ⬜️ Live `WebSocketGateway` networking (behind the existing gateway seam).
 - ⬜️ Feature UIs, composition-root DI & navigation.
-- ⬜️ Foundation Models insight integration.
+- ⬜️ Foundation Models insight integration (replacing the deterministic placeholder).
 - ⬜️ Xcode iOS app shell (`@main`) wrapping the `SignalFlowApp` composition root.
 
 ```bash
 swift build                    # compiles all 14 targets (Swift 6, strict concurrency)
-swift test                     # Swift Testing suite — 60 tests, 13 suites
+swift test                     # Swift Testing suite — 82 tests, 18 suites
 ./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
 ```
 
