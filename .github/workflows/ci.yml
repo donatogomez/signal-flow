@@ -32,3 +32,20 @@ jobs:
 
       - name: Test (Swift Testing)
         run: swift test
+
+  ios-app:
+    name: Build iOS app (simulator)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      # Builds the thin Xcode app target for the simulator, proving the runnable iOS app stays green.
+      # The SwiftPM package (built/tested in `verify`) holds all the logic; this only adds the host.
+      - name: Build SignalFlow.app for iOS Simulator
+        run: |
+          xcodebuild build \
+            -project App/SignalFlow.xcodeproj \
+            -scheme SignalFlow \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO

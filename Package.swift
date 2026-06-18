@@ -24,9 +24,10 @@ let package = Package(
         .macOS(.v26) // host platform, so `swift build` / `swift test` run from the CLI
     ],
     products: [
-        // The runnable app. As a SwiftPM executable it builds/links from the CLI; the same `@main`
-        // file also hosts an Xcode iOS app target unchanged.
-        .executable(name: "SignalFlow", targets: ["SignalFlow"]),
+        // A host runner for the `@main` shell: lets `swift build`/`swift run` compile and launch the
+        // entry point from the CLI (CI coverage). The Xcode iOS app target reuses the same source
+        // file. Named distinctly from the iOS app's `SignalFlow` scheme to avoid any ambiguity.
+        .executable(name: "SignalFlowHost", targets: ["SignalFlowHost"]),
         // The composition root library — `AppContainer` + `RootView`. Linkable by an external app
         // shell and importable by tests.
         .library(name: "SignalFlowApp", targets: ["SignalFlowApp"]),
@@ -93,9 +94,10 @@ let package = Package(
             swiftSettings: swift6
         ),
 
-        // The `@main` entry point. A thin shell over the `SignalFlowApp` composition root.
+        // The `@main` entry point. A thin shell over the `SignalFlowApp` composition root, reused by
+        // both this host runner and the Xcode iOS app target.
         .executableTarget(
-            name: "SignalFlow",
+            name: "SignalFlowHost",
             dependencies: ["SignalFlowApp"],
             swiftSettings: swift6
         ),
