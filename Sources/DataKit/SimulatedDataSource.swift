@@ -14,6 +14,7 @@ public struct SimulatedDataSource: Sendable {
     public let devices: any DeviceRepository
     public let telemetry: any TelemetryRepository
     public let alerts: any AlertRepository
+    public let events: any EventRepository
     public let insights: any InsightsProviding
 
     private let store: InMemoryTelemetryStore
@@ -30,6 +31,7 @@ public struct SimulatedDataSource: Sendable {
         self.devices = StoreDeviceRepository(store: store)
         self.telemetry = StoreTelemetryRepository(store: store)
         self.alerts = StoreAlertRepository(store: store)
+        self.events = StoreEventRepository(store: store)
         self.insights = DeterministicInsightsProvider()
     }
 

@@ -36,7 +36,9 @@ let package = Package(
         // MARK: - Core (feature-agnostic foundations)
 
         .target(name: "CoreKit", swiftSettings: swift6),
-        .target(name: "DesignSystemKit", swiftSettings: swift6),
+        // DesignSystemKit encodes the product's visual semantics for domain concepts (status, asset
+        // kind, severity), so it depends on DomainKit — but on nothing in the data layer.
+        .target(name: "DesignSystemKit", dependencies: ["DomainKit"], swiftSettings: swift6),
 
         // MARK: - Domain (pure business core — depends on NOTHING)
 
@@ -96,7 +98,10 @@ let package = Package(
         // A single smoke test target proving the test stack + TestingSupportKit link and run.
         .testTarget(
             name: "SignalFlowKitTests",
-            dependencies: ["DomainKit", "TestingSupportKit", "CoreKit", "SimulationKit", "DataKit"],
+            dependencies: [
+                "DomainKit", "TestingSupportKit", "CoreKit", "SimulationKit", "DataKit",
+                "DesignSystemKit", "FeatureDashboard", "FeatureFleet", "FeatureDeviceDetail",
+            ],
             swiftSettings: swift6
         )
     ]

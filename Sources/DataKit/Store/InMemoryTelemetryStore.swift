@@ -186,6 +186,15 @@ public actor InMemoryTelemetryStore {
         return record.rules
     }
 
+    public func recentEvents(forDevice id: DeviceID, limit: Int) throws -> [DeviceEvent] {
+        guard let record = devices[id] else { throw DomainError.deviceNotFound(id) }
+        return Array(record.events.sorted { $0.occurredAt > $1.occurredAt }.prefix(limit))
+    }
+
+    public func recentEvents(limit: Int) -> [DeviceEvent] {
+        Array(devices.values.flatMap(\.events).sorted { $0.occurredAt > $1.occurredAt }.prefix(limit))
+    }
+
     public func record(_ alert: Alert) {
         guard var record = devices[alert.deviceID] else { return }
         record.activeAlerts[alert.id] = alert
