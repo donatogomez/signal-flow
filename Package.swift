@@ -50,7 +50,9 @@ let package = Package(
 
         // MARK: - Data sources (concrete infrastructure)
 
-        .target(name: "NetworkingKit", dependencies: ["CoreKit"], swiftSettings: swift6),
+        // The only target responsible for remote HTTP. Maps wire DTOs to/from DomainKit entities;
+        // depends on DomainKit (+ Foundation) alone — no other first-party module, no UI/SwiftData.
+        .target(name: "NetworkingKit", dependencies: ["DomainKit"], swiftSettings: swift6),
         // The only target that imports SwiftData. Maps SwiftData @Model records to/from DomainKit
         // entities behind a ModelActor; depends on DomainKit alone.
         .target(name: "PersistenceKit", dependencies: ["DomainKit"], swiftSettings: swift6),
@@ -119,8 +121,9 @@ let package = Package(
             name: "SignalFlowKitTests",
             dependencies: [
                 "DomainKit", "TestingSupportKit", "CoreKit", "SimulationKit", "DataKit",
-                "PersistenceKit", "IntelligenceKit", "DesignSystemKit", "FeatureDashboard",
-                "FeatureFleet", "FeatureDeviceDetail", "FeatureInsights", "SignalFlowApp",
+                "PersistenceKit", "NetworkingKit", "IntelligenceKit", "DesignSystemKit",
+                "FeatureDashboard", "FeatureFleet", "FeatureDeviceDetail", "FeatureInsights",
+                "SignalFlowApp",
             ],
             swiftSettings: swift6
         )

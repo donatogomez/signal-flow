@@ -25,7 +25,7 @@ fi
 # Rule 2 — Feature modules must not reach into the data/infrastructure layer.
 for feature in Sources/Feature*; do
     [ -d "$feature" ] || continue
-    if grep -REn '^\s*import\s+(DataKit|PersistenceKit|NetworkingKit|SimulationKit|IntelligenceKit|FoundationModels)\b' "$feature" 2>/dev/null; then
+    if grep -REn '^\s*import\s+(DataKit|PersistenceKit|NetworkingKit|SimulationKit|IntelligenceKit|FoundationModels|SwiftData)\b' "$feature" 2>/dev/null; then
         report "$(basename "$feature") must not import a concrete data/intelligence module"
     fi
 done
@@ -60,6 +60,13 @@ fi
 if grep -REn '^\s*import\s+(CoreKit|DataKit|NetworkingKit|SimulationKit|IntelligenceKit|DesignSystemKit|Feature[A-Za-z]+|SignalFlowApp|SwiftUI|UIKit)\b' \
         Sources/PersistenceKit 2>/dev/null; then
     report "PersistenceKit may depend only on DomainKit (and SwiftData)"
+fi
+
+# Rule 8 — NetworkingKit is the remote-HTTP layer: DomainKit + Foundation only, never UI/SwiftData,
+# another data module, or features.
+if grep -REn '^\s*import\s+(CoreKit|DataKit|PersistenceKit|SimulationKit|IntelligenceKit|DesignSystemKit|Feature[A-Za-z]+|SignalFlowApp|SwiftUI|SwiftData|UIKit|FoundationModels|Combine)\b' \
+        Sources/NetworkingKit 2>/dev/null; then
+    report "NetworkingKit may depend only on DomainKit (and Foundation)"
 fi
 
 if [ "$fail" -eq 0 ]; then

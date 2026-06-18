@@ -9,7 +9,7 @@
 [![Swift](https://img.shields.io/badge/Swift-6-orange)](#)
 [![Strict Concurrency](https://img.shields.io/badge/strict%20concurrency-complete-green)](#)
 [![UI](https://img.shields.io/badge/UI-SwiftUI%20only-blue)](#)
-[![Tests](https://img.shields.io/badge/tests-117%20passing-success)](#how-to-run-the-tests)
+[![Tests](https://img.shields.io/badge/tests-142%20passing-success)](#how-to-run-the-tests)
 [![3rd-party deps](https://img.shields.io/badge/3rd--party%20deps-0-lightgrey)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
@@ -62,6 +62,7 @@ Each capability maps to a concrete place in the codebase — the point of the pr
 | **Clean Architecture, enforced** — features physically can't import the data layer | [Architecture](docs/03-technical-architecture.md) · [`check-boundaries.sh`](Scripts/check-boundaries.sh) |
 | **Actor-based systems** — device simulators, an in-memory store, an ingestion adapter | [Concurrency](docs/07-concurrency.md) |
 | **SwiftData persistence** — a dedicated `ModelActor` off-main, mapping, retention, offline-first restore | [SwiftData Persistence](docs/21-swiftdata-persistence.md) |
+| **Networking** — `URLSession` + `async/await`, typed endpoints, DTO mapping, structured errors, retry | [NetworkingKit](docs/22-networking-kit.md) |
 | **`AsyncSequence` end-to-end** — cancellation-correct telemetry streams | [`SimulationKit`](docs/15-simulation-kit.md) |
 | **Deterministic, reproducible simulation** — seeded RNG + virtual clock | [`SimulationKit`](docs/15-simulation-kit.md) |
 | **Domain modeling** — type-safe IDs, validated value objects, pure policies | [`DomainKit`](docs/13-domain-implementation.md) |
@@ -90,7 +91,7 @@ flowchart TB
     end
     subgraph Data["Data — implements Domain contracts"]
         REPO[Repositories]
-        GW["Telemetry source<br/>simulated · live (planned)"]
+        GW["Telemetry source<br/>simulated (default) · remote (URLSession)"]
         STORE[("SwiftData store · ModelActor<br/>+ in-memory read cache")]
     end
     subgraph Platform["Composition Root"]
@@ -142,6 +143,7 @@ flowchart TD
     subgraph DataLayer["Data / Intelligence"]
         DK[DataKit]
         PERSIST["PersistenceKit<br/>(SwiftData)"]
+        NET["NetworkingKit<br/>(URLSession)"]
         INTEL["IntelligenceKit<br/>(FoundationModels)"]
         SIM[SimulationKit]
         CORE[CoreKit]
@@ -158,7 +160,9 @@ flowchart TD
     DS --> DOM
     DK --> DOM
     DK --> PERSIST
+    DK --> NET
     PERSIST --> DOM
+    NET --> DOM
     INTEL --> DOM
     DK --> SIM
     SIM --> DOM
@@ -183,6 +187,7 @@ See [Scaffolding](docs/12-scaffolding.md) and [Xcode iOS Target](docs/19-xcode-i
 | Concurrency | actors, `AsyncSequence`, `TaskGroup` | Structured, cancellation-safe |
 | Insight | On-device **Foundation Models** (guided generation) + deterministic fallback | Private, offline, no keys; chosen behind one port |
 | Persistence | **SwiftData** (`ModelActor`, off-main) + in-memory read cache | Offline-first, retained; the only SwiftData importer |
+| Networking | **`URLSession`** + `async/await`, typed endpoints, DTOs, retry | Production-shaped behind a gateway; deterministic stub for tests/CI |
 | Testing | Swift Testing (`@Test`, `#expect`) | Modern, parameterized, async-native |
 | Modularization | Local Swift Package, many targets | Enforced boundaries without multi-repo overhead |
 | Tooling | SwiftPM + Xcode + GitHub Actions | `swift build`/`swift test` + `xcodebuild` in CI |
@@ -220,7 +225,7 @@ swift run SignalFlowHost
 
 ```bash
 swift build                    # compiles all 17 build targets (Swift 6, strict concurrency)
-swift test                     # Swift Testing suite — 117 tests, 28 suites
+swift test                     # Swift Testing suite — 142 tests, 33 suites
 ./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
 ```
 
@@ -246,13 +251,14 @@ The same three commands run locally and in CI, so a green local run means a gree
 - ✅ `SimulationKit` — actor-based, deterministic telemetry simulation for a 10-device fleet, exposed as cancellation-correct `AsyncStream`s (seeded RNG in `CoreKit`).
 - ✅ `DataKit` — actor-based in-memory store + ingestion adapter serving the Domain ports; leak-free, cancellation-safe. No simulation concept leaks past the ports.
 - ✅ `PersistenceKit` — **SwiftData** persistence via a dedicated `ModelActor` (off-main), with mapping, retention, and restore-on-launch (offline-first). The only module importing SwiftData. See [SwiftData Persistence](docs/21-swiftdata-persistence.md).
+- ✅ `NetworkingKit` — production-shaped remote HTTP layer (`URLSession`, typed endpoints, DTO mapping, structured errors, retry) behind a `RemoteGateway` abstraction, with a deterministic stub transport. Integrated into DataKit as a selectable `RemoteDataSource`; the app still defaults to SimulationKit (no backend yet). See [NetworkingKit](docs/22-networking-kit.md).
 - ✅ Feature UI — `FeatureDashboard`, `FeatureFleet`, `FeatureDeviceDetail` (Swift Charts), `FeatureInsights` on `@Observable`/`@MainActor`; domain-aware `DesignSystemKit`. Features see only Domain contracts.
 - ✅ **On-device AI** — `IntelligenceKit` uses Apple **Foundation Models** (guided generation) behind the `InsightsProviding` port, with a deterministic fallback and grounded facts computed in Swift. Safety logic stays deterministic. See [Foundation Models Insights](docs/20-foundation-models-insights.md).
 - ✅ App shell + composition root (`AppContainer` / `RootView`) and a thin **Xcode iOS app target**.
-- ✅ Architecture boundaries enforced by a CI check; **117 Swift Testing tests** passing.
+- ✅ Architecture boundaries enforced by a CI check; **142 Swift Testing tests** passing.
 
 **Upcoming**
-- ⬜️ `NetworkingKit` — live `WebSocketGateway` (behind the existing gateway seam).
+- ⬜️ Real backend wiring + auth (swap `URLSessionHTTPClient` in at the composition root).
 - ⬜️ `FeatureAlerts` / `FeatureSettings` surfaces.
 - ⬜️ App icon, UI-test/screenshot target & Fastlane release lanes.
 
@@ -275,6 +281,7 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 | 09 | [Testing Strategy](docs/09-testing-strategy.md) | 19 | [Xcode iOS Target](docs/19-xcode-ios-target.md) |
 | 10 | [Documentation Strategy](docs/10-documentation-strategy.md) | 20 | [Foundation Models Insights](docs/20-foundation-models-insights.md) |
 | | | 21 | [SwiftData Persistence](docs/21-swiftdata-persistence.md) |
+| | | 22 | [NetworkingKit](docs/22-networking-kit.md) |
 | | | | [Architecture Decision Records](docs/adr) |
 
 ## Portfolio value
