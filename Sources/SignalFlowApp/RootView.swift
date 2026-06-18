@@ -1,71 +1,58 @@
 import SwiftUI
 import DomainKit
-import DataKit
 import FeatureDashboard
 import FeatureFleet
 import FeatureDeviceDetail
 
-/// The composition root for the user-facing experience.
+/// The root user-facing surface: a Dashboard tab and a Fleet tab, with value-based navigation from a
+/// fleet row to its Device Detail.
 ///
-/// This is the **only** layer that knows a concrete data source exists. It builds a `DataKit`
-/// `SimulatedDataSource`, starts ingestion, and injects the resulting `DomainKit` ports into the
-/// feature screens. The features themselves never see DataKit or SimulationKit — they receive
-/// `any AssetRepository`, `any TelemetryRepository`, … and nothing more.
-///
-/// A future `@main App` simply hosts this view; keeping the composition here means the app shell is a
-/// thin wrapper rather than a place where wiring accumulates.
+/// It reads its data through the injected ``AppContainer``'s `DomainKit` ports — it never names a
+/// concrete data type. Lifecycle (starting ingestion) is driven from `.task`, and also from the
+/// app's scene phase, so the work is tied to the view being on screen.
 public struct RootView: View {
-    @State private var source: SimulatedDataSource
+    private let container: AppContainer
     @State private var fleetPath: [DeviceID] = []
-    @State private var didStart = false
 
-    /// - Parameter source: The data layer. Defaults to a real-time simulated source; previews and
-    ///   tests can inject a deterministic one.
-    public init(source: SimulatedDataSource = .live(seed: 42, timeScale: 600)) {
-        _source = State(initialValue: source)
+    public init(container: AppContainer) {
+        self.container = container
     }
 
     public var body: some View {
         TabView {
             NavigationStack {
                 DashboardScreen(
-                    assets: source.assets,
-                    devices: source.devices,
-                    alerts: source.alerts,
-                    events: source.events
+                    assets: container.assets,
+                    devices: container.devices,
+                    alerts: container.alerts,
+                    events: container.events
                 )
             }
             .tabItem { Label("Dashboard", systemImage: "square.grid.2x2.fill") }
 
             NavigationStack(path: $fleetPath) {
                 FleetScreen(
-                    assets: source.assets,
-                    devices: source.devices,
-                    alerts: source.alerts,
+                    assets: container.assets,
+                    devices: container.devices,
+                    alerts: container.alerts,
                     onOpenDevice: { fleetPath.append($0) }
                 )
                 .navigationDestination(for: DeviceID.self) { deviceID in
                     DeviceDetailScreen(
                         deviceID: deviceID,
-                        devices: source.devices,
-                        telemetry: source.telemetry,
-                        alerts: source.alerts,
-                        events: source.events
+                        devices: container.devices,
+                        telemetry: container.telemetry,
+                        alerts: container.alerts,
+                        events: container.events
                     )
                 }
             }
             .tabItem { Label("Fleet", systemImage: "list.bullet.rectangle.fill") }
         }
-        .task {
-            guard !didStart else { return }
-            didStart = true
-            try? await source.bootstrap()
-            await source.start()
-        }
+        .task { await container.start() }
     }
 }
 
 #Preview {
-    // Deterministic source so the preview fills with reproducible telemetry quickly.
-    RootView(source: .deterministic(seed: 42, maxTicks: 80))
+    RootView(container: .preview())
 }

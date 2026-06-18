@@ -24,8 +24,11 @@ let package = Package(
         .macOS(.v26) // host platform, so `swift build` / `swift test` run from the CLI
     ],
     products: [
-        // The composition root is the only product an external app shell needs to link;
-        // it transitively pulls in every feature and concrete data module.
+        // The runnable app. As a SwiftPM executable it builds/links from the CLI; the same `@main`
+        // file also hosts an Xcode iOS app target unchanged.
+        .executable(name: "SignalFlow", targets: ["SignalFlow"]),
+        // The composition root library — `AppContainer` + `RootView`. Linkable by an external app
+        // shell and importable by tests.
         .library(name: "SignalFlowApp", targets: ["SignalFlowApp"]),
         // Exposed for previews / design work without booting the whole app.
         .library(name: "DesignSystemKit", targets: ["DesignSystemKit"]),
@@ -90,6 +93,13 @@ let package = Package(
             swiftSettings: swift6
         ),
 
+        // The `@main` entry point. A thin shell over the `SignalFlowApp` composition root.
+        .executableTarget(
+            name: "SignalFlow",
+            dependencies: ["SignalFlowApp"],
+            swiftSettings: swift6
+        ),
+
         // MARK: - Testing
 
         // Shared test utilities (fakes, builders, fixtures). Intentionally empty for now.
@@ -101,6 +111,7 @@ let package = Package(
             dependencies: [
                 "DomainKit", "TestingSupportKit", "CoreKit", "SimulationKit", "DataKit",
                 "DesignSystemKit", "FeatureDashboard", "FeatureFleet", "FeatureDeviceDetail",
+                "SignalFlowApp",
             ],
             swiftSettings: swift6
         )
