@@ -87,41 +87,59 @@ struct UseCaseTests {
         #expect(history.map(\.value.magnitude) == [1, 2, 3])
     }
 
-    @Test("GenerateTelemetryInsight requires at least two readings")
-    func insightRequiresData() async throws {
-        let deviceID = DeviceID()
-        let insight = TelemetryInsight(summary: "stable", trend: .stable, confidence: 0.9)
-        let useCase = GenerateTelemetryInsightUseCase(
-            telemetry: StubTelemetryRepository(
-                stubHistory: [try Fixtures.temperatureReading(3, deviceID: deviceID)]
-            ),
+    private func insightUseCase(
+        deviceID: DeviceID,
+        history: [TelemetryReading],
+        insight: DeviceInsight
+    ) throws -> GenerateDeviceInsightUseCase {
+        let device = try Fixtures.device(id: deviceID)
+        let asset = try Asset(name: "Reefer 12", kind: .refrigeratedTruck)
+        return GenerateDeviceInsightUseCase(
+            devices: StubDeviceRepository(stubDevice: device),
+            assets: StubAssetRepository(stubAsset: asset),
+            telemetry: StubTelemetryRepository(stubHistory: history),
+            alerts: StubAlertRepository(),
+            events: StubEventRepository(),
             insights: StubInsightsProvider(stubInsight: insight)
         )
-        let range = try TimeRange(
-            start: Fixtures.referenceDate,
-            end: Fixtures.referenceDate.addingTimeInterval(1000)
+    }
+
+    private static let sampleInsight = DeviceInsight(
+        summary: "s", anomalyExplanation: "a", recommendation: "r",
+        severity: .nominal, confidence: 0.5, source: .deterministic
+    )
+
+    @Test("GenerateDeviceInsight requires at least two readings")
+    func insightRequiresData() async throws {
+        let deviceID = DeviceID()
+        let useCase = try insightUseCase(
+            deviceID: deviceID,
+            history: [try Fixtures.temperatureReading(3, deviceID: deviceID)],
+            insight: Self.sampleInsight
         )
+        let range = try TimeRange(start: Fixtures.referenceDate, end: Fixtures.referenceDate.addingTimeInterval(1000))
 
         await #expect(throws: DomainError.insufficientData) {
             _ = try await useCase(deviceID: deviceID, metric: .temperature, range: range)
         }
     }
 
-    @Test("GenerateTelemetryInsight delegates to the insights provider when data suffices")
+    @Test("GenerateDeviceInsight delegates to the insights provider when data suffices")
     func insightDelegates() async throws {
         let deviceID = DeviceID()
-        let expected = TelemetryInsight(summary: "rising overnight", trend: .rising, confidence: 0.7)
-        let useCase = GenerateTelemetryInsightUseCase(
-            telemetry: StubTelemetryRepository(stubHistory: [
+        let expected = DeviceInsight(
+            summary: "rising overnight", anomalyExplanation: "likely warming",
+            recommendation: "monitor", severity: .watch, confidence: 0.7, source: .foundationModel
+        )
+        let useCase = try insightUseCase(
+            deviceID: deviceID,
+            history: [
                 try Fixtures.temperatureReading(2, deviceID: deviceID, at: 0),
                 try Fixtures.temperatureReading(5, deviceID: deviceID, at: 600),
-            ]),
-            insights: StubInsightsProvider(stubInsight: expected)
+            ],
+            insight: expected
         )
-        let range = try TimeRange(
-            start: Fixtures.referenceDate,
-            end: Fixtures.referenceDate.addingTimeInterval(1000)
-        )
+        let range = try TimeRange(start: Fixtures.referenceDate, end: Fixtures.referenceDate.addingTimeInterval(1000))
 
         let result = try await useCase(deviceID: deviceID, metric: .temperature, range: range)
         #expect(result == expected)

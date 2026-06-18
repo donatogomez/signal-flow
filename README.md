@@ -9,7 +9,7 @@
 [![Swift](https://img.shields.io/badge/Swift-6-orange)](#)
 [![Strict Concurrency](https://img.shields.io/badge/strict%20concurrency-complete-green)](#)
 [![UI](https://img.shields.io/badge/UI-SwiftUI%20only-blue)](#)
-[![Tests](https://img.shields.io/badge/tests-96%20passing-success)](#how-to-run-the-tests)
+[![Tests](https://img.shields.io/badge/tests-105%20passing-success)](#how-to-run-the-tests)
 [![3rd-party deps](https://img.shields.io/badge/3rd--party%20deps-0-lightgrey)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
@@ -65,6 +65,7 @@ Each capability maps to a concrete place in the codebase — the point of the pr
 | **Deterministic, reproducible simulation** — seeded RNG + virtual clock | [`SimulationKit`](docs/15-simulation-kit.md) |
 | **Domain modeling** — type-safe IDs, validated value objects, pure policies | [`DomainKit`](docs/13-domain-implementation.md) |
 | **Modern SwiftUI** — `@Observable`/`@MainActor`, no Combine, Swift Charts | [Feature Layer](docs/17-feature-dashboard-fleet.md) |
+| **On-device AI** — Foundation Models + guided generation, grounded facts, deterministic fallback | [Foundation Models Insights](docs/20-foundation-models-insights.md) |
 | **Dependency injection** — one composition root owns all concretes | [App Shell](docs/18-app-shell.md) |
 | **Testing rigor** — Swift Testing, deterministic concurrency tests, port fakes | [Testing Strategy](docs/09-testing-strategy.md) |
 | **Engineering process** — ADRs, enforced CI, trunk-based PR workflow | [Git Workflow & CI](docs/14-git-workflow-and-ci.md) |
@@ -93,7 +94,7 @@ flowchart TB
     end
     subgraph Platform["Composition Root"]
         DI["AppContainer (DI)"]
-        FM["Insight provider<br/>deterministic · Foundation Models (planned)"]
+        FM["Insight provider<br/>on-device Foundation Models · deterministic fallback"]
     end
 
     V --> PM --> UC
@@ -121,7 +122,7 @@ Details: [Technical Architecture](docs/03-technical-architecture.md) · [Concurr
 
 ## Module graph
 
-A single local Swift Package (`SignalFlowKit`) with **16 build targets + a test target**. Boundaries
+A single local Swift Package (`SignalFlowKit`) with **17 build targets + a test target**. Boundaries
 are enforced by the build graph *and* a CI check — a feature target cannot even name the data layer.
 
 ```mermaid
@@ -134,22 +135,26 @@ flowchart TD
         F1[FeatureDashboard]
         F2[FeatureFleet]
         F3[FeatureDeviceDetail]
+        F4[FeatureInsights]
     end
     DS[DesignSystemKit]
-    subgraph DataLayer["Data"]
+    subgraph DataLayer["Data / Intelligence"]
         DK[DataKit]
+        INTEL["IntelligenceKit<br/>(FoundationModels)"]
         SIM[SimulationKit]
         CORE[CoreKit]
     end
     DOM[DomainKit]
 
     HOST --> APPLIB
-    APPLIB --> F1 & F2 & F3
+    APPLIB --> F1 & F2 & F3 & F4
     APPLIB --> DK
-    F1 & F2 & F3 --> DOM
-    F1 & F2 & F3 --> DS
+    APPLIB --> INTEL
+    F1 & F2 & F3 & F4 --> DOM
+    F1 & F2 & F3 & F4 --> DS
     DS --> DOM
     DK --> DOM
+    INTEL --> DOM
     DK --> SIM
     SIM --> DOM
     SIM --> CORE
@@ -171,7 +176,7 @@ See [Scaffolding](docs/12-scaffolding.md) and [Xcode iOS Target](docs/19-xcode-i
 | State | Observation (`@Observable`) | Replaces `ObservableObject`; fine-grained updates |
 | Charts | Swift Charts | First-party time-series visualization |
 | Concurrency | actors, `AsyncSequence`, `TaskGroup` | Structured, cancellation-safe |
-| Insight | Deterministic provider behind a port (Foundation Models planned) | Offline, no keys; AI swaps in behind the same contract |
+| Insight | On-device **Foundation Models** (guided generation) + deterministic fallback | Private, offline, no keys; chosen behind one port |
 | Persistence | In-memory actor store (SwiftData planned) | Same store seam; swap is local |
 | Testing | Swift Testing (`@Test`, `#expect`) | Modern, parameterized, async-native |
 | Modularization | Local Swift Package, many targets | Enforced boundaries without multi-repo overhead |
@@ -209,8 +214,8 @@ swift run SignalFlowHost
 ## How to run the tests
 
 ```bash
-swift build                    # compiles all 16 build targets (Swift 6, strict concurrency)
-swift test                     # Swift Testing suite — 96 tests, 22 suites
+swift build                    # compiles all 17 build targets (Swift 6, strict concurrency)
+swift test                     # Swift Testing suite — 105 tests, 25 suites
 ./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
 ```
 
@@ -235,15 +240,15 @@ The same three commands run locally and in CI, so a green local run means a gree
 - ✅ `DomainKit` — type-safe IDs, validated value objects, pure policies, typed errors, repository/insight **ports**, use cases. Pure Swift + `Foundation`, fully `Sendable`.
 - ✅ `SimulationKit` — actor-based, deterministic telemetry simulation for a 10-device fleet, exposed as cancellation-correct `AsyncStream`s (seeded RNG in `CoreKit`).
 - ✅ `DataKit` — actor-based in-memory store + ingestion adapter serving the Domain ports; leak-free, cancellation-safe. No simulation concept leaks past the ports.
-- ✅ Feature UI — `FeatureDashboard`, `FeatureFleet`, `FeatureDeviceDetail` (Swift Charts) on `@Observable`/`@MainActor`; domain-aware `DesignSystemKit`. Features see only Domain contracts.
+- ✅ Feature UI — `FeatureDashboard`, `FeatureFleet`, `FeatureDeviceDetail` (Swift Charts), `FeatureInsights` on `@Observable`/`@MainActor`; domain-aware `DesignSystemKit`. Features see only Domain contracts.
+- ✅ **On-device AI** — `IntelligenceKit` uses Apple **Foundation Models** (guided generation) behind the `InsightsProviding` port, with a deterministic fallback and grounded facts computed in Swift. Safety logic stays deterministic. See [Foundation Models Insights](docs/20-foundation-models-insights.md).
 - ✅ App shell + composition root (`AppContainer` / `RootView`) and a thin **Xcode iOS app target**.
-- ✅ Architecture boundaries enforced by a CI check; **96 Swift Testing tests** passing.
+- ✅ Architecture boundaries enforced by a CI check; **105 Swift Testing tests** passing.
 
 **Upcoming**
 - ⬜️ `PersistenceKit` — SwiftData store, offline & sync (behind the existing store seam).
 - ⬜️ `NetworkingKit` — live `WebSocketGateway` (behind the existing gateway seam).
-- ⬜️ Foundation Models insight integration (replacing the deterministic provider, same port).
-- ⬜️ `FeatureAlerts` / `FeatureInsights` / `FeatureSettings` surfaces.
+- ⬜️ `FeatureAlerts` / `FeatureSettings` surfaces.
 - ⬜️ App icon, UI-test/screenshot target & Fastlane release lanes.
 
 See [Functional Requirements](docs/02-functional-requirements.md) for the full scope.
@@ -263,7 +268,8 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 | 07 | [Concurrency Design](docs/07-concurrency.md) | 17 | [Feature Layer](docs/17-feature-dashboard-fleet.md) |
 | 08 | [Foundation Models](docs/08-foundation-models.md) | 18 | [App Shell](docs/18-app-shell.md) |
 | 09 | [Testing Strategy](docs/09-testing-strategy.md) | 19 | [Xcode iOS Target](docs/19-xcode-ios-target.md) |
-| 10 | [Documentation Strategy](docs/10-documentation-strategy.md) | | [Architecture Decision Records](docs/adr) |
+| 10 | [Documentation Strategy](docs/10-documentation-strategy.md) | 20 | [Foundation Models Insights](docs/20-foundation-models-insights.md) |
+| | | | [Architecture Decision Records](docs/adr) |
 
 ## Portfolio value
 

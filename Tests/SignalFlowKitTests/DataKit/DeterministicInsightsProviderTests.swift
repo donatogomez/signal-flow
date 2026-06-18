@@ -8,39 +8,41 @@ struct DeterministicInsightsProviderTests {
 
     private let provider = DeterministicInsightsProvider()
 
-    private func readings(_ values: [Double]) throws -> [TelemetryReading] {
-        let id = DeviceID()
-        return try values.enumerated().map { index, value in
-            try DataKitFixtures.reading(deviceID: id, .temperature, value, at: TimeInterval(index * 60))
-        }
+    private func context(trend: TrendDirection, activeAlerts: Int = 0, sampleCount: Int = 20) throws -> InsightContext {
+        let stats = InsightStatistics(
+            metric: .temperature, unit: .celsius, latest: 4, minimum: 2, maximum: 6,
+            average: 4, trend: trend, sampleCount: sampleCount
+        )
+        return InsightContext(
+            deviceName: "Reefer 12", assetKind: .refrigeratedTruck, statistics: stats,
+            activeAlertCount: activeAlerts, recentEventCount: 3, range: try DataKitFixtures.wideRange()
+        )
     }
 
-    @Test("A steadily increasing series reads as rising")
-    func rising() async throws {
-        let readings = try readings([1, 2, 3, 4, 5, 6])
-        let range = try TimeRange(start: readings.first!.recordedAt, end: readings.last!.recordedAt)
-        let insight = try await provider.summarize(readings, for: .temperature, over: range)
-        #expect(insight.trend == .rising)
-        #expect(insight.confidence > 0)
+    @Test("Produces an insight tagged as deterministic, grounded in the context")
+    func deterministicSource() async throws {
+        let insight = try await provider.insight(for: try context(trend: .stable))
+        #expect(insight.source == .deterministic)
+        #expect(insight.summary.contains("Reefer 12"))
+        #expect(insight.summary.contains("Temperature"))
+        #expect(!insight.recommendation.isEmpty)
+        #expect((0...1).contains(insight.confidence))
     }
 
-    @Test("A flat series reads as stable")
-    func stable() async throws {
-        let readings = try readings([5, 5, 5, 5])
-        let range = try TimeRange(start: readings.first!.recordedAt, end: readings.last!.recordedAt)
-        #expect(try await provider.summarize(readings, for: .temperature, over: range).trend == .stable)
+    @Test("Active alerts raise the advisory severity to concern")
+    func alertsConcern() async throws {
+        let insight = try await provider.insight(for: try context(trend: .stable, activeAlerts: 2))
+        #expect(insight.severity == .concern)
+        #expect(insight.anomalyExplanation.localizedCaseInsensitiveContains("alert"))
     }
 
-    @Test("Fewer than two readings is insufficient data")
-    func insufficient() async throws {
-        let readings = try readings([5])
-        let range = try DataKitFixtures.wideRange()
-        await #expect(throws: DomainError.insufficientData) {
-            _ = try await provider.summarize(readings, for: .temperature, over: range)
-        }
+    @Test("A volatile trend is a watch; calm, alert-free telemetry is nominal")
+    func severityFromTrend() async throws {
+        #expect(try await provider.insight(for: try context(trend: .volatile)).severity == .watch)
+        #expect(try await provider.insight(for: try context(trend: .stable)).severity == .nominal)
     }
 
-    @Test("Insights are reachable through the GenerateTelemetryInsight use case")
+    @Test("Reachable end-to-end through GenerateDeviceInsight on the simulated source")
     func viaUseCase() async throws {
         let source = SimulatedDataSource.deterministic(seed: 3, maxTicks: 40)
         try await source.bootstrap()
@@ -48,11 +50,13 @@ struct DeterministicInsightsProviderTests {
         let asset = try #require(try await source.assets.allAssets().first)
         let device = try #require(try await source.devices.devices(inAsset: asset.id).first)
 
-        let insight = try await GenerateTelemetryInsightUseCase(
-            telemetry: source.telemetry, insights: source.insights
+        let insight = try await GenerateDeviceInsightUseCase(
+            devices: source.devices, assets: source.assets, telemetry: source.telemetry,
+            alerts: source.alerts, events: source.events, insights: source.insights
         )(deviceID: device.id, metric: .temperature, range: try DataKitFixtures.wideRange())
 
         #expect(!insight.summary.isEmpty)
+        #expect(insight.source == .deterministic)
         #expect((0...1).contains(insight.confidence))
     }
 }

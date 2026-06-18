@@ -21,7 +21,7 @@ public struct SimulatedDataSource: Sendable {
     private let engine: SimulationEngineActor
     private let adapter: SimulationTelemetryAdapter
 
-    init(seed: UInt64, clock: any SimulationClock, maxTicks: Int?) {
+    init(seed: UInt64, clock: any SimulationClock, maxTicks: Int?, insights: any InsightsProviding) {
         let store = InMemoryTelemetryStore()
         let engine = SimulationFleet.standard(seed: seed, clock: clock, maxTicks: maxTicks)
         self.store = store
@@ -32,19 +32,30 @@ public struct SimulatedDataSource: Sendable {
         self.telemetry = StoreTelemetryRepository(store: store)
         self.alerts = StoreAlertRepository(store: store)
         self.events = StoreEventRepository(store: store)
-        self.insights = DeterministicInsightsProvider()
+        self.insights = insights
     }
 
     /// A reproducible source that produces `maxTicks` of telemetry as fast as possible — for tests and
     /// previews. Pair with `bootstrap()` + `ingestAll()`.
-    public static func deterministic(seed: UInt64 = 42, maxTicks: Int = 120) -> SimulatedDataSource {
-        SimulatedDataSource(seed: seed, clock: ImmediateSimulationClock(), maxTicks: maxTicks)
+    ///
+    /// The insight provider is injectable so the composition root can supply a Foundation Models
+    /// provider; it defaults to the deterministic one.
+    public static func deterministic(
+        seed: UInt64 = 42,
+        maxTicks: Int = 120,
+        insights: any InsightsProviding = DeterministicInsightsProvider()
+    ) -> SimulatedDataSource {
+        SimulatedDataSource(seed: seed, clock: ImmediateSimulationClock(), maxTicks: maxTicks, insights: insights)
     }
 
     /// A real-time source whose telemetry plays out at `timeScale`× wall speed — for a running app.
     /// Pair with `bootstrap()` + `start()`.
-    public static func live(seed: UInt64 = 42, timeScale: Double = 600) -> SimulatedDataSource {
-        SimulatedDataSource(seed: seed, clock: AcceleratedSimulationClock(timeScale: timeScale), maxTicks: nil)
+    public static func live(
+        seed: UInt64 = 42,
+        timeScale: Double = 600,
+        insights: any InsightsProviding = DeterministicInsightsProvider()
+    ) -> SimulatedDataSource {
+        SimulatedDataSource(seed: seed, clock: AcceleratedSimulationClock(timeScale: timeScale), maxTicks: nil, insights: insights)
     }
 
     /// Registers the fleet catalog and its default alert rules. Call once before ingesting, so the

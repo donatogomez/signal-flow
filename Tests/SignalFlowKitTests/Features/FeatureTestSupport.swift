@@ -86,3 +86,15 @@ struct FakeEventRepository: EventRepository {
     }
     func recentEvents(limit: Int) async throws -> [DeviceEvent] { Array(events.prefix(limit)) }
 }
+
+struct FakeInsightsProvider: InsightsProviding {
+    var stub: DeviceInsight
+    func insight(for context: InsightContext) async throws -> DeviceInsight { stub }
+}
+
+extension DeviceInsight {
+    static let sample = DeviceInsight(
+        summary: "Holding steady.", anomalyExplanation: "Nothing unusual.",
+        recommendation: "No action needed.", severity: .nominal, confidence: 0.5, source: .foundationModel
+    )
+}

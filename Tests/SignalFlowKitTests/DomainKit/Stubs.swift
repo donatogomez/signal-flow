@@ -31,11 +31,19 @@ struct StubAlertRepository: AlertRepository {
     func acknowledgeAlert(_ id: AlertID, at date: Date) async throws {}
 }
 
+struct StubAssetRepository: AssetRepository {
+    var stubAsset: Asset
+    func allAssets() async throws -> [Asset] { [stubAsset] }
+    func asset(_ id: AssetID) async throws -> Asset { stubAsset }
+}
+
+struct StubEventRepository: EventRepository {
+    var stubEvents: [DeviceEvent] = []
+    func recentEvents(forDevice deviceID: DeviceID, limit: Int) async throws -> [DeviceEvent] { stubEvents }
+    func recentEvents(limit: Int) async throws -> [DeviceEvent] { stubEvents }
+}
+
 struct StubInsightsProvider: InsightsProviding {
-    var stubInsight: TelemetryInsight
-    func summarize(
-        _ readings: [TelemetryReading],
-        for metric: MetricKind,
-        over range: TimeRange
-    ) async throws -> TelemetryInsight { stubInsight }
+    var stubInsight: DeviceInsight
+    func insight(for context: InsightContext) async throws -> DeviceInsight { stubInsight }
 }

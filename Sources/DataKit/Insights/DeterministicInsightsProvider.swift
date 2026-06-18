@@ -1,51 +1,58 @@
 import Foundation
 import DomainKit
 
-/// A deterministic, offline `InsightsProviding` placeholder.
+/// A deterministic, offline `InsightsProviding` implementation — and the fallback used whenever the
+/// Foundation Models provider is unavailable.
 ///
-/// It computes a trend from the readings with simple statistics — no AI, no randomness — so the
-/// Insights use case has a real, reproducible implementation to build on until the on-device
-/// Foundation Models provider (in `IntelligenceKit`) replaces it behind the same port.
+/// It phrases the grounded `InsightContext` with simple templates: no AI, no randomness, fully
+/// reproducible. It is the safety net that guarantees the Insights feature always has something
+/// truthful to show.
 public struct DeterministicInsightsProvider: InsightsProviding {
     public init() {}
 
-    public func summarize(
-        _ readings: [TelemetryReading],
-        for metric: MetricKind,
-        over range: TimeRange
-    ) async throws -> TelemetryInsight {
-        guard readings.count >= 2 else { throw DomainError.insufficientData }
+    public func insight(for context: InsightContext) async throws -> DeviceInsight {
+        let stats = context.statistics
+        let unit = stats.unit.symbol
+        let metricName = stats.metric.displayName
 
-        let sorted = readings.sorted { $0.recordedAt < $1.recordedAt }
-        let values = sorted.map(\.value.magnitude)
-        let first = values.first ?? 0
-        let last = values.last ?? 0
-        let delta = last - first
-        let mean = values.reduce(0, +) / Double(values.count)
-        let variance = values.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(values.count)
-        let standardDeviation = variance.squareRoot()
-        let spread = (values.max() ?? 0) - (values.min() ?? 0)
+        let summary = "\(metricName) on \(context.deviceName) is \(fmt(stats.latest)) \(unit) now, "
+            + "averaging \(fmt(stats.average)) \(unit) across \(stats.sampleCount) readings "
+            + "(range \(fmt(stats.minimum))–\(fmt(stats.maximum)) \(unit), \(stats.trend.label))."
 
-        let trend: TelemetryInsight.Trend
-        if spread < 0.001 {
-            trend = .stable
-        } else if standardDeviation > abs(delta) {
-            trend = .volatile
-        } else if delta > 0 {
-            trend = .rising
-        } else if delta < 0 {
-            trend = .falling
+        let anomalyExplanation: String
+        if context.activeAlertCount > 0 {
+            let plural = context.activeAlertCount == 1 ? "alert is" : "alerts are"
+            anomalyExplanation = "\(context.activeAlertCount) active \(plural) open on this device; "
+                + "the recent \(metricName.lowercased()) movement may be related."
+        } else if stats.trend == .volatile {
+            anomalyExplanation = "Readings have been volatile across the window, which can indicate an "
+                + "unstable environment or an intermittent sensor."
         } else {
-            trend = .stable
+            anomalyExplanation = "No unusual pattern detected in the available window."
         }
 
-        let unit = sorted.first?.value.unit.symbol ?? ""
-        let summary = "\(metric.displayName) went from \(format(first)) to \(format(last)) \(unit) "
-            + "across \(values.count) readings — \(trend.rawValue)."
-        let confidence = min(1.0, Double(values.count) / 50.0)
+        let recommendation: String
+        if context.activeAlertCount > 0 {
+            recommendation = "Review the active alerts for \(context.deviceName) and confirm conditions on site."
+        } else if stats.trend == .rising || stats.trend == .falling {
+            recommendation = "Keep monitoring; \(metricName.lowercased()) is trending \(stats.trend == .rising ? "up" : "down")."
+        } else {
+            recommendation = "No action needed; continue routine monitoring."
+        }
 
-        return TelemetryInsight(summary: summary, trend: trend, confidence: confidence)
+        let severity: InsightSeverity = context.activeAlertCount > 0
+            ? .concern
+            : (stats.trend == .volatile ? .watch : .nominal)
+
+        return DeviceInsight(
+            summary: summary,
+            anomalyExplanation: anomalyExplanation,
+            recommendation: recommendation,
+            severity: severity,
+            confidence: min(1.0, Double(stats.sampleCount) / 50.0),
+            source: .deterministic
+        )
     }
 
-    private func format(_ value: Double) -> String { String(format: "%.1f", value) }
+    private func fmt(_ value: Double) -> String { String(format: "%.1f", value) }
 }
