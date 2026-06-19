@@ -2,6 +2,7 @@ import WidgetKit
 import SwiftUI
 import DomainKit
 import DesignSystemKit
+import SnapshotKit
 
 /// **Critical Alerts** widget — the most pressing active alerts with their device and severity. Reads
 /// persisted state only; tapping deep-links into the in-app Alerts screen.
@@ -66,7 +67,7 @@ struct CriticalAlertsView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .widgetURL(WidgetRoute.alerts.url)
+        .widgetURL(DeepLinkRoute.alerts.url)
     }
 
     private var header: some View {

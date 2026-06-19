@@ -1,5 +1,6 @@
 import Foundation
 import WidgetKit
+import SnapshotKit
 
 /// Timeline entry for the Fleet Status widget.
 public struct FleetStatusEntry: TimelineEntry, Sendable, Equatable {

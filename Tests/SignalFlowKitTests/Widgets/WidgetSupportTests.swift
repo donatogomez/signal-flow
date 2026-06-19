@@ -3,6 +3,7 @@ import Foundation
 import WidgetKit
 import DomainKit
 import PersistenceKit
+import SnapshotKit
 @testable import WidgetSupportKit
 
 @Suite("Widget support")
@@ -167,10 +168,10 @@ struct WidgetSupportTests {
 
     @Test("Widget routes round-trip through their URLs")
     func deepLinks() {
-        for route in WidgetRoute.allCases {
-            #expect(WidgetRoute(url: route.url) == route)
+        for route in DeepLinkRoute.allCases {
+            #expect(DeepLinkRoute(url: route.url) == route)
         }
-        #expect(WidgetRoute(url: URL(string: "https://example.com/alerts")!) == nil)
-        #expect(WidgetRoute.alerts.url.absoluteString == "signalflow://alerts")
+        #expect(DeepLinkRoute(url: URL(string: "https://example.com/alerts")!) == nil)
+        #expect(DeepLinkRoute.alerts.url.absoluteString == "signalflow://alerts")
     }
 }

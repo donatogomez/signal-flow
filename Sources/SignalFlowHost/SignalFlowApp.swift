@@ -1,5 +1,6 @@
 import SwiftUI
 import SignalFlowApp
+import AppIntentsKit
 
 /// The application entry point.
 ///
@@ -11,6 +12,12 @@ import SignalFlowApp
 struct SignalFlowApp: App {
     @State private var container = AppContainer.live()
     @Environment(\.scenePhase) private var scenePhase
+
+    init() {
+        // App Intents run in this process; register their dependencies once at launch so `@Dependency`
+        // resolves the persisted-data provider for Shortcuts/Siri invocations.
+        AppIntentsBootstrap.register()
+    }
 
     var body: some Scene {
         WindowGroup {
