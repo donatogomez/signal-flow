@@ -69,6 +69,15 @@ if grep -REn '^\s*import\s+(CoreKit|DataKit|PersistenceKit|SimulationKit|Intelli
     report "NetworkingKit may depend only on DomainKit (and Foundation)"
 fi
 
+# Rule 9 — WidgetSupportKit renders **persisted** state only. It may read PersistenceKit (+ DomainKit
+# + DesignSystemKit), but must never touch the live data engine (DataKit/SimulationKit/NetworkingKit)
+# or own SwiftData. This is what keeps widgets reading the app's reconciled snapshot, not a divergent
+# simulation. See docs/24-widgetkit.md.
+if grep -REn '^\s*import\s+(DataKit|SimulationKit|NetworkingKit|IntelligenceKit|SwiftData)\b' \
+        Sources/WidgetSupportKit 2>/dev/null; then
+    report "WidgetSupportKit must read persisted state only (no DataKit/SimulationKit/NetworkingKit/SwiftData)"
+fi
+
 if [ "$fail" -eq 0 ]; then
     echo "✅ architecture boundaries respected"
 fi

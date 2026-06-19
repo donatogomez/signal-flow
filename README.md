@@ -9,7 +9,7 @@
 [![Swift](https://img.shields.io/badge/Swift-6-orange)](#)
 [![Strict Concurrency](https://img.shields.io/badge/strict%20concurrency-complete-green)](#)
 [![UI](https://img.shields.io/badge/UI-SwiftUI%20only-blue)](#)
-[![Tests](https://img.shields.io/badge/tests-152%20passing-success)](#how-to-run-the-tests)
+[![Tests](https://img.shields.io/badge/tests-161%20passing-success)](#how-to-run-the-tests)
 [![3rd-party deps](https://img.shields.io/badge/3rd--party%20deps-0-lightgrey)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
@@ -31,7 +31,8 @@ SignalFlow ingests live telemetry (temperature, humidity, CO₂, GPS, battery, d
 connectivity) from many devices at once and presents it as a calm, native monitoring console: a
 **Dashboard** of fleet health, a searchable/sortable/filterable **Fleet** list, a **Device
 Detail** screen with Swift Charts trends, active alerts, and a recent-events feed, and an **Alerts**
-console for triaging and acknowledging active alerts against a resolved history.
+console for triaging and acknowledging active alerts against a resolved history. Two **Home Screen
+widgets** mirror fleet status and critical alerts from persisted state.
 
 The IoT domain was chosen deliberately — it forces every hard problem a senior iOS engineer should be
 able to solve, and the **real product is the engineering**: the architecture, the Swift 6 concurrency
@@ -51,6 +52,13 @@ model, the testing strategy, and the documentation.
 | Dashboard | Fleet | Device Detail |
 | :---: | :---: | :---: |
 | <img src="Assets/README/dashboard.png" alt="Dashboard" width="250" /> | <img src="Assets/README/fleet.png" alt="Fleet" width="250" /> | <img src="Assets/README/device-detail.png" alt="Device Detail" width="250" /> |
+
+**Home Screen widgets** — _Fleet Status_ and _Critical Alerts_ (small + medium), rendered from
+persisted state and deep-linking back into the app:
+
+| Fleet Status | Critical Alerts |
+| :---: | :---: |
+| _screenshot coming soon_ | _screenshot coming soon_ |
 
 ## What this project demonstrates
 
@@ -125,7 +133,7 @@ Details: [Technical Architecture](docs/03-technical-architecture.md) · [Concurr
 
 ## Module graph
 
-A single local Swift Package (`SignalFlowKit`) with **17 build targets + a test target**. Boundaries
+A single local Swift Package (`SignalFlowKit`) with **18 build targets + a test target**. Boundaries
 are enforced by the build graph *and* a CI check — a feature target cannot even name the data layer.
 
 ```mermaid
@@ -133,6 +141,7 @@ flowchart TD
     subgraph AppLayer["App / composition root"]
         HOST["SignalFlowHost · Xcode iOS app"]
         APPLIB["SignalFlowApp<br/>AppContainer · RootView"]
+        WIDGETHOST["SignalFlowWidgets · Xcode app-extension"]
     end
     subgraph FeatureLayer["Features"]
         F1[FeatureDashboard]
@@ -141,6 +150,7 @@ flowchart TD
         F4[FeatureAlerts]
         F5[FeatureInsights]
     end
+    WS["WidgetSupportKit<br/>(WidgetKit)"]
     DS[DesignSystemKit]
     subgraph DataLayer["Data / Intelligence"]
         DK[DataKit]
@@ -153,12 +163,17 @@ flowchart TD
     DOM[DomainKit]
 
     HOST --> APPLIB
+    WIDGETHOST --> WS
     APPLIB --> F1 & F2 & F3 & F4 & F5
+    APPLIB --> WS
     APPLIB --> DK
     APPLIB --> INTEL
     APPLIB --> PERSIST
     F1 & F2 & F3 & F4 & F5 --> DOM
     F1 & F2 & F3 & F4 & F5 --> DS
+    WS --> DOM
+    WS --> PERSIST
+    WS --> DS
     DS --> DOM
     DK --> DOM
     DK --> PERSIST
@@ -173,6 +188,10 @@ flowchart TD
     classDef domain fill:#1d3b2a,stroke:#2ecc71,color:#fff;
     class DOM domain;
 ```
+
+The widget surface reads **persisted state only** (`WidgetSupportKit → PersistenceKit`); it has no edge
+to `DataKit`, `SimulationKit`, or `NetworkingKit`. The app and the `SignalFlowWidgets` extension share
+one SwiftData store via an App Group — see [WidgetKit](docs/24-widgetkit.md).
 
 The thin Xcode app target ([`App/SignalFlow.xcodeproj`](App/SignalFlow.xcodeproj)) hosts the package's
 composition root and adds nothing but the bundle, asset catalog, and a synthesized Info.plist.
@@ -226,8 +245,8 @@ swift run SignalFlowHost
 ## How to run the tests
 
 ```bash
-swift build                    # compiles all 17 build targets (Swift 6, strict concurrency)
-swift test                     # Swift Testing suite — 152 tests, 34 suites
+swift build                    # compiles all 18 build targets (Swift 6, strict concurrency)
+swift test                     # Swift Testing suite — 161 tests, 35 suites
 ./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
 ```
 
@@ -258,11 +277,12 @@ The same three commands run locally and in CI, so a green local run means a gree
 - ✅ `FeatureAlerts` — an alerts console: fleet-wide active alerts and a resolved history, severity filtering, device/asset context, and **acknowledgement** (which removes an alert from device health). Alerts stay deterministic — raised and cleared by `AlertRule` evaluation, never by AI. See [FeatureAlerts](docs/23-feature-alerts.md).
 - ✅ **On-device AI** — `IntelligenceKit` uses Apple **Foundation Models** (guided generation) behind the `InsightsProviding` port, with a deterministic fallback and grounded facts computed in Swift. Safety logic stays deterministic. See [Foundation Models Insights](docs/20-foundation-models-insights.md).
 - ✅ App shell + composition root (`AppContainer` / `RootView`) and a thin **Xcode iOS app target**.
-- ✅ Architecture boundaries enforced by a CI check; **152 Swift Testing tests** passing.
+- ✅ **WidgetKit** — `SignalFlowWidgets` extension with _Fleet Status_ and _Critical Alerts_ widgets (small + medium). Reads **persisted state only** (`WidgetSupportKit → PersistenceKit`, no DataKit/Simulation/Networking), shares one SwiftData store with the app via an **App Group**, refreshes on a deterministic `TimelineProvider`, and deep-links into Dashboard/Alerts. See [WidgetKit](docs/24-widgetkit.md).
+- ✅ Architecture boundaries enforced by a CI check; **161 Swift Testing tests** passing.
 
 **Upcoming**
 - ⬜️ Real backend wiring + auth (swap `URLSessionHTTPClient` in at the composition root).
-- ⬜️ `FeatureAlerts` / `FeatureSettings` surfaces.
+- ⬜️ `FeatureSettings` surface.
 - ⬜️ App icon, UI-test/screenshot target & Fastlane release lanes.
 
 See [Functional Requirements](docs/02-functional-requirements.md) for the full scope.
@@ -286,6 +306,7 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 | | | 21 | [SwiftData Persistence](docs/21-swiftdata-persistence.md) |
 | | | 22 | [NetworkingKit](docs/22-networking-kit.md) |
 | | | 23 | [FeatureAlerts](docs/23-feature-alerts.md) |
+| | | 24 | [WidgetKit](docs/24-widgetkit.md) |
 | | | | [Architecture Decision Records](docs/adr) |
 
 ## Portfolio value
