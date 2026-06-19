@@ -2,6 +2,7 @@ import WidgetKit
 import SwiftUI
 import DomainKit
 import DesignSystemKit
+import SnapshotKit
 
 /// **Fleet Status** widget — at-a-glance counts of online / warning / critical devices, plus when the
 /// data was last refreshed. Reads persisted state only (see ``WidgetSnapshotReader``).
@@ -51,7 +52,7 @@ struct FleetStatusView: View {
             default: medium
             }
         }
-        .widgetURL(WidgetRoute.dashboard.url)
+        .widgetURL(DeepLinkRoute.dashboard.url)
     }
 
     private var small: some View {

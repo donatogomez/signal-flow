@@ -37,7 +37,12 @@ let package = Package(
         // The widget surface, linked by the `SignalFlowWidgets` Xcode app-extension target. It holds
         // all the widget logic + views so they're built and tested from SwiftPM; the extension is a
         // thin `@main WidgetBundle` shell over it.
-        .library(name: "WidgetSupportKit", targets: ["WidgetSupportKit"])
+        .library(name: "WidgetSupportKit", targets: ["WidgetSupportKit"]),
+        // The UI-free read model + deep-link contract shared by every glance surface (widgets, App
+        // Intents). Reads persisted snapshots through PersistenceKit; no SwiftUI/WidgetKit.
+        .library(name: "SnapshotKit", targets: ["SnapshotKit"]),
+        // App Intents / Shortcuts / Siri surface. Linked by the iOS app target.
+        .library(name: "AppIntentsKit", targets: ["AppIntentsKit"])
     ],
     targets: [
 
@@ -73,15 +78,32 @@ let package = Package(
         // InsightsProviding port with on-device guided generation; depends on DomainKit alone.
         .target(name: "IntelligenceKit", dependencies: ["DomainKit"], swiftSettings: swift6),
 
-        // MARK: - Widgets (read-only presentation over persisted state)
+        // MARK: - Glance surfaces (read-only over persisted state)
 
-        // WidgetKit surface. Reads the **persisted** snapshot through PersistenceKit's port (never
-        // DataKit/SimulationKit/NetworkingKit) and renders it with DesignSystemKit semantics. It does
-        // NOT import SwiftData — PersistenceKit owns that. Built/tested from SwiftPM; the Xcode
-        // `SignalFlowWidgets` extension is a thin `@main` shell linking this library.
+        // The shared, UI-free read model + deep-link contract for glance surfaces. Reads the persisted
+        // snapshot through PersistenceKit's port (never DataKit/SimulationKit/NetworkingKit) and never
+        // imports SwiftData (PersistenceKit owns it). Depended on by both WidgetSupportKit and
+        // AppIntentsKit, so neither duplicates aggregation nor drifts on the deep-link scheme.
+        .target(
+            name: "SnapshotKit",
+            dependencies: ["DomainKit", "PersistenceKit"],
+            swiftSettings: swift6
+        ),
+
+        // WidgetKit surface. Renders SnapshotKit's read model with DesignSystemKit semantics. Built and
+        // tested from SwiftPM; the Xcode `SignalFlowWidgets` extension is a thin `@main` shell over it.
         .target(
             name: "WidgetSupportKit",
-            dependencies: ["DomainKit", "PersistenceKit", "DesignSystemKit"],
+            dependencies: ["DomainKit", "PersistenceKit", "DesignSystemKit", "SnapshotKit"],
+            swiftSettings: swift6
+        ),
+
+        // App Intents / Shortcuts / Siri surface. Exposes navigation intents + a "fleet summary" data
+        // intent. Reads persisted data only via SnapshotKit; never the live data engine. Linked by the
+        // iOS app target so the intents land in the app binary for Shortcuts/Spotlight discovery.
+        .target(
+            name: "AppIntentsKit",
+            dependencies: ["DomainKit", "SnapshotKit"],
             swiftSettings: swift6
         ),
 
@@ -115,8 +137,10 @@ let package = Package(
                 "FeatureAlerts",
                 "FeatureInsights",
                 "FeatureSettings",
-                // widget deep-link contract + shared persistence wiring
-                "WidgetSupportKit"
+                // glance surfaces: shared read model, widgets, and App Intents wiring
+                "SnapshotKit",
+                "WidgetSupportKit",
+                "AppIntentsKit"
             ],
             swiftSettings: swift6
         ),
@@ -141,7 +165,7 @@ let package = Package(
                 "DomainKit", "TestingSupportKit", "CoreKit", "SimulationKit", "DataKit",
                 "PersistenceKit", "NetworkingKit", "IntelligenceKit", "DesignSystemKit",
                 "FeatureDashboard", "FeatureFleet", "FeatureDeviceDetail", "FeatureInsights",
-                "FeatureAlerts", "WidgetSupportKit", "SignalFlowApp",
+                "FeatureAlerts", "SnapshotKit", "WidgetSupportKit", "AppIntentsKit", "SignalFlowApp",
             ],
             swiftSettings: swift6
         )

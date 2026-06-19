@@ -2,9 +2,9 @@ import Foundation
 import DomainKit
 import PersistenceKit
 
-/// Aggregated fleet health for the Fleet Status widget — pure value type, derived deterministically
-/// from a ``PersistedSnapshot``. Counts are bucketed by ``DeviceStatus`` so they match exactly what the
-/// app shows, because both go through the same ``DeviceHealthPolicy``.
+/// Aggregated fleet health for glance surfaces (widgets, App Intents) — a pure value type derived
+/// deterministically from a ``PersistedSnapshot``. Counts are bucketed by ``DeviceStatus`` so they match
+/// exactly what the app shows, because both go through the same ``DeviceHealthPolicy``.
 public struct FleetSummary: Sendable, Equatable {
     public let online: Int      // DeviceStatus.nominal — connected and healthy
     public let warning: Int     // DeviceStatus.warning
@@ -47,8 +47,8 @@ public struct FleetSummary: Sendable, Equatable {
     }
 }
 
-/// One alert as the Critical Alerts widget needs it: just the device name, severity, and message —
-/// pre-joined so the widget renders without touching repositories.
+/// One alert as a glance surface needs it: just the device name, severity, and message — pre-joined so
+/// widgets and intents render without touching repositories.
 public struct WidgetAlert: Identifiable, Sendable, Equatable {
     public let id: AlertID
     public let deviceName: String
@@ -92,11 +92,11 @@ public struct WidgetAlert: Identifiable, Sendable, Equatable {
     }
 }
 
-/// The full data backing for both widgets, produced once per timeline refresh.
+/// The full read model assembled from a persisted snapshot, shared by widgets and intents.
 public struct WidgetData: Sendable, Equatable {
     public let fleet: FleetSummary
     public let alerts: [WidgetAlert]
-    /// When this data was assembled — drives the widgets' "updated" label.
+    /// When this data was assembled — drives the "updated" label.
     public let generatedAt: Date
 
     public init(fleet: FleetSummary, alerts: [WidgetAlert], generatedAt: Date) {

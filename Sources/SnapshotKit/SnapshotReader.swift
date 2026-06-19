@@ -2,24 +2,24 @@ import Foundation
 import DomainKit
 import PersistenceKit
 
-/// Reads the widgets' data from **persisted state only**.
+/// Reads glance-surface data from **persisted state only**.
 ///
-/// This is the heart of requirement #3: the widget never touches `DataKit`, `SimulationKit`, or
-/// `NetworkingKit`. It reads the last snapshot the app committed to SwiftData through PersistenceKit's
-/// `PersistenceStoring` port (a `ModelActor`), and aggregates it into a ``WidgetData``. The widget
-/// process and the app process open the *same* App Group store, so this is genuinely the app's data —
-/// just observed from another process, read-only.
+/// This is the architectural keystone for both widgets and App Intents: neither ever touches
+/// `DataKit`, `SimulationKit`, or `NetworkingKit`. This reader loads the last snapshot the app
+/// committed to SwiftData through PersistenceKit's `PersistenceStoring` port (a `ModelActor`) and
+/// aggregates it into a ``WidgetData``. Out-of-process surfaces open the *same* App Group store, so this
+/// is genuinely the app's data — just observed read-only.
 public struct WidgetSnapshotReader: Sendable {
     private let store: any PersistenceStoring
     private let alertLimit: Int
 
-    /// Injectable store — tests pass an in-memory `PersistenceStore`; the extension uses the shared one.
+    /// Injectable store — tests pass an in-memory `PersistenceStore`; surfaces use the shared one.
     public init(store: any PersistenceStoring, alertLimit: Int = 6) {
         self.store = store
         self.alertLimit = alertLimit
     }
 
-    /// Builds a reader over the shared App Group store. Used by the widget extension at runtime.
+    /// Builds a reader over the shared App Group store. Used by the widget extension and App Intents.
     public static func shared(alertLimit: Int = 6) throws -> WidgetSnapshotReader {
         WidgetSnapshotReader(store: try PersistenceController.makeSharedStore(), alertLimit: alertLimit)
     }
@@ -36,10 +36,11 @@ public struct WidgetSnapshotReader: Sendable {
     }
 }
 
-/// The single entry point both providers call. It builds the shared reader and degrades to an empty
-/// (but valid) payload if persisted state can't be read — a widget must always render something.
-enum WidgetDataLoader {
-    static func load(now: Date) async -> WidgetData {
+/// The single entry point glance surfaces call. It builds the shared reader and degrades to an empty
+/// (but valid) payload if persisted state can't be read — a widget or intent must always produce
+/// something.
+public enum WidgetDataLoader {
+    public static func load(now: Date) async -> WidgetData {
         guard let reader = try? WidgetSnapshotReader.shared() else { return .empty(now: now) }
         return (try? await reader.read(now: now)) ?? .empty(now: now)
     }

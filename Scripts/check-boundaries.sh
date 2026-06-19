@@ -78,6 +78,20 @@ if grep -REn '^\s*import\s+(DataKit|SimulationKit|NetworkingKit|IntelligenceKit|
     report "WidgetSupportKit must read persisted state only (no DataKit/SimulationKit/NetworkingKit/SwiftData)"
 fi
 
+# Rule 10 — SnapshotKit is the UI-free read model shared by glance surfaces. It may read DomainKit +
+# PersistenceKit, but must never import UI, WidgetKit, the live data engine, or SwiftData directly.
+if grep -REn '^\s*import\s+(CoreKit|DataKit|SimulationKit|NetworkingKit|IntelligenceKit|DesignSystemKit|Feature[A-Za-z]+|SignalFlowApp|WidgetKit|SwiftUI|SwiftData|UIKit|AppIntents)\b' \
+        Sources/SnapshotKit 2>/dev/null; then
+    report "SnapshotKit may depend only on DomainKit and PersistenceKit"
+fi
+
+# Rule 11 — AppIntentsKit exposes App Intents over **persisted** state only. It reads via SnapshotKit
+# (+ DomainKit + AppIntents/Observation), and must never touch the live data engine or SwiftData.
+if grep -REn '^\s*import\s+(DataKit|SimulationKit|NetworkingKit|IntelligenceKit|SwiftData|WidgetKit|DesignSystemKit|Feature[A-Za-z]+|SignalFlowApp)\b' \
+        Sources/AppIntentsKit 2>/dev/null; then
+    report "AppIntentsKit must read persisted state only (via SnapshotKit; no DataKit/SimulationKit/NetworkingKit/IntelligenceKit/SwiftData)"
+fi
+
 if [ "$fail" -eq 0 ]; then
     echo "✅ architecture boundaries respected"
 fi

@@ -5,7 +5,8 @@ import FeatureFleet
 import FeatureDeviceDetail
 import FeatureInsights
 import FeatureAlerts
-import WidgetSupportKit
+import SnapshotKit
+import AppIntentsKit
 
 /// The root user-facing surface: a Dashboard tab and a Fleet tab, with value-based navigation from a
 /// fleet row to its Device Detail.
@@ -14,15 +15,26 @@ import WidgetSupportKit
 /// concrete data type. Lifecycle (starting ingestion) is driven from `.task`, and also from the
 /// app's scene phase, so the work is tied to the view being on screen.
 ///
-/// Tab selection is bound so widget deep links (`signalflow://dashboard`, `signalflow://alerts`) can
-/// route the user straight to the right surface via `.onOpenURL`.
+/// Tab selection is bound so both **deep links** (`signalflow://dashboard|fleet|alerts|insights`, via
+/// `.onOpenURL`) and **App Intents** (via the shared ``AppNavigationModel``) can route the user
+/// straight to the right surface.
 public struct RootView: View {
     private let container: AppContainer
     @State private var fleetPath: [DeviceID] = []
     @State private var selection: Tab = .dashboard
+    @State private var navigation = AppNavigationModel.shared
 
-    /// Tabs, with stable tags so deep links can select one.
+    /// Tabs, with stable tags so routes can select one.
     private enum Tab: Hashable { case dashboard, fleet, alerts, insights }
+
+    private func tab(for route: DeepLinkRoute) -> Tab {
+        switch route {
+        case .dashboard: .dashboard
+        case .fleet: .fleet
+        case .alerts: .alerts
+        case .insights: .insights
+        }
+    }
 
     public init(container: AppContainer) {
         self.container = container
@@ -86,12 +98,23 @@ public struct RootView: View {
             .tag(Tab.insights)
         }
         .task { await container.start() }
-        .onOpenURL { url in
-            switch WidgetRoute(url: url) {
-            case .dashboard: selection = .dashboard
-            case .alerts: selection = .alerts
-            case nil: break
+        .task {
+            // A route an intent requested before this view appeared (e.g. cold launch from Shortcuts).
+            if let route = navigation.pendingRoute {
+                selection = tab(for: route)
+                navigation.pendingRoute = nil
             }
+        }
+        .onChange(of: navigation.pendingRoute) { _, route in
+            // App Intents (Open Dashboard / Fleet Status / Critical Alerts) drive navigation here.
+            if let route {
+                selection = tab(for: route)
+                navigation.pendingRoute = nil
+            }
+        }
+        .onOpenURL { url in
+            // Widgets, Spotlight, and external deep links arrive as signalflow:// URLs.
+            if let route = DeepLinkRoute(url: url) { selection = tab(for: route) }
         }
     }
 }
