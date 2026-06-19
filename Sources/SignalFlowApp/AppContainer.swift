@@ -24,6 +24,7 @@ public final class AppContainer {
     public var devices: any DeviceRepository { source.devices }
     public var telemetry: any TelemetryRepository { source.telemetry }
     public var alerts: any AlertRepository { source.alerts }
+    public var alertHistory: any AlertHistoryProviding { source.alertHistory }
     public var events: any EventRepository { source.events }
     public var insights: any InsightsProviding { source.insights }
 

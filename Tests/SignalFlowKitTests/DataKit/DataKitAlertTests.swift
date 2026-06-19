@@ -66,4 +66,53 @@ struct DataKitAlertTests {
             try await store.acknowledgeAlert(AlertID(), at: DataKitFixtures.origin)
         }
     }
+
+    @Test("A cleared alert is archived to history, not lost")
+    func clearedAlertIsArchived() async throws {
+        let id = DeviceID()
+        let store = try await storeWithTruckRule(id: id)
+
+        await store.ingest(.reading(try DataKitFixtures.reading(deviceID: id, .temperature, 12, at: 0)))
+        #expect(await store.alertHistory(limit: 10).isEmpty)
+
+        await store.ingest(.reading(try DataKitFixtures.reading(deviceID: id, .temperature, 4, at: 60)))
+        let history = await store.alertHistory(limit: 10)
+        #expect(history.count == 1)
+        #expect(history.first?.severity == .critical)
+        #expect(try await store.activeAlerts(forDevice: id).isEmpty)
+    }
+
+    @Test("History preserves whether a resolved alert had been acknowledged")
+    func archivedAlertKeepsAcknowledgement() async throws {
+        let id = DeviceID()
+        let store = try await storeWithTruckRule(id: id)
+
+        await store.ingest(.reading(try DataKitFixtures.reading(deviceID: id, .temperature, 12, at: 0)))
+        let alert = try #require(try await store.activeAlerts(forDevice: id).first)
+        try await store.acknowledgeAlert(alert.id, at: DataKitFixtures.origin.addingTimeInterval(30))
+
+        await store.ingest(.reading(try DataKitFixtures.reading(deviceID: id, .temperature, 4, at: 60)))
+        #expect(await store.alertHistory(limit: 10).first?.isAcknowledged == true)
+    }
+
+    @Test("Acknowledging an alert removes it from device health")
+    func acknowledgeClearsDeviceHealth() async throws {
+        let id = DeviceID()
+        let store = try await storeWithTruckRule(id: id)
+        await store.ingest(.reading(try DataKitFixtures.reading(deviceID: id, .temperature, 12, at: 0)))
+
+        let detail = FetchDeviceDetailUseCase(
+            devices: StoreDeviceRepository(store: store),
+            telemetry: StoreTelemetryRepository(store: store),
+            alerts: StoreAlertRepository(store: store)
+        )
+
+        var result = try await detail(deviceID: id)
+        #expect(result.status == .critical)
+        let alert = try #require(result.activeAlerts.first)
+
+        try await store.acknowledgeAlert(alert.id, at: DataKitFixtures.origin.addingTimeInterval(30))
+        result = try await detail(deviceID: id)
+        #expect(result.status != .critical)
+    }
 }

@@ -50,14 +50,18 @@ public actor InMemoryTelemetryStore {
     private var assets: [AssetID: AssetRecord] = [:]
     private var assetOrder: [AssetID] = []
     private var insightHistory: [DeviceID: [InsightRecord]] = [:]
+    /// Resolved alerts (cleared incidents), newest appended last — the source of the history list.
+    private var archivedAlerts: [Alert] = []
     private let historyLimit: Int
     private let eventLimit: Int
     private let insightLimit: Int
+    private let alertHistoryLimit: Int
 
-    public init(historyLimit: Int = 10_000, eventLimit: Int = 500, insightLimit: Int = 100) {
+    public init(historyLimit: Int = 10_000, eventLimit: Int = 500, insightLimit: Int = 100, alertHistoryLimit: Int = 500) {
         self.historyLimit = historyLimit
         self.eventLimit = eventLimit
         self.insightLimit = insightLimit
+        self.alertHistoryLimit = alertHistoryLimit
     }
 
     // MARK: Catalog
@@ -214,6 +218,9 @@ public actor InMemoryTelemetryStore {
                     record.alertByRule[rule.id] = alert.id
                 }
             } else if let activeID = record.alertByRule[rule.id] {
+                // The condition recovered: archive the (possibly acknowledged) alert as history,
+                // then clear it from the active set.
+                if let cleared = record.activeAlerts[activeID] { archive(cleared) }
                 record.activeAlerts[activeID] = nil
                 record.alertByRule[rule.id] = nil
             }
@@ -251,6 +258,18 @@ public actor InMemoryTelemetryStore {
         return (record.history[metric] ?? [])
             .filter { range.contains($0.recordedAt) }
             .sorted { $0.recordedAt < $1.recordedAt }
+    }
+
+    /// Resolved alerts (cleared incidents) across the fleet, newest first.
+    public func alertHistory(limit: Int) -> [Alert] {
+        Array(archivedAlerts.sorted { $0.raisedAt > $1.raisedAt }.prefix(limit))
+    }
+
+    private func archive(_ alert: Alert) {
+        archivedAlerts.append(alert)
+        if archivedAlerts.count > alertHistoryLimit {
+            archivedAlerts.removeFirst(archivedAlerts.count - alertHistoryLimit)
+        }
     }
 
     public func activeAlerts(forDevice id: DeviceID) throws -> [Alert] {
