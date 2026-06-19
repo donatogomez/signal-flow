@@ -33,7 +33,11 @@ let package = Package(
         .library(name: "SignalFlowApp", targets: ["SignalFlowApp"]),
         // Exposed for previews / design work without booting the whole app.
         .library(name: "DesignSystemKit", targets: ["DesignSystemKit"]),
-        .library(name: "DomainKit", targets: ["DomainKit"])
+        .library(name: "DomainKit", targets: ["DomainKit"]),
+        // The widget surface, linked by the `SignalFlowWidgets` Xcode app-extension target. It holds
+        // all the widget logic + views so they're built and tested from SwiftPM; the extension is a
+        // thin `@main WidgetBundle` shell over it.
+        .library(name: "WidgetSupportKit", targets: ["WidgetSupportKit"])
     ],
     targets: [
 
@@ -69,6 +73,18 @@ let package = Package(
         // InsightsProviding port with on-device guided generation; depends on DomainKit alone.
         .target(name: "IntelligenceKit", dependencies: ["DomainKit"], swiftSettings: swift6),
 
+        // MARK: - Widgets (read-only presentation over persisted state)
+
+        // WidgetKit surface. Reads the **persisted** snapshot through PersistenceKit's port (never
+        // DataKit/SimulationKit/NetworkingKit) and renders it with DesignSystemKit semantics. It does
+        // NOT import SwiftData — PersistenceKit owns that. Built/tested from SwiftPM; the Xcode
+        // `SignalFlowWidgets` extension is a thin `@main` shell linking this library.
+        .target(
+            name: "WidgetSupportKit",
+            dependencies: ["DomainKit", "PersistenceKit", "DesignSystemKit"],
+            swiftSettings: swift6
+        ),
+
         // MARK: - Features (vertical slices — Domain + DesignSystem only, never Data)
 
         .target(name: "FeatureDashboard", dependencies: ["DomainKit", "DesignSystemKit"], swiftSettings: swift6),
@@ -98,7 +114,9 @@ let package = Package(
                 "FeatureDeviceDetail",
                 "FeatureAlerts",
                 "FeatureInsights",
-                "FeatureSettings"
+                "FeatureSettings",
+                // widget deep-link contract + shared persistence wiring
+                "WidgetSupportKit"
             ],
             swiftSettings: swift6
         ),
@@ -123,7 +141,7 @@ let package = Package(
                 "DomainKit", "TestingSupportKit", "CoreKit", "SimulationKit", "DataKit",
                 "PersistenceKit", "NetworkingKit", "IntelligenceKit", "DesignSystemKit",
                 "FeatureDashboard", "FeatureFleet", "FeatureDeviceDetail", "FeatureInsights",
-                "FeatureAlerts", "SignalFlowApp",
+                "FeatureAlerts", "WidgetSupportKit", "SignalFlowApp",
             ],
             swiftSettings: swift6
         )
