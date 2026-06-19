@@ -43,9 +43,10 @@ public final class AppContainer {
         let insights: any InsightsProviding = FoundationModelsInsightProvider.systemModelAvailable
             ? FoundationModelsInsightProvider(fallback: deterministic)
             : deterministic
-        // On-disk SwiftData persistence. If the container can't be created, the app degrades to
+        // On-disk SwiftData persistence in the shared App Group container, so the SignalFlowWidgets
+        // extension reads the exact same store. If the container can't be created, the app degrades to
         // in-memory only rather than failing to launch.
-        let persistence = (try? PersistenceController.makeContainer()).map(PersistenceStore.init(modelContainer:))
+        let persistence = (try? PersistenceController.makeSharedContainer()).map(PersistenceStore.init(modelContainer:))
         return AppContainer(source: .live(seed: 42, timeScale: 600, insights: insights, persistence: persistence))
     }
 
