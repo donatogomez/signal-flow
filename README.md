@@ -9,7 +9,7 @@
 [![Swift](https://img.shields.io/badge/Swift-6-orange)](#)
 [![Strict Concurrency](https://img.shields.io/badge/strict%20concurrency-complete-green)](#)
 [![UI](https://img.shields.io/badge/UI-SwiftUI%20only-blue)](#)
-[![Tests](https://img.shields.io/badge/tests-142%20passing-success)](#how-to-run-the-tests)
+[![Tests](https://img.shields.io/badge/tests-152%20passing-success)](#how-to-run-the-tests)
 [![3rd-party deps](https://img.shields.io/badge/3rd--party%20deps-0-lightgrey)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
@@ -29,8 +29,9 @@ awareness**, **offline-resilient history**, and **on-device insight**.
 
 SignalFlow ingests live telemetry (temperature, humidity, CO₂, GPS, battery, door state,
 connectivity) from many devices at once and presents it as a calm, native monitoring console: a
-**Dashboard** of fleet health, a searchable/sortable/filterable **Fleet** list, and a **Device
-Detail** screen with Swift Charts trends, active alerts, and a recent-events feed.
+**Dashboard** of fleet health, a searchable/sortable/filterable **Fleet** list, a **Device
+Detail** screen with Swift Charts trends, active alerts, and a recent-events feed, and an **Alerts**
+console for triaging and acknowledging active alerts against a resolved history.
 
 The IoT domain was chosen deliberately — it forces every hard problem a senior iOS engineer should be
 able to solve, and the **real product is the engineering**: the architecture, the Swift 6 concurrency
@@ -137,7 +138,8 @@ flowchart TD
         F1[FeatureDashboard]
         F2[FeatureFleet]
         F3[FeatureDeviceDetail]
-        F4[FeatureInsights]
+        F4[FeatureAlerts]
+        F5[FeatureInsights]
     end
     DS[DesignSystemKit]
     subgraph DataLayer["Data / Intelligence"]
@@ -151,12 +153,12 @@ flowchart TD
     DOM[DomainKit]
 
     HOST --> APPLIB
-    APPLIB --> F1 & F2 & F3 & F4
+    APPLIB --> F1 & F2 & F3 & F4 & F5
     APPLIB --> DK
     APPLIB --> INTEL
     APPLIB --> PERSIST
-    F1 & F2 & F3 & F4 --> DOM
-    F1 & F2 & F3 & F4 --> DS
+    F1 & F2 & F3 & F4 & F5 --> DOM
+    F1 & F2 & F3 & F4 & F5 --> DS
     DS --> DOM
     DK --> DOM
     DK --> PERSIST
@@ -202,7 +204,7 @@ open App/SignalFlow.xcodeproj
 ```
 
 Select the **SignalFlow** scheme and an iOS Simulator, then Run (⌘R). The app launches into the
-Dashboard/Fleet tabs with live simulated telemetry; tap a device to push Device Detail.
+Dashboard/Fleet/Alerts/Insights tabs with live simulated telemetry; tap a device to push Device Detail.
 
 From the command line (what CI runs):
 
@@ -225,7 +227,7 @@ swift run SignalFlowHost
 
 ```bash
 swift build                    # compiles all 17 build targets (Swift 6, strict concurrency)
-swift test                     # Swift Testing suite — 142 tests, 33 suites
+swift test                     # Swift Testing suite — 152 tests, 34 suites
 ./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
 ```
 
@@ -252,10 +254,11 @@ The same three commands run locally and in CI, so a green local run means a gree
 - ✅ `DataKit` — actor-based in-memory store + ingestion adapter serving the Domain ports; leak-free, cancellation-safe. No simulation concept leaks past the ports.
 - ✅ `PersistenceKit` — **SwiftData** persistence via a dedicated `ModelActor` (off-main), with mapping, retention, and restore-on-launch (offline-first). The only module importing SwiftData. See [SwiftData Persistence](docs/21-swiftdata-persistence.md).
 - ✅ `NetworkingKit` — production-shaped remote HTTP layer (`URLSession`, typed endpoints, DTO mapping, structured errors, retry) behind a `RemoteGateway` abstraction, with a deterministic stub transport. Integrated into DataKit as a selectable `RemoteDataSource`; the app still defaults to SimulationKit (no backend yet). See [NetworkingKit](docs/22-networking-kit.md).
-- ✅ Feature UI — `FeatureDashboard`, `FeatureFleet`, `FeatureDeviceDetail` (Swift Charts), `FeatureInsights` on `@Observable`/`@MainActor`; domain-aware `DesignSystemKit`. Features see only Domain contracts.
+- ✅ Feature UI — `FeatureDashboard`, `FeatureFleet`, `FeatureDeviceDetail` (Swift Charts), `FeatureAlerts`, `FeatureInsights` on `@Observable`/`@MainActor`; domain-aware `DesignSystemKit`. Features see only Domain contracts.
+- ✅ `FeatureAlerts` — an alerts console: fleet-wide active alerts and a resolved history, severity filtering, device/asset context, and **acknowledgement** (which removes an alert from device health). Alerts stay deterministic — raised and cleared by `AlertRule` evaluation, never by AI. See [FeatureAlerts](docs/23-feature-alerts.md).
 - ✅ **On-device AI** — `IntelligenceKit` uses Apple **Foundation Models** (guided generation) behind the `InsightsProviding` port, with a deterministic fallback and grounded facts computed in Swift. Safety logic stays deterministic. See [Foundation Models Insights](docs/20-foundation-models-insights.md).
 - ✅ App shell + composition root (`AppContainer` / `RootView`) and a thin **Xcode iOS app target**.
-- ✅ Architecture boundaries enforced by a CI check; **142 Swift Testing tests** passing.
+- ✅ Architecture boundaries enforced by a CI check; **152 Swift Testing tests** passing.
 
 **Upcoming**
 - ⬜️ Real backend wiring + auth (swap `URLSessionHTTPClient` in at the composition root).
@@ -282,6 +285,7 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 | 10 | [Documentation Strategy](docs/10-documentation-strategy.md) | 20 | [Foundation Models Insights](docs/20-foundation-models-insights.md) |
 | | | 21 | [SwiftData Persistence](docs/21-swiftdata-persistence.md) |
 | | | 22 | [NetworkingKit](docs/22-networking-kit.md) |
+| | | 23 | [FeatureAlerts](docs/23-feature-alerts.md) |
 | | | | [Architecture Decision Records](docs/adr) |
 
 ## Portfolio value

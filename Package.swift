@@ -123,7 +123,7 @@ let package = Package(
                 "DomainKit", "TestingSupportKit", "CoreKit", "SimulationKit", "DataKit",
                 "PersistenceKit", "NetworkingKit", "IntelligenceKit", "DesignSystemKit",
                 "FeatureDashboard", "FeatureFleet", "FeatureDeviceDetail", "FeatureInsights",
-                "SignalFlowApp",
+                "FeatureAlerts", "SignalFlowApp",
             ],
             swiftSettings: swift6
         )

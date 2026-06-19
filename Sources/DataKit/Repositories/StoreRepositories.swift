@@ -53,6 +53,15 @@ public struct StoreAlertRepository: AlertRepository {
     }
 }
 
+public struct StoreAlertHistoryRepository: AlertHistoryProviding {
+    private let store: InMemoryTelemetryStore
+    public init(store: InMemoryTelemetryStore) { self.store = store }
+
+    public func alertHistory(limit: Int) async throws -> [Alert] {
+        await store.alertHistory(limit: limit)
+    }
+}
+
 public struct StoreEventRepository: EventRepository {
     private let store: InMemoryTelemetryStore
     public init(store: InMemoryTelemetryStore) { self.store = store }

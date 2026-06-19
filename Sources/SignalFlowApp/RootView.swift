@@ -4,6 +4,7 @@ import FeatureDashboard
 import FeatureFleet
 import FeatureDeviceDetail
 import FeatureInsights
+import FeatureAlerts
 
 /// The root user-facing surface: a Dashboard tab and a Fleet tab, with value-based navigation from a
 /// fleet row to its Device Detail.
@@ -49,6 +50,16 @@ public struct RootView: View {
                 }
             }
             .tabItem { Label("Fleet", systemImage: "list.bullet.rectangle.fill") }
+
+            NavigationStack {
+                AlertsScreen(
+                    assets: container.assets,
+                    devices: container.devices,
+                    alerts: container.alerts,
+                    alertHistory: container.alertHistory
+                )
+            }
+            .tabItem { Label("Alerts", systemImage: "bell.fill") }
 
             NavigationStack {
                 InsightsScreen(
