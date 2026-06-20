@@ -9,7 +9,7 @@
 [![Swift](https://img.shields.io/badge/Swift-6-orange)](#)
 [![Strict Concurrency](https://img.shields.io/badge/strict%20concurrency-complete-green)](#)
 [![UI](https://img.shields.io/badge/UI-SwiftUI%20only-blue)](#)
-[![Tests](https://img.shields.io/badge/tests-182%20passing-success)](#how-to-run-the-tests)
+[![Tests](https://img.shields.io/badge/tests-190%20passing-success)](#how-to-run-the-tests)
 [![3rd-party deps](https://img.shields.io/badge/3rd--party%20deps-0-lightgrey)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
@@ -82,6 +82,7 @@ Each capability maps to a concrete place in the codebase — the point of the pr
 | **On-device AI** — Foundation Models + guided generation, grounded facts, deterministic fallback | [Foundation Models Insights](docs/20-foundation-models-insights.md) |
 | **Dependency injection** — one composition root owns all concretes | [App Shell](docs/18-app-shell.md) |
 | **Testing rigor** — Swift Testing, deterministic concurrency tests, port fakes | [Testing Strategy](docs/09-testing-strategy.md) |
+| **Localization** — English + Spanish via String Catalogs; domain stays language-neutral | [Localization](docs/28-localization.md) |
 | **Engineering process** — ADRs, enforced CI, trunk-based PR workflow | [Git Workflow & CI](docs/14-git-workflow-and-ci.md) |
 
 ## Architecture overview
@@ -279,7 +280,7 @@ swift run SignalFlowHost
 
 ```bash
 swift build                    # compiles all 22 build targets (Swift 6, strict concurrency)
-swift test                     # Swift Testing suite — 182 tests, 38 suites
+swift test                     # Swift Testing suite — 190 tests, 39 suites
 ./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
 ```
 
@@ -314,7 +315,8 @@ The same three commands run locally and in CI, so a green local run means a gree
 - ✅ **App Intents** — `AppIntentsKit` with _Open Dashboard / Fleet Status / Critical Alerts_ navigation intents + a _Show Fleet Summary_ data intent, surfaced to Shortcuts/Siri/Spotlight via an `AppShortcutsProvider`. Reads **persisted state only** through the shared `SnapshotKit`; a single `DeepLinkRoute` contract powers widget, intent, and URL navigation. See [App Intents](docs/25-app-intents.md).
 - ✅ **Live Activities & Dynamic Island** — `LiveActivityKit` surfaces an ongoing **critical alert** on the Lock Screen / StandBy and across all Dynamic Island presentations (compact / minimal / expanded). Lifecycle (start on critical, update on change, end on acknowledge/resolve) is a pure, tested state machine over **deterministic** alert state — never AI; ActivityKit is `#if os(iOS)`-guarded so CI needs no device. Taps deep-link to the device via the shared `DeepLink`. See [Live Activities](docs/26-live-activities.md).
 - ✅ **watchOS companion** — a thin `SignalFlow Watch App` over `WatchSupportKit`: glanceable _Fleet Summary → Critical Alerts → Device Snapshot_, reading the **same persisted snapshot** via `SnapshotKit` (never the data engine). Standalone target with its own scheme, so the iOS CI build is unchanged. **Verified on the watchOS 26.5 Simulator** — builds, installs, and launches without crashing (shows the empty state until WatchConnectivity sync lands — a future iteration). Completes the one-truth-everywhere story (iPhone · widgets · Siri · Dynamic Island · watch). See [watchOS Companion](docs/27-watchos-companion.md).
-- ✅ Architecture boundaries enforced by a CI check; **182 Swift Testing tests** passing.
+- ✅ **Localization (English + Spanish)** — full localization across every surface via Apple's modern stack only (`String(localized:)`, `LocalizedStringResource`, **String Catalogs**), no `NSLocalizedString`/legacy `.strings`. Domain enums stay language-neutral; localized labels live in `DesignSystemKit` and per-module `.xcstrings`. ~152 keys, each with a complete Spanish translation. See [Localization](docs/28-localization.md).
+- ✅ Architecture boundaries enforced by a CI check; **190 Swift Testing tests** passing.
 
 **Upcoming**
 - ⬜️ Real backend wiring + auth (swap `URLSessionHTTPClient` in at the composition root).
@@ -346,6 +348,7 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 | | | 25 | [App Intents](docs/25-app-intents.md) |
 | | | 26 | [Live Activities](docs/26-live-activities.md) |
 | | | 27 | [watchOS Companion](docs/27-watchos-companion.md) |
+| | | 28 | [Localization](docs/28-localization.md) |
 | | | | [Architecture Decision Records](docs/adr) |
 
 ## Portfolio value

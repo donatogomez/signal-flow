@@ -25,7 +25,7 @@ public struct CriticalAlertLiveActivity: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Label("Critical", systemImage: "exclamationmark.octagon.fill")
+                    Label(context.state.severity.label, systemImage: "exclamationmark.octagon.fill")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(context.state.severity.tint)
                 }
@@ -43,11 +43,11 @@ public struct CriticalAlertLiveActivity: Widget {
                             .font(.subheadline)
                             .lineLimit(2)
                         if let asset = context.state.assetName {
-                            Text("\(asset) · since \(context.state.startedAt, style: .relative)")
+                            (Text(verbatim: "\(asset) · ") + Text(context.state.startedAt, style: .relative))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         } else {
-                            Text("Since \(context.state.startedAt, style: .relative)")
+                            (Text(verbatim: loc("Since") + " ") + Text(context.state.startedAt, style: .relative))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
@@ -104,7 +104,7 @@ private struct LockScreenView: View {
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text("Since \(state.startedAt, style: .relative)")
+            (Text(verbatim: loc("Since") + " ") + Text(state.startedAt, style: .relative))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }

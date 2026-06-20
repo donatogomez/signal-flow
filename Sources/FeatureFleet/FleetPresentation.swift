@@ -21,10 +21,10 @@ public enum FleetSort: String, CaseIterable, Sendable, Identifiable {
 
     public var title: String {
         switch self {
-        case .status: "Status"
-        case .name: "Name"
-        case .battery: "Battery"
-        case .alerts: "Alerts"
+        case .status: loc("Status")
+        case .name: loc("Name")
+        case .battery: loc("Battery")
+        case .alerts: loc("Alerts")
         }
     }
 
@@ -63,11 +63,11 @@ public enum FleetStatusFilter: String, CaseIterable, Sendable, Identifiable {
 
     public var title: String {
         switch self {
-        case .all: "All"
-        case .nominal: "Nominal"
-        case .warning: "Warning"
-        case .critical: "Critical"
-        case .offline: "Offline"
+        case .all: loc("All")
+        case .nominal: loc("Nominal")
+        case .warning: loc("Warning")
+        case .critical: loc("Critical")
+        case .offline: loc("Offline")
         }
     }
 

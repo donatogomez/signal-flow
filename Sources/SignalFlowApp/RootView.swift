@@ -50,7 +50,7 @@ public struct RootView: View {
                     events: container.events
                 )
             }
-            .tabItem { Label("Dashboard", systemImage: "square.grid.2x2.fill") }
+            .tabItem { Label(loc("Dashboard"), systemImage: "square.grid.2x2.fill") }
             .tag(Tab.dashboard)
 
             NavigationStack(path: $fleetPath) {
@@ -70,7 +70,7 @@ public struct RootView: View {
                     )
                 }
             }
-            .tabItem { Label("Fleet", systemImage: "list.bullet.rectangle.fill") }
+            .tabItem { Label(loc("Fleet"), systemImage: "list.bullet.rectangle.fill") }
             .tag(Tab.fleet)
 
             NavigationStack {
@@ -81,7 +81,7 @@ public struct RootView: View {
                     alertHistory: container.alertHistory
                 )
             }
-            .tabItem { Label("Alerts", systemImage: "bell.fill") }
+            .tabItem { Label(loc("Alerts"), systemImage: "bell.fill") }
             .tag(Tab.alerts)
 
             NavigationStack {
@@ -94,7 +94,7 @@ public struct RootView: View {
                     insights: container.insights
                 )
             }
-            .tabItem { Label("Insights", systemImage: "sparkles") }
+            .tabItem { Label(loc("Insights"), systemImage: "sparkles") }
             .tag(Tab.insights)
         }
         .task { await container.start() }

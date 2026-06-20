@@ -24,10 +24,10 @@ public struct FleetSummaryViewModel: Equatable, Sendable {
 
     /// One-line status, severity-first, for a large glanceable headline.
     public var headline: String {
-        guard hasData else { return "No data" }
-        if critical > 0 { return "\(critical) critical" }
-        if warning > 0 { return "\(warning) warning" }
-        return "All clear"
+        guard hasData else { return loc("No data") }
+        if critical > 0 { return loc("\(critical) critical") }
+        if warning > 0 { return loc("\(warning) warning") }
+        return loc("All clear")
     }
 
     /// True when there's something worth tapping into the Alerts screen for.

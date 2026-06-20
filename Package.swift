@@ -19,6 +19,7 @@ let swift6: [SwiftSetting] = [
 
 let package = Package(
     name: "SignalFlowKit",
+    defaultLocalization: "en",
     platforms: [
         .iOS(.v26),
         .macOS(.v26) // host platform, so `swift build` / `swift test` run from the CLI
@@ -57,7 +58,12 @@ let package = Package(
         .target(name: "CoreKit", swiftSettings: swift6),
         // DesignSystemKit encodes the product's visual semantics for domain concepts (status, asset
         // kind, severity), so it depends on DomainKit — but on nothing in the data layer.
-        .target(name: "DesignSystemKit", dependencies: ["DomainKit"], swiftSettings: swift6),
+        .target(
+            name: "DesignSystemKit",
+            dependencies: ["DomainKit"],
+            resources: [.process("Resources")],
+            swiftSettings: swift6
+        ),
 
         // MARK: - Domain (pure business core — depends on NOTHING)
 
@@ -102,6 +108,7 @@ let package = Package(
         .target(
             name: "WidgetSupportKit",
             dependencies: ["DomainKit", "PersistenceKit", "DesignSystemKit", "SnapshotKit", "LiveActivityKit"],
+            resources: [.process("Resources")],
             swiftSettings: swift6
         ),
 
@@ -111,6 +118,7 @@ let package = Package(
         .target(
             name: "AppIntentsKit",
             dependencies: ["DomainKit", "SnapshotKit"],
+            resources: [.process("Resources")],
             swiftSettings: swift6
         ),
 
@@ -120,6 +128,7 @@ let package = Package(
         .target(
             name: "LiveActivityKit",
             dependencies: ["DomainKit", "SnapshotKit"],
+            resources: [.process("Resources")],
             swiftSettings: swift6
         ),
 
@@ -129,16 +138,17 @@ let package = Package(
         .target(
             name: "WatchSupportKit",
             dependencies: ["DomainKit", "SnapshotKit"],
+            resources: [.process("Resources")],
             swiftSettings: swift6
         ),
 
         // MARK: - Features (vertical slices — Domain + DesignSystem only, never Data)
 
-        .target(name: "FeatureDashboard", dependencies: ["DomainKit", "DesignSystemKit"], swiftSettings: swift6),
-        .target(name: "FeatureFleet", dependencies: ["DomainKit", "DesignSystemKit"], swiftSettings: swift6),
-        .target(name: "FeatureDeviceDetail", dependencies: ["DomainKit", "DesignSystemKit"], swiftSettings: swift6),
-        .target(name: "FeatureAlerts", dependencies: ["DomainKit", "DesignSystemKit"], swiftSettings: swift6),
-        .target(name: "FeatureInsights", dependencies: ["DomainKit", "DesignSystemKit"], swiftSettings: swift6),
+        .target(name: "FeatureDashboard", dependencies: ["DomainKit", "DesignSystemKit"], resources: [.process("Resources")], swiftSettings: swift6),
+        .target(name: "FeatureFleet", dependencies: ["DomainKit", "DesignSystemKit"], resources: [.process("Resources")], swiftSettings: swift6),
+        .target(name: "FeatureDeviceDetail", dependencies: ["DomainKit", "DesignSystemKit"], resources: [.process("Resources")], swiftSettings: swift6),
+        .target(name: "FeatureAlerts", dependencies: ["DomainKit", "DesignSystemKit"], resources: [.process("Resources")], swiftSettings: swift6),
+        .target(name: "FeatureInsights", dependencies: ["DomainKit", "DesignSystemKit"], resources: [.process("Resources")], swiftSettings: swift6),
         .target(name: "FeatureSettings", dependencies: ["DomainKit", "DesignSystemKit"], swiftSettings: swift6),
 
         // MARK: - App (composition root — the ONLY target allowed to know concretes)
@@ -168,6 +178,7 @@ let package = Package(
                 "AppIntentsKit",
                 "LiveActivityKit"
             ],
+            resources: [.process("Resources")],
             swiftSettings: swift6
         ),
 

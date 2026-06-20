@@ -9,9 +9,9 @@ public enum AlertActivityStatus: String, Codable, Hashable, Sendable, CaseIterab
 
     public var label: String {
         switch self {
-        case .active: "Active"
-        case .acknowledged: "Acknowledged"
-        case .resolved: "Resolved"
+        case .active: String(localized: "Active", bundle: .module)
+        case .acknowledged: String(localized: "Acknowledged", bundle: .module)
+        case .resolved: String(localized: "Resolved", bundle: .module)
         }
     }
 }

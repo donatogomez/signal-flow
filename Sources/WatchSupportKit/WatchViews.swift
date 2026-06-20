@@ -36,7 +36,7 @@ struct FleetSummaryScreen: View {
                 loaded
             }
         }
-        .navigationTitle("Fleet")
+        .navigationTitle(loc("Fleet"))
     }
 
     private var loaded: some View {
@@ -47,7 +47,7 @@ struct FleetSummaryScreen: View {
                     Text(fleet.headline)
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(fleet.critical > 0 ? .red : (fleet.warning > 0 ? .orange : .green))
-                    Text("\(fleet.online)/\(fleet.total) online")
+                    Text(loc("\(fleet.online)/\(fleet.total) online"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -55,11 +55,11 @@ struct FleetSummaryScreen: View {
             }
 
             Section {
-                StatRow(symbol: "checkmark.circle.fill", tint: .green, label: "Online", value: fleet.online)
-                StatRow(symbol: "exclamationmark.triangle.fill", tint: .orange, label: "Warning", value: fleet.warning)
-                StatRow(symbol: "exclamationmark.octagon.fill", tint: .red, label: "Critical", value: fleet.critical)
+                StatRow(symbol: "checkmark.circle.fill", tint: .green, label: loc("Online"), value: fleet.online)
+                StatRow(symbol: "exclamationmark.triangle.fill", tint: .orange, label: loc("Warning"), value: fleet.warning)
+                StatRow(symbol: "exclamationmark.octagon.fill", tint: .red, label: loc("Critical"), value: fleet.critical)
                 if fleet.offline > 0 {
-                    StatRow(symbol: "wifi.slash", tint: .secondary, label: "Offline", value: fleet.offline)
+                    StatRow(symbol: "wifi.slash", tint: .secondary, label: loc("Offline"), value: fleet.offline)
                 }
             }
 
@@ -67,7 +67,7 @@ struct FleetSummaryScreen: View {
                 NavigationLink {
                     CriticalAlertsScreen(store: store)
                 } label: {
-                    Label("\(fleet.alertCount) active \(fleet.alertCount == 1 ? "alert" : "alerts")", systemImage: "bell.fill")
+                    Label(loc("\(fleet.alertCount) active alerts"), systemImage: "bell.fill")
                         .foregroundStyle(.red)
                 }
             }
@@ -101,7 +101,7 @@ struct CriticalAlertsScreen: View {
         let model = store.alertList
         Group {
             if model.isEmpty {
-                ContentUnavailableView("No active alerts", systemImage: "checkmark.seal.fill")
+                ContentUnavailableView(loc("No active alerts"), systemImage: "checkmark.seal.fill")
             } else {
                 List(model.alerts) { alert in
                     NavigationLink(value: alert) {
@@ -113,7 +113,7 @@ struct CriticalAlertsScreen: View {
                 }
             }
         }
-        .navigationTitle("Alerts")
+        .navigationTitle(loc("Alerts"))
     }
 }
 
@@ -154,15 +154,15 @@ struct DeviceSnapshotScreen: View {
                         .foregroundStyle(alert.severity.watchTint)
                 }
             }
-            Section("Reason") {
+            Section(loc("Reason")) {
                 Text(alert.message)
                     .font(.body)
             }
             Section {
-                LabeledContent("Since", value: alert.raisedAt, format: .relative(presentation: .named))
+                LabeledContent(loc("Since"), value: alert.raisedAt, format: .relative(presentation: .named))
             }
         }
-        .navigationTitle("Device")
+        .navigationTitle(loc("Device"))
     }
 }
 
@@ -171,9 +171,9 @@ struct DeviceSnapshotScreen: View {
 struct WatchEmptyState: View {
     var body: some View {
         ContentUnavailableView {
-            Label("No fleet data", systemImage: "iphone.gen3")
+            Label(loc("No fleet data"), systemImage: "iphone.gen3")
         } description: {
-            Text("Open SignalFlow on your iPhone to sync fleet status to your watch.")
+            Text(loc("Open SignalFlow on your iPhone to sync fleet status to your watch."))
         }
     }
 }
@@ -191,9 +191,9 @@ private extension AlertSeverity {
 
     var watchLabel: String {
         switch self {
-        case .info: "Info"
-        case .warning: "Warning"
-        case .critical: "Critical"
+        case .info: loc("Info")
+        case .warning: loc("Warning")
+        case .critical: loc("Critical")
         }
     }
 
