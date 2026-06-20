@@ -49,7 +49,7 @@ public struct FleetSummary: Sendable, Equatable {
 
 /// One alert as a glance surface needs it: just the device name, severity, and message — pre-joined so
 /// widgets and intents render without touching repositories.
-public struct WidgetAlert: Identifiable, Sendable, Equatable {
+public struct WidgetAlert: Identifiable, Sendable, Equatable, Hashable {
     public let id: AlertID
     public let deviceName: String
     public let severity: AlertSeverity
