@@ -14,8 +14,8 @@ public struct CriticalAlertsWidget: Widget {
             CriticalAlertsView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
-        .configurationDisplayName("Critical Alerts")
-        .description("The top active alerts across your fleet.")
+        .configurationDisplayName(loc("Critical Alerts"))
+        .description(loc("The top active alerts across your fleet."))
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 
@@ -72,7 +72,7 @@ struct CriticalAlertsView: View {
 
     private var header: some View {
         HStack {
-            Label("Critical Alerts", systemImage: "bell.badge.fill")
+            Label(loc("Critical Alerts"), systemImage: "bell.badge.fill")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
             Spacer()
@@ -80,7 +80,7 @@ struct CriticalAlertsView: View {
                 Text("\(entry.alerts.count)")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
-                    .accessibilityLabel("\(entry.alerts.count) active alerts")
+                    .accessibilityLabel(loc("\(entry.alerts.count) active alerts"))
             }
         }
     }
@@ -89,9 +89,9 @@ struct CriticalAlertsView: View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
             Image(systemName: "checkmark.seal.fill")
                 .foregroundStyle(DeviceStatus.nominal.tint)
-            Text("No active alerts")
+            Text(loc("No active alerts"))
                 .font(.subheadline.weight(.medium))
-            Text("The fleet looks healthy.")
+            Text(loc("The fleet looks healthy."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -124,7 +124,7 @@ private struct AlertRowView: View {
             Spacer(minLength: 0)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(alert.severity.label) on \(alert.deviceName). \(alert.message)")
+        .accessibilityLabel(loc("\(alert.severity.label) on \(alert.deviceName). \(alert.message)"))
     }
 }
 

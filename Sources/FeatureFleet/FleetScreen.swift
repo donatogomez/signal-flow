@@ -26,10 +26,10 @@ public struct FleetScreen: View {
             case .loading where model.rows.isEmpty:
                 ProgressView().frame(maxWidth: .infinity).listRowSeparator(.hidden)
             case .failed(let message):
-                ContentUnavailableView("Couldn't load the fleet", systemImage: "exclamationmark.triangle", description: Text(message))
+                ContentUnavailableView(loc("Couldn't load the fleet"), systemImage: "exclamationmark.triangle", description: Text(message))
             default:
                 if model.visibleRows.isEmpty {
-                    ContentUnavailableView("No matching devices", systemImage: "magnifyingglass")
+                    ContentUnavailableView(loc("No matching devices"), systemImage: "magnifyingglass")
                 } else {
                     ForEach(model.visibleRows) { row in
                         Button { onOpenDevice(row.id) } label: { FleetRowView(row: row) }
@@ -39,19 +39,19 @@ public struct FleetScreen: View {
             }
         }
         .listStyle(.plain)
-        .navigationTitle("Fleet")
-        .searchable(text: $model.searchText, prompt: "Search devices or assets")
+        .navigationTitle(loc("Fleet"))
+        .searchable(text: $model.searchText, prompt: Text(loc("Search devices or assets")))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    Picker("Sort", selection: $model.sort) {
+                    Picker(loc("Sort"), selection: $model.sort) {
                         ForEach(FleetSort.allCases) { Text($0.title).tag($0) }
                     }
-                    Picker("Filter", selection: $model.statusFilter) {
+                    Picker(loc("Filter"), selection: $model.statusFilter) {
                         ForEach(FleetStatusFilter.allCases) { Text($0.title).tag($0) }
                     }
                 } label: {
-                    Label("Sort & filter", systemImage: "line.3.horizontal.decrease.circle")
+                    Label(loc("Sort & filter"), systemImage: "line.3.horizontal.decrease.circle")
                 }
             }
         }
@@ -72,7 +72,7 @@ struct FleetRowView: View {
 
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text(row.deviceName).font(.body.weight(.medium))
-                Text("\(row.assetName) · \(row.assetKind.displayName)")
+                Text(verbatim: "\(row.assetName) · \(row.assetKind.localizedName)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 HStack(spacing: Spacing.lg) {

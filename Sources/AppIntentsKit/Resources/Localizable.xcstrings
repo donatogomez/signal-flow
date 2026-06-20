@@ -1,0 +1,21 @@
+{
+  "sourceLanguage" : "en",
+  "version" : "1.0",
+  "strings" : {
+    "%lld critical" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "%lld crítico" } } }
+    },
+    "%lld of %lld devices online" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "%1$lld de %2$lld dispositivos en línea" } } }
+    },
+    "%lld offline" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "%lld sin conexión" } } }
+    },
+    "%lld warning" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "%lld en advertencia" } } }
+    },
+    "No devices are reporting yet." : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Aún no hay dispositivos reportando." } } }
+    }
+  }
+}

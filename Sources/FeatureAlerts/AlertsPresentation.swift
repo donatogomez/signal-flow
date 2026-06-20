@@ -22,8 +22,8 @@ public enum AlertTab: String, CaseIterable, Sendable, Identifiable {
     public var id: String { rawValue }
     public var title: String {
         switch self {
-        case .active: "Active"
-        case .history: "History"
+        case .active: loc("Active")
+        case .history: loc("History")
         }
     }
 }
@@ -34,10 +34,10 @@ public enum AlertSeverityFilter: String, CaseIterable, Sendable, Identifiable {
     public var id: String { rawValue }
     public var title: String {
         switch self {
-        case .all: "All severities"
-        case .info: "Info"
-        case .warning: "Warning"
-        case .critical: "Critical"
+        case .all: loc("All severities")
+        case .info: loc("Info")
+        case .warning: loc("Warning")
+        case .critical: loc("Critical")
         }
     }
 

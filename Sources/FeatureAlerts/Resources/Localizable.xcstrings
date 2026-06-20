@@ -1,0 +1,66 @@
+{
+  "sourceLanguage" : "en",
+  "version" : "1.0",
+  "strings" : {
+    "Acknowledge" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Confirmar" } } }
+    },
+    "Acknowledged" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Confirmada" } } }
+    },
+    "Active" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Activas" } } }
+    },
+    "Alerts" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Alertas" } } }
+    },
+    "All severities" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Todas las severidades" } } }
+    },
+    "Couldn't load alerts" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "No se pudieron cargar las alertas" } } }
+    },
+    "Critical" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Crítico" } } }
+    },
+    "Everything in the fleet looks healthy." : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Toda la flota se ve saludable." } } }
+    },
+    "Filter" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Filtrar" } } }
+    },
+    "History" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Historial" } } }
+    },
+    "Info" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Información" } } }
+    },
+    "No active alerts" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "No hay alertas activas" } } }
+    },
+    "No alert history" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "No hay historial de alertas" } } }
+    },
+    "No alerts match this filter" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Ninguna alerta coincide con este filtro" } } }
+    },
+    "Resolved" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Resuelta" } } }
+    },
+    "Resolved · was acknowledged" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Resuelta · fue confirmada" } } }
+    },
+    "Resolved alerts will appear here." : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Las alertas resueltas aparecerán aquí." } } }
+    },
+    "Severity" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Severidad" } } }
+    },
+    "View" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Vista" } } }
+    },
+    "Warning" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Advertencia" } } }
+    }
+  }
+}

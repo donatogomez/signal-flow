@@ -1,0 +1,63 @@
+{
+  "sourceLanguage" : "en",
+  "version" : "1.0",
+  "strings" : {
+    "%@ on %@. %@" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ en %2$@. %3$@" } } }
+    },
+    "%lld %@ devices" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "%1$lld dispositivos %2$@" } } }
+    },
+    "%lld active alerts" : {
+      "localizations" : {
+        "en" : { "variations" : { "plural" : {
+          "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld active alert" } },
+          "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld active alerts" } }
+        } } },
+        "es" : { "variations" : { "plural" : {
+          "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld alerta activa" } },
+          "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld alertas activas" } }
+        } } }
+      }
+    },
+    "Critical" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Crítico" } } }
+    },
+    "Critical Alerts" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Alertas críticas" } } }
+    },
+    "Fleet Status" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Estado de la flota" } } }
+    },
+    "No active alerts" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "No hay alertas activas" } } }
+    },
+    "No data yet" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Aún no hay datos" } } }
+    },
+    "Online" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "En línea" } } }
+    },
+    "online" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "en línea" } } }
+    },
+    "Online, warning, and critical devices across your fleet." : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Dispositivos en línea, en advertencia y críticos de tu flota." } } }
+    },
+    "Since" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Desde" } } }
+    },
+    "The fleet looks healthy." : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "La flota se ve saludable." } } }
+    },
+    "The top active alerts across your fleet." : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Las alertas activas más importantes de tu flota." } } }
+    },
+    "Updated %@" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Actualizado %@" } } }
+    },
+    "Warning" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Advertencia" } } }
+    }
+  }
+}

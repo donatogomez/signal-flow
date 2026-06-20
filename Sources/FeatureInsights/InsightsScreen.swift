@@ -25,16 +25,16 @@ public struct InsightsScreen: View {
         @Bindable var model = model
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) {
-                CardSection("Subject", systemImage: "scope") {
+                CardSection(loc("Subject"), systemImage: "scope") {
                     VStack(spacing: Spacing.md) {
-                        Picker("Device", selection: $model.selectedDeviceID) {
+                        Picker(loc("Device"), selection: $model.selectedDeviceID) {
                             ForEach(model.devices) { device in
                                 Label(device.name, systemImage: device.assetKind.symbol).tag(Optional(device.id))
                             }
                         }
-                        Picker("Metric", selection: $model.metric) {
+                        Picker(loc("Metric"), selection: $model.metric) {
                             ForEach(model.metricOptions, id: \.self) { metric in
-                                Label(metric.displayName, systemImage: metric.symbol).tag(metric)
+                                Label(metric.localizedName, systemImage: metric.symbol).tag(metric)
                             }
                         }
                     }
@@ -44,7 +44,7 @@ public struct InsightsScreen: View {
             }
             .padding(Spacing.lg)
         }
-        .navigationTitle("Insights")
+        .navigationTitle(loc("Insights"))
         .task {
             await model.loadDevices()
             await model.generateInsight()
@@ -59,21 +59,21 @@ public struct InsightsScreen: View {
         case .idle:
             EmptyView()
         case .generating:
-            CardSection("Insight", systemImage: "sparkles") {
+            CardSection(loc("Insight"), systemImage: "sparkles") {
                 HStack(spacing: Spacing.md) {
                     ProgressView()
-                    Text("Generating on-device insight…").foregroundStyle(.secondary)
+                    Text(loc("Generating on-device insight…")).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         case .insufficientData:
             ContentUnavailableView(
-                "Not enough data",
+                loc("Not enough data"),
                 systemImage: "chart.line.downtrend.xyaxis",
-                description: Text("This device hasn't reported enough \(model.metric.displayName.lowercased()) readings yet.")
+                description: Text(loc("This device hasn't reported enough \(model.metric.localizedName.lowercased()) readings yet."))
             )
         case .failed(let message):
-            ContentUnavailableView("Couldn't generate an insight", systemImage: "exclamationmark.triangle", description: Text(message))
+            ContentUnavailableView(loc("Couldn't generate an insight"), systemImage: "exclamationmark.triangle", description: Text(message))
         case .ready:
             if let insight = model.insight {
                 InsightCard(insight: insight)
@@ -86,17 +86,20 @@ public struct InsightsScreen: View {
 private struct InsightCard: View {
     let insight: DeviceInsight
 
+    /// Pre-formatted so the localized key is "Confidence %@" — the "%" stays in the value, not the key.
+    private var percentText: String { "\(Int(insight.confidence * 100))%" }
+
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             provenanceBanner
 
-            CardSection("Summary", systemImage: "text.alignleft") {
+            CardSection(loc("Summary"), systemImage: "text.alignleft") {
                 Text(insight.summary)
             }
-            CardSection("Potential anomaly", systemImage: "questionmark.circle") {
+            CardSection(loc("Potential anomaly"), systemImage: "questionmark.circle") {
                 Text(insight.anomalyExplanation)
             }
-            CardSection("Recommendation", systemImage: "lightbulb") {
+            CardSection(loc("Recommendation"), systemImage: "lightbulb") {
                 Text(insight.recommendation)
             }
 
@@ -104,7 +107,7 @@ private struct InsightCard: View {
                 Label(insight.severity.label, systemImage: "gauge.with.dots.needle.bottom.50percent")
                     .foregroundStyle(insight.severity.tint)
                 Spacer()
-                Text("Confidence \(Int(insight.confidence * 100))%")
+                Text(loc("Confidence \(percentText)"))
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
@@ -116,12 +119,12 @@ private struct InsightCard: View {
     private var provenanceBanner: some View {
         switch insight.source {
         case .foundationModel:
-            Label("Generated on-device by Apple Intelligence. Telemetry never leaves your device.",
+            Label(loc("Generated on-device by Apple Intelligence. Telemetry never leaves your device."),
                   systemImage: InsightSource.foundationModel.symbol)
                 .font(.caption)
                 .foregroundStyle(.blue)
         case .deterministic:
-            Label("On-device AI is unavailable — showing a deterministic insight instead.",
+            Label(loc("On-device AI is unavailable — showing a deterministic insight instead."),
                   systemImage: InsightSource.deterministic.symbol)
                 .font(.caption)
                 .foregroundStyle(.secondary)

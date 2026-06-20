@@ -20,7 +20,7 @@ public struct AlertsScreen: View {
     public var body: some View {
         @Bindable var model = model
         VStack(spacing: 0) {
-            Picker("View", selection: $model.tab) {
+            Picker(loc("View"), selection: $model.tab) {
                 ForEach(AlertTab.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
@@ -29,15 +29,15 @@ public struct AlertsScreen: View {
 
             list
         }
-        .navigationTitle("Alerts")
+        .navigationTitle(loc("Alerts"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    Picker("Severity", selection: $model.severityFilter) {
+                    Picker(loc("Severity"), selection: $model.severityFilter) {
                         ForEach(AlertSeverityFilter.allCases) { Text($0.title).tag($0) }
                     }
                 } label: {
-                    Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
+                    Label(loc("Filter"), systemImage: "line.3.horizontal.decrease.circle")
                 }
             }
         }
@@ -50,7 +50,7 @@ public struct AlertsScreen: View {
         case .loading where model.active.isEmpty && model.history.isEmpty:
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
         case .failed(let message):
-            ContentUnavailableView("Couldn't load alerts", systemImage: "exclamationmark.triangle", description: Text(message))
+            ContentUnavailableView(loc("Couldn't load alerts"), systemImage: "exclamationmark.triangle", description: Text(message))
         default:
             if model.visibleAlerts.isEmpty {
                 emptyState
@@ -70,11 +70,11 @@ public struct AlertsScreen: View {
     private var emptyState: some View {
         Group {
             if model.severityFilter != .all {
-                ContentUnavailableView("No \(model.severityFilter.title.lowercased()) alerts", systemImage: "line.3.horizontal.decrease.circle")
+                ContentUnavailableView(loc("No alerts match this filter"), systemImage: "line.3.horizontal.decrease.circle")
             } else if model.tab == .active {
-                ContentUnavailableView("No active alerts", systemImage: "checkmark.seal", description: Text("Everything in the fleet looks healthy."))
+                ContentUnavailableView(loc("No active alerts"), systemImage: "checkmark.seal", description: Text(loc("Everything in the fleet looks healthy.")))
             } else {
-                ContentUnavailableView("No alert history", systemImage: "clock.arrow.circlepath", description: Text("Resolved alerts will appear here."))
+                ContentUnavailableView(loc("No alert history"), systemImage: "clock.arrow.circlepath", description: Text(loc("Resolved alerts will appear here.")))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -101,9 +101,13 @@ private struct AlertRowView: View {
                 .font(.subheadline)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Label("\(row.deviceName) · \(row.assetName)", systemImage: row.assetKind.symbol)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Label {
+                Text(verbatim: "\(row.deviceName) · \(row.assetName)")
+            } icon: {
+                Image(systemName: row.assetKind.symbol)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
 
             footer
         }
@@ -114,16 +118,16 @@ private struct AlertRowView: View {
     @ViewBuilder
     private var footer: some View {
         if isHistory {
-            Label(row.isAcknowledged ? "Resolved · was acknowledged" : "Resolved", systemImage: "checkmark.circle")
+            Label(row.isAcknowledged ? loc("Resolved · was acknowledged") : loc("Resolved"), systemImage: "checkmark.circle")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else if row.isAcknowledged {
-            Label("Acknowledged", systemImage: "checkmark.circle.fill")
+            Label(loc("Acknowledged"), systemImage: "checkmark.circle.fill")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
             Button(action: onAcknowledge) {
-                Label("Acknowledge", systemImage: "checkmark.circle")
+                Label(loc("Acknowledge"), systemImage: "checkmark.circle")
             }
             .buttonStyle(.bordered)
             .controlSize(.small)

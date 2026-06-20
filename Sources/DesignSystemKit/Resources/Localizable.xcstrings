@@ -1,0 +1,146 @@
+{
+  "sourceLanguage" : "en",
+  "version" : "1.0",
+  "strings" : {
+    "Battery level" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nivel de batería" } }
+      }
+    },
+    "Carbon dioxide" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Dióxido de carbono" } }
+      }
+    },
+    "Cold-chain container" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Contenedor de cadena de frío" } }
+      }
+    },
+    "Concern" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Atención" } }
+      }
+    },
+    "Connection lost" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Conexión perdida" } }
+      }
+    },
+    "Critical" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Crítico" } }
+      }
+    },
+    "Degraded" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Degradada" } }
+      }
+    },
+    "Deterministic" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Determinista" } }
+      }
+    },
+    "Door closed" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Puerta cerrada" } }
+      }
+    },
+    "Door opened" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Puerta abierta" } }
+      }
+    },
+    "Environmental station" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Estación ambiental" } }
+      }
+    },
+    "Greenhouse" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Invernadero" } }
+      }
+    },
+    "Humidity" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Humedad" } }
+      }
+    },
+    "Industrial equipment" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Equipo industrial" } }
+      }
+    },
+    "Info" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Información" } }
+      }
+    },
+    "Nominal" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nominal" } }
+      }
+    },
+    "Offline" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin conexión" } }
+      }
+    },
+    "On-device AI" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "IA en el dispositivo" } }
+      }
+    },
+    "Online" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "En línea" } }
+      }
+    },
+    "Power lost" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin alimentación" } }
+      }
+    },
+    "Power restored" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Alimentación restaurada" } }
+      }
+    },
+    "Refrigerated truck" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Camión refrigerado" } }
+      }
+    },
+    "Reconnected" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Reconectado" } }
+      }
+    },
+    "Signal strength" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Intensidad de señal" } }
+      }
+    },
+    "Temperature" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Temperatura" } }
+      }
+    },
+    "Warehouse" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Almacén" } }
+      }
+    },
+    "Warning" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Advertencia" } }
+      }
+    },
+    "Watch" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Vigilar" } }
+      }
+    }
+  }
+}

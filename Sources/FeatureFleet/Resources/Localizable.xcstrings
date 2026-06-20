@@ -1,0 +1,54 @@
+{
+  "sourceLanguage" : "en",
+  "version" : "1.0",
+  "strings" : {
+    "Alerts" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Alertas" } } }
+    },
+    "All" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Todos" } } }
+    },
+    "Battery" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Batería" } } }
+    },
+    "Couldn't load the fleet" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "No se pudo cargar la flota" } } }
+    },
+    "Critical" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Crítico" } } }
+    },
+    "Filter" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Filtrar" } } }
+    },
+    "Fleet" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Flota" } } }
+    },
+    "Name" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Nombre" } } }
+    },
+    "No matching devices" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "No hay dispositivos coincidentes" } } }
+    },
+    "Nominal" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Nominal" } } }
+    },
+    "Offline" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin conexión" } } }
+    },
+    "Search devices or assets" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Buscar dispositivos o activos" } } }
+    },
+    "Sort" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Ordenar" } } }
+    },
+    "Sort & filter" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Ordenar y filtrar" } } }
+    },
+    "Status" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Estado" } } }
+    },
+    "Warning" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Advertencia" } } }
+    }
+  }
+}

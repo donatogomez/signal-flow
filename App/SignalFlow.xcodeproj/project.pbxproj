@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		1A0000000000000000000009 /* SignalFlowApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000007 /* SignalFlowApp.swift */; };
 		1A000000000000000000000A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000008 /* Assets.xcassets */; };
+		1A0000000000000000000061 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000060 /* Localizable.xcstrings */; };
 		1A0000000000000000000016 /* SignalFlowApp in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000015 /* SignalFlowApp */; };
 		1A0000000000000000000034 /* AppIntentsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000033 /* AppIntentsKit */; };
 		1A000000000000000000002C /* SignalFlowWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000022 /* SignalFlowWidgetBundle.swift */; };
@@ -22,6 +23,7 @@
 		1A0000000000000000000006 /* SignalFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SignalFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A0000000000000000000007 /* SignalFlowApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SignalFlowApp.swift; path = ../Sources/SignalFlowHost/SignalFlowApp.swift; sourceTree = SOURCE_ROOT; };
 		1A0000000000000000000008 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1A0000000000000000000060 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		1A0000000000000000000020 /* SignalFlow.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SignalFlow.entitlements; sourceTree = "<group>"; };
 		1A0000000000000000000022 /* SignalFlowWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalFlowWidgetBundle.swift; sourceTree = "<group>"; };
 		1A0000000000000000000023 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -101,6 +103,7 @@
 			children = (
 				1A0000000000000000000007 /* SignalFlowApp.swift */,
 				1A0000000000000000000008 /* Assets.xcassets */,
+				1A0000000000000000000060 /* Localizable.xcstrings */,
 				1A0000000000000000000020 /* SignalFlow.entitlements */,
 			);
 			path = SignalFlow;
@@ -218,6 +221,7 @@
 			knownRegions = (
 				en,
 				Base,
+				es,
 			);
 			mainGroup = 1A0000000000000000000002;
 			packageReferences = (
@@ -240,6 +244,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1A000000000000000000000A /* Assets.xcassets in Resources */,
+				1A0000000000000000000061 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

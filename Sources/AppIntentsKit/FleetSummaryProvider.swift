@@ -43,12 +43,12 @@ public enum AppIntentsEnvironment {
 public extension FleetSummary {
     /// A natural-language one-liner for Siri/Shortcuts dialog and the intent's returned value.
     var spokenSummary: String {
-        guard total > 0 else { return "No devices are reporting yet." }
+        guard total > 0 else { return loc("No devices are reporting yet.") }
 
-        var parts = ["\(online) of \(total) devices online"]
-        if critical > 0 { parts.append("\(critical) critical") }
-        if warning > 0 { parts.append("\(warning) warning") }
-        if offline > 0 { parts.append("\(offline) offline") }
+        var parts = [loc("\(online) of \(total) devices online")]
+        if critical > 0 { parts.append(loc("\(critical) critical")) }
+        if warning > 0 { parts.append(loc("\(warning) warning")) }
+        if offline > 0 { parts.append(loc("\(offline) offline")) }
         return parts.joined(separator: ", ") + "."
     }
 }

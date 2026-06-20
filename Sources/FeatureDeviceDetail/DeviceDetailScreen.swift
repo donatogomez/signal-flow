@@ -24,7 +24,7 @@ public struct DeviceDetailScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) {
                 if case .failed(let message) = model.phase {
-                    ContentUnavailableView("Couldn't load the device", systemImage: "exclamationmark.triangle", description: Text(message))
+                    ContentUnavailableView(loc("Couldn't load the device"), systemImage: "exclamationmark.triangle", description: Text(message))
                         .frame(maxWidth: .infinity)
                 } else {
                     header
@@ -36,7 +36,7 @@ public struct DeviceDetailScreen: View {
             }
             .padding(Spacing.lg)
         }
-        .navigationTitle(model.deviceName.isEmpty ? "Device" : model.deviceName)
+        .navigationTitle(model.deviceName.isEmpty ? loc("Device") : model.deviceName)
         .task { await model.observe() }
     }
 
@@ -51,13 +51,13 @@ public struct DeviceDetailScreen: View {
     }
 
     private var currentTelemetry: some View {
-        CardSection("Current telemetry", systemImage: "gauge.with.dots.needle.bottom.50percent") {
+        CardSection(loc("Current telemetry"), systemImage: "gauge.with.dots.needle.bottom.50percent") {
             if model.readings.isEmpty {
-                EmptyHint("Waiting for telemetry", systemImage: "antenna.radiowaves.left.and.right.slash")
+                EmptyHint(loc("Waiting for telemetry"), systemImage: "antenna.radiowaves.left.and.right.slash")
             } else {
                 VStack(spacing: Spacing.sm) {
                     ForEach(model.readings) { reading in
-                        KeyValueRow(reading.metric.displayName, value: reading.valueText, systemImage: reading.metric.symbol)
+                        KeyValueRow(reading.metric.localizedName, value: reading.valueText, systemImage: reading.metric.symbol)
                     }
                 }
             }
@@ -66,16 +66,16 @@ public struct DeviceDetailScreen: View {
 
     private var trendCharts: some View {
         ForEach(model.trends, id: \.metric) { series in
-            CardSection(series.metric.displayName + " trend", systemImage: series.metric.symbol) {
+            CardSection(loc("\(series.metric.localizedName) trend"), systemImage: series.metric.symbol) {
                 TrendChart(series: series)
             }
         }
     }
 
     private var activeAlerts: some View {
-        CardSection("Active alerts", systemImage: "bell.fill") {
+        CardSection(loc("Active alerts"), systemImage: "bell.fill") {
             if model.alerts.isEmpty {
-                EmptyHint("No active alerts", systemImage: "checkmark.seal")
+                EmptyHint(loc("No active alerts"), systemImage: "checkmark.seal")
             } else {
                 VStack(spacing: Spacing.md) {
                     ForEach(model.alerts) { alert in
@@ -87,9 +87,9 @@ public struct DeviceDetailScreen: View {
     }
 
     private var recentEvents: some View {
-        CardSection("Recent events", systemImage: "clock.arrow.circlepath") {
+        CardSection(loc("Recent events"), systemImage: "clock.arrow.circlepath") {
             if model.events.isEmpty {
-                EmptyHint("No events yet", systemImage: "tray")
+                EmptyHint(loc("No events yet"), systemImage: "tray")
             } else {
                 VStack(spacing: Spacing.md) {
                     ForEach(model.events) { event in
@@ -109,8 +109,8 @@ private struct TrendChart: View {
     var body: some View {
         Chart(series.points) { point in
             LineMark(
-                x: .value("Time", point.date),
-                y: .value(series.metric.displayName, point.value)
+                x: .value(loc("Time"), point.date),
+                y: .value(series.metric.localizedName, point.value)
             )
             .interpolationMethod(.catmullRom)
             .foregroundStyle(series.metric.lineTint)

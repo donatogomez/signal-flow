@@ -14,8 +14,8 @@ public struct FleetStatusWidget: Widget {
             FleetStatusView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
-        .configurationDisplayName("Fleet Status")
-        .description("Online, warning, and critical devices across your fleet.")
+        .configurationDisplayName(loc("Fleet Status"))
+        .description(loc("Online, warning, and critical devices across your fleet."))
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 
@@ -63,7 +63,7 @@ struct FleetStatusView: View {
                 .font(.system(size: 40, weight: .semibold, design: .rounded))
                 .foregroundStyle(DeviceStatus.nominal.tint)
                 .contentTransition(.numericText())
-            Text("online")
+            Text(loc("online"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             HStack(spacing: Spacing.md) {
@@ -79,9 +79,9 @@ struct FleetStatusView: View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             header
             HStack(spacing: Spacing.md) {
-                tile(.nominal, entry.fleet.online, "Online")
-                tile(.warning, entry.fleet.warning, "Warning")
-                tile(.critical, entry.fleet.critical, "Critical")
+                tile(.nominal, entry.fleet.online, loc("Online"))
+                tile(.warning, entry.fleet.warning, loc("Warning"))
+                tile(.critical, entry.fleet.critical, loc("Critical"))
             }
             updatedFootnote
         }
@@ -89,7 +89,7 @@ struct FleetStatusView: View {
     }
 
     private var header: some View {
-        Label("Fleet Status", systemImage: "antenna.radiowaves.left.and.right")
+        Label(loc("Fleet Status"), systemImage: "antenna.radiowaves.left.and.right")
             .font(.caption.weight(.semibold))
             .foregroundStyle(.secondary)
     }
@@ -110,7 +110,7 @@ struct FleetStatusView: View {
         .padding(Spacing.sm)
         .background(status.tint.opacity(0.12), in: RoundedRectangle(cornerRadius: Radius.card))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(value) \(title.lowercased()) devices")
+        .accessibilityLabel(loc("\(value) \(title.lowercased()) devices"))
     }
 
     private func count(_ status: DeviceStatus, _ value: Int) -> some View {
@@ -123,11 +123,11 @@ struct FleetStatusView: View {
     @ViewBuilder
     private var updatedFootnote: some View {
         if let updated = entry.fleet.lastUpdated {
-            Text("Updated \(updated, format: .relative(presentation: .named))")
+            Text(loc("Updated \(updated, format: .relative(presentation: .named))"))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         } else {
-            Text("No data yet")
+            Text(loc("No data yet"))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
