@@ -1,8 +1,10 @@
+import Foundation
 import Observation
 import DomainKit
 import DataKit
 import IntelligenceKit
 import PersistenceKit
+import LiveActivityKit
 
 /// The dependency composition root.
 ///
@@ -18,6 +20,10 @@ import PersistenceKit
 public final class AppContainer {
     private let source: SimulatedDataSource
     private var didBootstrap = false
+
+    /// Drives the critical-alert Live Activity. ActivityKit work happens inside the service (guarded for
+    /// iOS); on other platforms it's a no-op, so the composition root calls it unconditionally.
+    private let liveActivities = CriticalAlertActivityService()
 
     // Domain ports — the entire surface features depend on.
     public var assets: any AssetRepository { source.assets }
@@ -69,5 +75,35 @@ public final class AppContainer {
     /// cancellation-safe (see DataKit §16.5).
     public func stop() async {
         await source.stop()
+    }
+
+    // MARK: - Live Activities
+
+    /// Reconciles the critical-alert Live Activity on a steady cadence while on screen.
+    ///
+    /// Critical-alert detection is **deterministic and data-driven**: it reads alerts/devices/assets
+    /// straight from the `DomainKit` ports — the same state the app and widgets show — and never
+    /// consults Foundation Models. Cancellation-safe; tied to a view's `.task`.
+    public func observeCriticalAlertActivity(pollInterval: Duration = .seconds(4)) async {
+        while !Task.isCancelled {
+            await liveActivities.reconcile(currentAlertContexts())
+            do { try await Task.sleep(for: pollInterval) } catch { break }
+        }
+    }
+
+    /// Builds the alert contexts (alert + device/asset names) from the domain ports.
+    private func currentAlertContexts() async -> [AlertContext] {
+        var contexts: [AlertContext] = []
+        guard let allAssets = try? await assets.allAssets() else { return [] }
+        for asset in allAssets {
+            guard let assetDevices = try? await devices.devices(inAsset: asset.id) else { continue }
+            for device in assetDevices {
+                guard let active = try? await alerts.activeAlerts(forDevice: device.id) else { continue }
+                for alert in active {
+                    contexts.append(AlertContext(alert: alert, deviceName: device.name, assetName: asset.name))
+                }
+            }
+        }
+        return contexts
     }
 }

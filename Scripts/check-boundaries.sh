@@ -22,11 +22,12 @@ if grep -REn '^\s*import\s+(CoreKit|DesignSystemKit|DataKit|PersistenceKit|Netwo
     report "DomainKit must not depend on any other SignalFlow target"
 fi
 
-# Rule 2 — Feature modules must not reach into the data/infrastructure layer.
+# Rule 2 — Feature modules must not reach into the data/infrastructure layer, nor into the app's
+# glance/integration surfaces (widgets, App Intents, Live Activities) — features stay independent.
 for feature in Sources/Feature*; do
     [ -d "$feature" ] || continue
-    if grep -REn '^\s*import\s+(DataKit|PersistenceKit|NetworkingKit|SimulationKit|IntelligenceKit|FoundationModels|SwiftData)\b' "$feature" 2>/dev/null; then
-        report "$(basename "$feature") must not import a concrete data/intelligence module"
+    if grep -REn '^\s*import\s+(DataKit|PersistenceKit|NetworkingKit|SimulationKit|IntelligenceKit|FoundationModels|SwiftData|SnapshotKit|WidgetSupportKit|AppIntentsKit|LiveActivityKit|ActivityKit)\b' "$feature" 2>/dev/null; then
+        report "$(basename "$feature") must not import a concrete data/intelligence module or a glance surface"
     fi
 done
 
@@ -90,6 +91,14 @@ fi
 if grep -REn '^\s*import\s+(DataKit|SimulationKit|NetworkingKit|IntelligenceKit|SwiftData|WidgetKit|DesignSystemKit|Feature[A-Za-z]+|SignalFlowApp)\b' \
         Sources/AppIntentsKit 2>/dev/null; then
     report "AppIntentsKit must read persisted state only (via SnapshotKit; no DataKit/SimulationKit/NetworkingKit/IntelligenceKit/SwiftData)"
+fi
+
+# Rule 12 — LiveActivityKit drives Live Activities from **deterministic domain state**. It may use
+# DomainKit + SnapshotKit (+ ActivityKit, iOS-guarded), but must never reach the live data engine,
+# Foundation Models, SwiftData, or UI — so Live Activity content can't be AI-driven or data-coupled.
+if grep -REn '^\s*import\s+(DataKit|SimulationKit|NetworkingKit|IntelligenceKit|FoundationModels|PersistenceKit|SwiftData|DesignSystemKit|WidgetKit|SwiftUI|Feature[A-Za-z]+|SignalFlowApp)\b' \
+        Sources/LiveActivityKit 2>/dev/null; then
+    report "LiveActivityKit must depend only on DomainKit + SnapshotKit (+ ActivityKit); no data engine, AI, SwiftData, or UI"
 fi
 
 if [ "$fail" -eq 0 ]; then

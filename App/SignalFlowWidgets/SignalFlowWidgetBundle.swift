@@ -10,5 +10,9 @@ struct SignalFlowWidgetBundle: WidgetBundle {
     var body: some Widget {
         FleetStatusWidget()
         CriticalAlertsWidget()
+        #if os(iOS)
+        // The critical-alert Live Activity (Dynamic Island + Lock Screen). iOS-only.
+        CriticalAlertLiveActivity()
+        #endif
     }
 }

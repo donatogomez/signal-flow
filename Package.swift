@@ -42,7 +42,10 @@ let package = Package(
         // Intents). Reads persisted snapshots through PersistenceKit; no SwiftUI/WidgetKit.
         .library(name: "SnapshotKit", targets: ["SnapshotKit"]),
         // App Intents / Shortcuts / Siri surface. Linked by the iOS app target.
-        .library(name: "AppIntentsKit", targets: ["AppIntentsKit"])
+        .library(name: "AppIntentsKit", targets: ["AppIntentsKit"]),
+        // Live Activities / Dynamic Island for critical alerts. ActivityKit-dependent code is guarded
+        // (`#if canImport(ActivityKit)`) so the package still builds/tests on the macOS host.
+        .library(name: "LiveActivityKit", targets: ["LiveActivityKit"])
     ],
     targets: [
 
@@ -90,11 +93,12 @@ let package = Package(
             swiftSettings: swift6
         ),
 
-        // WidgetKit surface. Renders SnapshotKit's read model with DesignSystemKit semantics. Built and
-        // tested from SwiftPM; the Xcode `SignalFlowWidgets` extension is a thin `@main` shell over it.
+        // WidgetKit surface. Renders SnapshotKit's read model with DesignSystemKit semantics, and hosts
+        // the critical-alert Live Activity UI (Dynamic Island + Lock Screen, ActivityKit-guarded). Built
+        // and tested from SwiftPM; the Xcode `SignalFlowWidgets` extension is a thin `@main` shell.
         .target(
             name: "WidgetSupportKit",
-            dependencies: ["DomainKit", "PersistenceKit", "DesignSystemKit", "SnapshotKit"],
+            dependencies: ["DomainKit", "PersistenceKit", "DesignSystemKit", "SnapshotKit", "LiveActivityKit"],
             swiftSettings: swift6
         ),
 
@@ -103,6 +107,15 @@ let package = Package(
         // iOS app target so the intents land in the app binary for Shortcuts/Spotlight discovery.
         .target(
             name: "AppIntentsKit",
+            dependencies: ["DomainKit", "SnapshotKit"],
+            swiftSettings: swift6
+        ),
+
+        // Live Activities + Dynamic Island for critical alerts. Pure lifecycle/selection/mapping logic
+        // is platform-agnostic and unit-tested; ActivityKit usage is `#if canImport(ActivityKit)`-guarded
+        // so the macOS host build (CI) stays green. Reads deterministic domain state — never AI.
+        .target(
+            name: "LiveActivityKit",
             dependencies: ["DomainKit", "SnapshotKit"],
             swiftSettings: swift6
         ),
@@ -137,10 +150,11 @@ let package = Package(
                 "FeatureAlerts",
                 "FeatureInsights",
                 "FeatureSettings",
-                // glance surfaces: shared read model, widgets, and App Intents wiring
+                // glance surfaces: shared read model, widgets, App Intents, and Live Activities
                 "SnapshotKit",
                 "WidgetSupportKit",
-                "AppIntentsKit"
+                "AppIntentsKit",
+                "LiveActivityKit"
             ],
             swiftSettings: swift6
         ),
@@ -165,7 +179,8 @@ let package = Package(
                 "DomainKit", "TestingSupportKit", "CoreKit", "SimulationKit", "DataKit",
                 "PersistenceKit", "NetworkingKit", "IntelligenceKit", "DesignSystemKit",
                 "FeatureDashboard", "FeatureFleet", "FeatureDeviceDetail", "FeatureInsights",
-                "FeatureAlerts", "SnapshotKit", "WidgetSupportKit", "AppIntentsKit", "SignalFlowApp",
+                "FeatureAlerts", "SnapshotKit", "WidgetSupportKit", "AppIntentsKit", "LiveActivityKit",
+                "SignalFlowApp",
             ],
             swiftSettings: swift6
         )
