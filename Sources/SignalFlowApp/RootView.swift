@@ -98,6 +98,7 @@ public struct RootView: View {
             .tag(Tab.insights)
         }
         .task { await container.start() }
+        .task { await container.observeCriticalAlertActivity() }
         .task {
             // A route an intent requested before this view appeared (e.g. cold launch from Shortcuts).
             if let route = navigation.pendingRoute {
@@ -113,8 +114,17 @@ public struct RootView: View {
             }
         }
         .onOpenURL { url in
-            // Widgets, Spotlight, and external deep links arrive as signalflow:// URLs.
-            if let route = DeepLinkRoute(url: url) { selection = tab(for: route) }
+            // Widgets, Spotlight, App Intents, and Live Activities arrive as signalflow:// URLs.
+            switch DeepLink(url: url) {
+            case .route(let route):
+                selection = tab(for: route)
+            case .device(let deviceID):
+                // A Live Activity tap deep-links to its device's detail screen.
+                selection = .fleet
+                fleetPath = [deviceID]
+            case nil:
+                break
+            }
         }
     }
 }

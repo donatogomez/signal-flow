@@ -9,7 +9,7 @@
 [![Swift](https://img.shields.io/badge/Swift-6-orange)](#)
 [![Strict Concurrency](https://img.shields.io/badge/strict%20concurrency-complete-green)](#)
 [![UI](https://img.shields.io/badge/UI-SwiftUI%20only-blue)](#)
-[![Tests](https://img.shields.io/badge/tests-166%20passing-success)](#how-to-run-the-tests)
+[![Tests](https://img.shields.io/badge/tests-176%20passing-success)](#how-to-run-the-tests)
 [![3rd-party deps](https://img.shields.io/badge/3rd--party%20deps-0-lightgrey)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
@@ -32,8 +32,9 @@ connectivity) from many devices at once and presents it as a calm, native monito
 **Dashboard** of fleet health, a searchable/sortable/filterable **Fleet** list, a **Device
 Detail** screen with Swift Charts trends, active alerts, and a recent-events feed, and an **Alerts**
 console for triaging and acknowledging active alerts against a resolved history. Two **Home Screen
-widgets** mirror fleet status and critical alerts from persisted state, and **App Intents** expose the
-same glances to Shortcuts, Siri, and Spotlight.
+widgets** mirror fleet status and critical alerts from persisted state, **App Intents** expose the
+same glances to Shortcuts, Siri, and Spotlight, and a **Live Activity** surfaces an ongoing critical
+alert on the Lock Screen and Dynamic Island.
 
 The IoT domain was chosen deliberately — it forces every hard problem a senior iOS engineer should be
 able to solve, and the **real product is the engineering**: the architecture, the Swift 6 concurrency
@@ -134,7 +135,7 @@ Details: [Technical Architecture](docs/03-technical-architecture.md) · [Concurr
 
 ## Module graph
 
-A single local Swift Package (`SignalFlowKit`) with **20 build targets + a test target**. Boundaries
+A single local Swift Package (`SignalFlowKit`) with **21 build targets + a test target**. Boundaries
 are enforced by the build graph *and* a CI check — a feature target cannot even name the data layer.
 
 ```mermaid
@@ -151,9 +152,10 @@ flowchart TD
         F4[FeatureAlerts]
         F5[FeatureInsights]
     end
-    subgraph GlanceLayer["Glance surfaces (read persisted state only)"]
-        WS["WidgetSupportKit<br/>(WidgetKit)"]
+    subgraph GlanceLayer["Glance surfaces (read persisted / deterministic state only)"]
+        WS["WidgetSupportKit<br/>(WidgetKit + Live Activity UI)"]
         AI["AppIntentsKit<br/>(App Intents · Siri)"]
+        LA["LiveActivityKit<br/>(ActivityKit · Dynamic Island)"]
         SK["SnapshotKit<br/>(shared read model + routes)"]
     end
     DS[DesignSystemKit]
@@ -170,7 +172,7 @@ flowchart TD
     HOST --> APPLIB
     WIDGETHOST --> WS
     APPLIB --> F1 & F2 & F3 & F4 & F5
-    APPLIB --> WS & AI & SK
+    APPLIB --> WS & AI & SK & LA
     APPLIB --> DK
     APPLIB --> INTEL
     APPLIB --> PERSIST
@@ -178,7 +180,9 @@ flowchart TD
     F1 & F2 & F3 & F4 & F5 --> DS
     WS --> SK
     WS --> DS
+    WS --> LA
     AI --> SK
+    LA --> SK
     SK --> DOM
     SK --> PERSIST
     DS --> DOM
@@ -196,10 +200,11 @@ flowchart TD
     class DOM domain;
 ```
 
-The glance surfaces (Widgets + App Intents) read **persisted state only** through `SnapshotKit →
-PersistenceKit`; neither has an edge to `DataKit`, `SimulationKit`, `NetworkingKit`, or
-`IntelligenceKit` (CI-enforced). The app and the `SignalFlowWidgets` extension share one SwiftData store
-via an App Group. See [WidgetKit](docs/24-widgetkit.md) and [App Intents](docs/25-app-intents.md).
+The glance surfaces (Widgets, App Intents, Live Activities) read **persisted / deterministic state
+only**; none has an edge to `DataKit`, `SimulationKit`, `NetworkingKit`, or `IntelligenceKit`
+(CI-enforced). The app and the `SignalFlowWidgets` extension share one SwiftData store via an App Group.
+See [WidgetKit](docs/24-widgetkit.md), [App Intents](docs/25-app-intents.md), and
+[Live Activities](docs/26-live-activities.md).
 
 The thin Xcode app target ([`App/SignalFlow.xcodeproj`](App/SignalFlow.xcodeproj)) hosts the package's
 composition root and adds nothing but the bundle, asset catalog, and a synthesized Info.plist.
@@ -253,8 +258,8 @@ swift run SignalFlowHost
 ## How to run the tests
 
 ```bash
-swift build                    # compiles all 20 build targets (Swift 6, strict concurrency)
-swift test                     # Swift Testing suite — 166 tests, 36 suites
+swift build                    # compiles all 21 build targets (Swift 6, strict concurrency)
+swift test                     # Swift Testing suite — 176 tests, 37 suites
 ./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
 ```
 
@@ -287,7 +292,8 @@ The same three commands run locally and in CI, so a green local run means a gree
 - ✅ App shell + composition root (`AppContainer` / `RootView`) and a thin **Xcode iOS app target**.
 - ✅ **WidgetKit** — `SignalFlowWidgets` extension with _Fleet Status_ and _Critical Alerts_ widgets (small + medium). Reads **persisted state only** (`SnapshotKit → PersistenceKit`, no DataKit/Simulation/Networking), shares one SwiftData store with the app via an **App Group**, refreshes on a deterministic `TimelineProvider`, and deep-links into Dashboard/Alerts. See [WidgetKit](docs/24-widgetkit.md).
 - ✅ **App Intents** — `AppIntentsKit` with _Open Dashboard / Fleet Status / Critical Alerts_ navigation intents + a _Show Fleet Summary_ data intent, surfaced to Shortcuts/Siri/Spotlight via an `AppShortcutsProvider`. Reads **persisted state only** through the shared `SnapshotKit`; a single `DeepLinkRoute` contract powers widget, intent, and URL navigation. See [App Intents](docs/25-app-intents.md).
-- ✅ Architecture boundaries enforced by a CI check; **166 Swift Testing tests** passing.
+- ✅ **Live Activities & Dynamic Island** — `LiveActivityKit` surfaces an ongoing **critical alert** on the Lock Screen / StandBy and across all Dynamic Island presentations (compact / minimal / expanded). Lifecycle (start on critical, update on change, end on acknowledge/resolve) is a pure, tested state machine over **deterministic** alert state — never AI; ActivityKit is `#if os(iOS)`-guarded so CI needs no device. Taps deep-link to the device via the shared `DeepLink`. See [Live Activities](docs/26-live-activities.md).
+- ✅ Architecture boundaries enforced by a CI check; **176 Swift Testing tests** passing.
 
 **Upcoming**
 - ⬜️ Real backend wiring + auth (swap `URLSessionHTTPClient` in at the composition root).
@@ -317,6 +323,7 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 | | | 23 | [FeatureAlerts](docs/23-feature-alerts.md) |
 | | | 24 | [WidgetKit](docs/24-widgetkit.md) |
 | | | 25 | [App Intents](docs/25-app-intents.md) |
+| | | 26 | [Live Activities](docs/26-live-activities.md) |
 | | | | [Architecture Decision Records](docs/adr) |
 
 ## Portfolio value
