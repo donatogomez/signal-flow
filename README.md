@@ -9,7 +9,7 @@
 [![Swift](https://img.shields.io/badge/Swift-6-orange)](#)
 [![Strict Concurrency](https://img.shields.io/badge/strict%20concurrency-complete-green)](#)
 [![UI](https://img.shields.io/badge/UI-SwiftUI%20only-blue)](#)
-[![Tests](https://img.shields.io/badge/tests-176%20passing-success)](#how-to-run-the-tests)
+[![Tests](https://img.shields.io/badge/tests-182%20passing-success)](#how-to-run-the-tests)
 [![3rd-party deps](https://img.shields.io/badge/3rd--party%20deps-0-lightgrey)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
@@ -33,8 +33,9 @@ connectivity) from many devices at once and presents it as a calm, native monito
 Detail** screen with Swift Charts trends, active alerts, and a recent-events feed, and an **Alerts**
 console for triaging and acknowledging active alerts against a resolved history. Two **Home Screen
 widgets** mirror fleet status and critical alerts from persisted state, **App Intents** expose the
-same glances to Shortcuts, Siri, and Spotlight, and a **Live Activity** surfaces an ongoing critical
-alert on the Lock Screen and Dynamic Island.
+same glances to Shortcuts, Siri, and Spotlight, a **Live Activity** surfaces an ongoing critical
+alert on the Lock Screen and Dynamic Island, and an **Apple Watch** companion shows fleet status and
+alerts at a glance.
 
 The IoT domain was chosen deliberately — it forces every hard problem a senior iOS engineer should be
 able to solve, and the **real product is the engineering**: the architecture, the Swift 6 concurrency
@@ -135,7 +136,7 @@ Details: [Technical Architecture](docs/03-technical-architecture.md) · [Concurr
 
 ## Module graph
 
-A single local Swift Package (`SignalFlowKit`) with **21 build targets + a test target**. Boundaries
+A single local Swift Package (`SignalFlowKit`) with **22 build targets + a test target**. Boundaries
 are enforced by the build graph *and* a CI check — a feature target cannot even name the data layer.
 
 ```mermaid
@@ -144,6 +145,7 @@ flowchart TD
         HOST["SignalFlowHost · Xcode iOS app"]
         APPLIB["SignalFlowApp<br/>AppContainer · RootView"]
         WIDGETHOST["SignalFlowWidgets · Xcode app-extension"]
+        WATCHHOST["SignalFlow Watch App · Xcode watchOS target"]
     end
     subgraph FeatureLayer["Features"]
         F1[FeatureDashboard]
@@ -156,6 +158,7 @@ flowchart TD
         WS["WidgetSupportKit<br/>(WidgetKit + Live Activity UI)"]
         AI["AppIntentsKit<br/>(App Intents · Siri)"]
         LA["LiveActivityKit<br/>(ActivityKit · Dynamic Island)"]
+        WATCH["WatchSupportKit<br/>(watchOS UI + models)"]
         SK["SnapshotKit<br/>(shared read model + routes)"]
     end
     DS[DesignSystemKit]
@@ -171,6 +174,7 @@ flowchart TD
 
     HOST --> APPLIB
     WIDGETHOST --> WS
+    WATCHHOST --> WATCH
     APPLIB --> F1 & F2 & F3 & F4 & F5
     APPLIB --> WS & AI & SK & LA
     APPLIB --> DK
@@ -183,6 +187,7 @@ flowchart TD
     WS --> LA
     AI --> SK
     LA --> SK
+    WATCH --> SK
     SK --> DOM
     SK --> PERSIST
     DS --> DOM
@@ -200,11 +205,11 @@ flowchart TD
     class DOM domain;
 ```
 
-The glance surfaces (Widgets, App Intents, Live Activities) read **persisted / deterministic state
-only**; none has an edge to `DataKit`, `SimulationKit`, `NetworkingKit`, or `IntelligenceKit`
-(CI-enforced). The app and the `SignalFlowWidgets` extension share one SwiftData store via an App Group.
-See [WidgetKit](docs/24-widgetkit.md), [App Intents](docs/25-app-intents.md), and
-[Live Activities](docs/26-live-activities.md).
+The glance surfaces (Widgets, App Intents, Live Activities, **the watchOS app**) read **persisted /
+deterministic state only**; none has an edge to `DataKit`, `SimulationKit`, `NetworkingKit`, or
+`IntelligenceKit` (CI-enforced). The app and the `SignalFlowWidgets` extension share one SwiftData store
+via an App Group. See [WidgetKit](docs/24-widgetkit.md), [App Intents](docs/25-app-intents.md),
+[Live Activities](docs/26-live-activities.md), and [watchOS Companion](docs/27-watchos-companion.md).
 
 The thin Xcode app target ([`App/SignalFlow.xcodeproj`](App/SignalFlow.xcodeproj)) hosts the package's
 composition root and adds nothing but the bundle, asset catalog, and a synthesized Info.plist.
@@ -249,6 +254,21 @@ xcodebuild build \
   CODE_SIGNING_ALLOWED=NO
 ```
 
+The **watchOS companion** is a standalone target with its own scheme (it doesn't affect the iOS build).
+On a machine with the watchOS simulator runtime installed — verified building, installing, and launching
+on the **watchOS 26.5 Simulator** — target a concrete simulator by `id` (`name=` is ambiguous across
+same-named watches):
+
+```bash
+xcrun simctl list devices available | grep -i watch   # pick a watch simulator udid
+
+xcodebuild build \
+  -project App/SignalFlow.xcodeproj \
+  -scheme "SignalFlow Watch App" \
+  -destination 'id=<watchOS 26.5 simulator udid>' \
+  CODE_SIGNING_ALLOWED=NO
+```
+
 Or launch the package's host runner without Xcode:
 
 ```bash
@@ -258,8 +278,8 @@ swift run SignalFlowHost
 ## How to run the tests
 
 ```bash
-swift build                    # compiles all 21 build targets (Swift 6, strict concurrency)
-swift test                     # Swift Testing suite — 176 tests, 37 suites
+swift build                    # compiles all 22 build targets (Swift 6, strict concurrency)
+swift test                     # Swift Testing suite — 182 tests, 38 suites
 ./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
 ```
 
@@ -293,7 +313,8 @@ The same three commands run locally and in CI, so a green local run means a gree
 - ✅ **WidgetKit** — `SignalFlowWidgets` extension with _Fleet Status_ and _Critical Alerts_ widgets (small + medium). Reads **persisted state only** (`SnapshotKit → PersistenceKit`, no DataKit/Simulation/Networking), shares one SwiftData store with the app via an **App Group**, refreshes on a deterministic `TimelineProvider`, and deep-links into Dashboard/Alerts. See [WidgetKit](docs/24-widgetkit.md).
 - ✅ **App Intents** — `AppIntentsKit` with _Open Dashboard / Fleet Status / Critical Alerts_ navigation intents + a _Show Fleet Summary_ data intent, surfaced to Shortcuts/Siri/Spotlight via an `AppShortcutsProvider`. Reads **persisted state only** through the shared `SnapshotKit`; a single `DeepLinkRoute` contract powers widget, intent, and URL navigation. See [App Intents](docs/25-app-intents.md).
 - ✅ **Live Activities & Dynamic Island** — `LiveActivityKit` surfaces an ongoing **critical alert** on the Lock Screen / StandBy and across all Dynamic Island presentations (compact / minimal / expanded). Lifecycle (start on critical, update on change, end on acknowledge/resolve) is a pure, tested state machine over **deterministic** alert state — never AI; ActivityKit is `#if os(iOS)`-guarded so CI needs no device. Taps deep-link to the device via the shared `DeepLink`. See [Live Activities](docs/26-live-activities.md).
-- ✅ Architecture boundaries enforced by a CI check; **176 Swift Testing tests** passing.
+- ✅ **watchOS companion** — a thin `SignalFlow Watch App` over `WatchSupportKit`: glanceable _Fleet Summary → Critical Alerts → Device Snapshot_, reading the **same persisted snapshot** via `SnapshotKit` (never the data engine). Standalone target with its own scheme, so the iOS CI build is unchanged. **Verified on the watchOS 26.5 Simulator** — builds, installs, and launches without crashing (shows the empty state until WatchConnectivity sync lands — a future iteration). Completes the one-truth-everywhere story (iPhone · widgets · Siri · Dynamic Island · watch). See [watchOS Companion](docs/27-watchos-companion.md).
+- ✅ Architecture boundaries enforced by a CI check; **182 Swift Testing tests** passing.
 
 **Upcoming**
 - ⬜️ Real backend wiring + auth (swap `URLSessionHTTPClient` in at the composition root).
@@ -324,6 +345,7 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 | | | 24 | [WidgetKit](docs/24-widgetkit.md) |
 | | | 25 | [App Intents](docs/25-app-intents.md) |
 | | | 26 | [Live Activities](docs/26-live-activities.md) |
+| | | 27 | [watchOS Companion](docs/27-watchos-companion.md) |
 | | | | [Architecture Decision Records](docs/adr) |
 
 ## Portfolio value

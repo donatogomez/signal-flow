@@ -101,6 +101,13 @@ if grep -REn '^\s*import\s+(DataKit|SimulationKit|NetworkingKit|IntelligenceKit|
     report "LiveActivityKit must depend only on DomainKit + SnapshotKit (+ ActivityKit); no data engine, AI, SwiftData, or UI"
 fi
 
+# Rule 13 — WatchSupportKit (the watchOS companion's UI/models) reads persisted snapshots via SnapshotKit
+# and must stay thin: no business logic, no data engine, no AI, no sibling glance surfaces, no features.
+if grep -REn '^\s*import\s+(DataKit|SimulationKit|NetworkingKit|IntelligenceKit|FoundationModels|WidgetKit|ActivityKit|WidgetSupportKit|AppIntentsKit|LiveActivityKit|Feature[A-Za-z]+|SignalFlowApp)\b' \
+        Sources/WatchSupportKit 2>/dev/null; then
+    report "WatchSupportKit must depend only on DomainKit + SnapshotKit (read persisted state; no data engine, AI, or features)"
+fi
+
 if [ "$fail" -eq 0 ]; then
     echo "✅ architecture boundaries respected"
 fi

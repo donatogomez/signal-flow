@@ -45,7 +45,10 @@ let package = Package(
         .library(name: "AppIntentsKit", targets: ["AppIntentsKit"]),
         // Live Activities / Dynamic Island for critical alerts. ActivityKit-dependent code is guarded
         // (`#if canImport(ActivityKit)`) so the package still builds/tests on the macOS host.
-        .library(name: "LiveActivityKit", targets: ["LiveActivityKit"])
+        .library(name: "LiveActivityKit", targets: ["LiveActivityKit"]),
+        // The watchOS companion's UI + models. Linked by the `SignalFlow Watch App` target; reads
+        // persisted snapshots through SnapshotKit. Cross-platform SwiftUI (builds on the macOS host too).
+        .library(name: "WatchSupportKit", targets: ["WatchSupportKit"])
     ],
     targets: [
 
@@ -120,6 +123,15 @@ let package = Package(
             swiftSettings: swift6
         ),
 
+        // The watchOS companion app's surface: thin `@Observable` models + watch-native SwiftUI screens
+        // (Fleet Summary, Critical Alerts, Device Snapshot). Reads persisted state via SnapshotKit and
+        // never links the data engine — so no business logic is duplicated on the watch.
+        .target(
+            name: "WatchSupportKit",
+            dependencies: ["DomainKit", "SnapshotKit"],
+            swiftSettings: swift6
+        ),
+
         // MARK: - Features (vertical slices — Domain + DesignSystem only, never Data)
 
         .target(name: "FeatureDashboard", dependencies: ["DomainKit", "DesignSystemKit"], swiftSettings: swift6),
@@ -180,7 +192,7 @@ let package = Package(
                 "PersistenceKit", "NetworkingKit", "IntelligenceKit", "DesignSystemKit",
                 "FeatureDashboard", "FeatureFleet", "FeatureDeviceDetail", "FeatureInsights",
                 "FeatureAlerts", "SnapshotKit", "WidgetSupportKit", "AppIntentsKit", "LiveActivityKit",
-                "SignalFlowApp",
+                "WatchSupportKit", "SignalFlowApp",
             ],
             swiftSettings: swift6
         )
