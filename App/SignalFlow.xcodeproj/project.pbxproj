@@ -249,6 +249,7 @@
 			files = (
 				1A000000000000000000000A /* Assets.xcassets in Resources */,
 				1A0000000000000000000061 /* Localizable.xcstrings in Resources */,
+<<<<<<< HEAD
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -257,6 +258,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				1A0000000000000000000074 /* Localizable.xcstrings in Resources */,
+=======
+>>>>>>> origin/main
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
