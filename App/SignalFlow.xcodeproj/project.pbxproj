@@ -30,11 +30,11 @@
 		1A0000000000000000000023 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1A0000000000000000000024 /* SignalFlowWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SignalFlowWidgets.entitlements; sourceTree = "<group>"; };
 		1A0000000000000000000025 /* SignalFlowWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SignalFlowWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		1A0000000000000000000073 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		1A0000000000000000000051 /* SignalFlowWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalFlowWatchApp.swift; sourceTree = "<group>"; };
 		1A0000000000000000000052 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1A0000000000000000000053 /* SignalFlowWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SignalFlowWatch.entitlements; sourceTree = "<group>"; };
 		1A0000000000000000000054 /* SignalFlow Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SignalFlow Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A0000000000000000000073 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
