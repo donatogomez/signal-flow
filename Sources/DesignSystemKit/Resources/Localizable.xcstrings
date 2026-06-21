@@ -22,6 +22,16 @@
         }
       }
     },
+    "Battery low": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Batería baja"
+          }
+        }
+      }
+    },
     "Carbon dioxide": {
       "localizations": {
         "es": {
@@ -222,6 +232,16 @@
         }
       }
     },
+    "Pressure": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presión"
+          }
+        }
+      }
+    },
     "Reconnected": {
       "localizations": {
         "es": {
@@ -258,6 +278,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Temperatura"
+          }
+        }
+      }
+    },
+    "Threshold exceeded": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Umbral superado"
           }
         }
       }

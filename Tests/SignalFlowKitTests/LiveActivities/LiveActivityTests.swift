@@ -51,6 +51,10 @@ struct LiveActivityTests {
         // The reason is a localized, derived string built from the alert's metric + observed value.
         #expect(state.reason == "Temperature 12.0 °C is outside the acceptable range")
         #expect(state.startedAt == Date(timeIntervalSince1970: 100))
+        // It is never the raw domain message, nor the threshold-event English.
+        #expect(state.reason != a.message)
+        #expect(!state.reason.contains("Threshold exceeded"))
+        #expect(state.reason == AlertText.message(metric: a.metric, value: a.observedValue))
         #expect(state.status == .active)
         #expect(state.with(status: .resolved).status == .resolved)
     }

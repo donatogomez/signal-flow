@@ -67,6 +67,7 @@ public struct DeterministicInsightsProvider: InsightsProviding {
         case .carbonDioxide: String(localized: "Carbon dioxide", bundle: .module)
         case .batteryLevel: String(localized: "Battery level", bundle: .module)
         case .signalStrength: String(localized: "Signal strength", bundle: .module)
+        case .custom("pressure"): String(localized: "Pressure", bundle: .module)
         case .custom(let key): key.replacingOccurrences(of: "_", with: " ").capitalized
         }
     }

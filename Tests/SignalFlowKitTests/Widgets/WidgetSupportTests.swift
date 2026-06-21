@@ -111,6 +111,21 @@ struct WidgetSupportTests {
         #expect(top.allSatisfy { $0.deviceName == "Reefer 12" })
     }
 
+    @Test("Widget alerts never expose the raw domain alert message")
+    func widgetAlertMessageIsLocalized() throws {
+        let truck = try device("Reefer 12", .online)
+        let rawDomainMessage = "Threshold exceeded — raw domain diagnostic"
+        let a = try alert(.critical, device: truck.id, message: rawDomainMessage, raisedAt: 1)
+
+        let top = WidgetAlert.top(from: snapshot(devices: [truck], alerts: [a]), limit: 1)
+
+        let message = try #require(top.first?.message)
+        #expect(message != rawDomainMessage)
+        #expect(!message.contains("Threshold exceeded"))
+        // It's the derived/localized alert text built from metric + observed value.
+        #expect(message == AlertText.message(metric: a.metric, value: a.observedValue))
+    }
+
     @Test("Alerts for an unknown device fall back to a placeholder name")
     func alertUnknownDevice() throws {
         let orphan = try alert(.critical, device: DeviceID(), raisedAt: 1)
