@@ -83,6 +83,7 @@ let package = Package(
         .target(
             name: "DataKit",
             dependencies: ["DomainKit", "PersistenceKit", "NetworkingKit", "SimulationKit"],
+            resources: [.process("Resources")],
             swiftSettings: swift6
         ),
 
@@ -99,6 +100,7 @@ let package = Package(
         .target(
             name: "SnapshotKit",
             dependencies: ["DomainKit", "PersistenceKit"],
+            resources: [.process("Resources")],
             swiftSettings: swift6
         ),
 

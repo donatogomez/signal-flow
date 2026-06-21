@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import DomainKit
+import DesignSystemKit
 
 /// The device detail screen's state: current telemetry, trend series for charts, active alerts, and
 /// recent events — all derived from `DomainKit` ports for a single device.
@@ -62,7 +63,7 @@ public final class DeviceDetailModel {
                     )
                 }
             alerts = detail.activeAlerts.map {
-                AlertRow(id: $0.id, message: $0.message, severity: $0.severity, raisedAt: $0.raisedAt, isAcknowledged: $0.isAcknowledged)
+                AlertRow(id: $0.id, message: localizedAlertMessage(metric: $0.metric, value: $0.observedValue), severity: $0.severity, raisedAt: $0.raisedAt, isAcknowledged: $0.isAcknowledged)
             }
             events = try await eventsRepository.recentEvents(forDevice: deviceID, limit: 10).map {
                 DeviceEventRow(id: $0.id, kind: $0.kind, occurredAt: $0.occurredAt)

@@ -1,0 +1,69 @@
+{
+  "sourceLanguage" : "en",
+  "version" : "1.0",
+  "strings" : {
+    "%@ on %@ is %@ %@ now, averaging %@ %@ across %lld readings (range %@–%@ %@, %@)." : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ en %2$@ es %3$@ %4$@ ahora, con un promedio de %5$@ %6$@ en %7$lld lecturas (rango %8$@–%9$@ %10$@, %11$@)." } } }
+    },
+    "%lld active alerts open on this device." : {
+      "localizations" : {
+        "en" : { "variations" : { "plural" : {
+          "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld active alert open on this device." } },
+          "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld active alerts open on this device." } }
+        } } },
+        "es" : { "variations" : { "plural" : {
+          "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld alerta activa abierta en este dispositivo." } },
+          "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld alertas activas abiertas en este dispositivo." } }
+        } } }
+      }
+    },
+    "Battery level" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Nivel de batería" } } }
+    },
+    "Carbon dioxide" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Dióxido de carbono" } } }
+    },
+    "Humidity" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Humedad" } } }
+    },
+    "Keep monitoring; %@ is trending down." : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Sigue monitoreando; %@ está bajando." } } }
+    },
+    "Keep monitoring; %@ is trending up." : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Sigue monitoreando; %@ está subiendo." } } }
+    },
+    "No action needed; continue routine monitoring." : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "No se requiere acción; continúa el monitoreo rutinario." } } }
+    },
+    "No unusual pattern detected in the available window." : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "No se detectó ningún patrón inusual en la ventana disponible." } } }
+    },
+    "Readings have been volatile across the window, which can indicate an unstable environment or an intermittent sensor." : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Las lecturas han sido volátiles en la ventana, lo que puede indicar un entorno inestable o un sensor intermitente." } } }
+    },
+    "Review the active alerts for %@ and confirm conditions on site." : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Revisa las alertas activas de %@ y confirma las condiciones en el sitio." } } }
+    },
+    "Signal strength" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Intensidad de señal" } } }
+    },
+    "Temperature" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Temperatura" } } }
+    },
+    "The recent %@ movement may be related." : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "El movimiento reciente de %@ puede estar relacionado." } } }
+    },
+    "falling" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "bajando" } } }
+    },
+    "holding steady" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "estable" } } }
+    },
+    "rising" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "subiendo" } } }
+    },
+    "volatile" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "volátil" } } }
+    }
+  }
+}

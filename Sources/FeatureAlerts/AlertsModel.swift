@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import DomainKit
+import DesignSystemKit
 
 /// State for the Alerts screen: the active and resolved alert lists, a tab + severity filter, and the
 /// acknowledge action — all driven by `DomainKit` ports.
@@ -96,14 +97,14 @@ public final class AlertsModel {
         let deviceName: String
         let assetName: String
         let kind: AssetKind
-        static let unknown = AssetContext(deviceName: "Device", assetName: "—", kind: .warehouse)
+        static let unknown = AssetContext(deviceName: loc("Device"), assetName: "—", kind: .warehouse)
     }
 
     private func row(from alert: Alert, ctx: AssetContext) -> AlertRow {
         AlertRow(
             id: alert.id, deviceID: alert.deviceID,
             deviceName: ctx.deviceName, assetName: ctx.assetName, assetKind: ctx.kind,
-            severity: alert.severity, message: alert.message,
+            severity: alert.severity, message: localizedAlertMessage(metric: alert.metric, value: alert.observedValue),
             raisedAt: alert.raisedAt, acknowledgedAt: alert.acknowledgedAt
         )
     }

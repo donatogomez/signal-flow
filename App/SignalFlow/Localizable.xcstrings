@@ -1,40 +1,128 @@
 {
   "sourceLanguage" : "en",
-  "version" : "1.0",
   "strings" : {
     "Critical Alerts" : {
       "comment" : "App Intents / Shortcuts metadata — must live in the main bundle.",
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Alertas críticas" } } }
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alertas críticas"
+          }
+        }
+      }
     },
     "Fleet Status" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Estado de la flota" } } }
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estado de la flota"
+          }
+        }
+      }
     },
     "Fleet Summary" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Resumen de la flota" } } }
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resumen de la flota"
+          }
+        }
+      }
     },
     "Open Critical Alerts" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Abrir alertas críticas" } } }
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir alertas críticas"
+          }
+        }
+      }
     },
     "Open Dashboard" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Abrir panel" } } }
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir panel"
+          }
+        }
+      }
     },
     "Open Fleet Status" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Abrir estado de la flota" } } }
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir estado de la flota"
+          }
+        }
+      }
     },
     "Opens SignalFlow on the active alerts console." : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Abre SignalFlow en la consola de alertas activas." } } }
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre SignalFlow en la consola de alertas activas."
+          }
+        }
+      }
     },
     "Opens SignalFlow on the fleet dashboard." : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Abre SignalFlow en el panel de la flota." } } }
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre SignalFlow en el panel de la flota."
+          }
+        }
+      }
     },
     "Opens SignalFlow on the fleet status list." : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Abre SignalFlow en la lista de estado de la flota." } } }
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre SignalFlow en la lista de estado de la flota."
+          }
+        }
+      }
     },
     "Reads the latest saved fleet status — how many devices are online, in warning, or critical." : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Lee el último estado guardado de la flota: cuántos dispositivos están en línea, en advertencia o críticos." } } }
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lee el último estado guardado de la flota: cuántos dispositivos están en línea, en advertencia o críticos."
+          }
+        }
+      }
     },
     "Show Fleet Summary" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Mostrar resumen de la flota" } } }
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar resumen de la flota"
+          }
+        }
+      }
     }
-  }
+  },
+  "version" : "1.0"
 }

@@ -56,14 +56,18 @@ public struct FoundationModelsInsightProvider: InsightsProviding {
 
     // MARK: - Grounding
 
-    static let instructions = """
-    You explain IoT sensor telemetry for an operations dashboard.
-    Rules:
-    - Use ONLY the facts provided. Never invent, estimate, or extrapolate numbers or values.
-    - Be concise, concrete, and neutral.
-    - Frame any anomaly as a hypothesis ("likely…", "may indicate…"), never as a certainty.
-    - Do not give safety verdicts or decide alert status; thresholds are evaluated separately.
-    """
+    static var instructions: String {
+        """
+        You explain IoT sensor telemetry for an operations dashboard.
+        Rules:
+        - Use ONLY the facts provided. Never invent, estimate, or extrapolate numbers or values.
+        - Be concise, concrete, and neutral.
+        - Frame any anomaly as a hypothesis ("likely…", "may indicate…"), never as a certainty.
+        - Do not give safety verdicts or decide alert status; thresholds are evaluated separately.
+        - Write all prose (summary, anomaly explanation, recommendation) in \(outputLanguageName). \
+        Keep numbers, units, and the device name exactly as given.
+        """
+    }
 
     static func prompt(for context: InsightContext) -> String {
         let s = context.statistics
@@ -77,6 +81,13 @@ public struct FoundationModelsInsightProvider: InsightsProviding {
 
         Write a short summary, an anomaly explanation, an operational recommendation, and an advisory severity.
         """
+    }
+
+    /// The user's language, named in English (e.g. "Spanish") so the on-device model reliably honors it.
+    /// This is why FM output follows the device language instead of always being English.
+    static var outputLanguageName: String {
+        let code = Locale.current.language.languageCode?.identifier ?? "en"
+        return Locale(identifier: "en").localizedString(forLanguageCode: code) ?? "English"
     }
 
     private static func f(_ value: Double) -> String { String(format: "%.1f", value) }

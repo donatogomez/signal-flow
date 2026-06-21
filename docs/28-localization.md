@@ -69,8 +69,32 @@ ContentUnavailableView(loc("No matching devices"), systemImage: "magnifyingglass
   `one`/`other` in both languages (no `.stringsdict`).
 - **`Bundle.module`** is essential: in a SwiftPM library the default bundle is the *app's*, so omitting
   it would silently fail to find the module's catalog.
-- **App Intents** use `LocalizedStringResource(key, bundle: .atURL(Bundle.module.bundleURL))` for intent
-  titles, descriptions, and shortcut short-titles, which Apple's metadata extractor resolves.
+### App Intents & App Extensions — the main-bundle edge case
+
+App Intents metadata (intent titles, descriptions, shortcut short-titles, **and WidgetKit
+`WidgetConfigurationIntent` descriptions**) is special: the metadata extractor (`appintentsmetadataprocessor`)
+**requires the strings to resolve from the *main* bundle of the running target** — it rejects a
+`LocalizedStringResource` bound to a SwiftPM module's `Bundle.module` (it fails the build with
+*"AppIntents requires 'LocalizedStringResource' to use the main bundle"*), and it also rejects a
+wrapper-function initializer (it must be a string literal or an inline `LocalizedStringResource(...)`).
+
+So intent strings are written as **plain literals** in the module, and their translations live in a
+`Localizable.xcstrings` placed in the **executable target's** bundle, not the module's:
+
+| Intent kind | Lives in | Translations catalog | Resolved from |
+| --- | --- | --- | --- |
+| App's intents (Open Dashboard, Show Fleet Summary, …) | `AppIntentsKit` (literals) | `App/SignalFlow/Localizable.xcstrings` | the **app** target's main bundle |
+| Widget config intent (`SignalFlowWidgetConfiguration.description`) | `WidgetSupportKit` (literal) | `App/SignalFlowWidgets/Localizable.xcstrings` | the **widget extension's** main bundle |
+
+The widget case is the subtle one: the `SignalFlowWidgetConfiguration` intent is *defined* in the
+`WidgetSupportKit` SwiftPM module, but its description is shown by the widget **extension**, whose main
+bundle is `SignalFlowWidgets.appex` — so the catalog must be added to that extension target (its own
+`Resources` build phase), not to the module. The module's `Bundle.module` catalog would never be
+consulted for it. Everything else the widgets render (display names, labels, empty states) is ordinary
+SwiftUI text and *does* localize from `WidgetSupportKit`'s module catalog as usual.
+
+- Everything that is **not** App Intents metadata uses `String(localized:bundle:.module)` /
+  `Text("…", bundle: .module)` against its own module catalog.
 
 ## 28.3 Supported languages
 

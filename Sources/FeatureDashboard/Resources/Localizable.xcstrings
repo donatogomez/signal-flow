@@ -1,33 +1,99 @@
 {
   "sourceLanguage" : "en",
-  "version" : "1.0",
   "strings" : {
+    "%lld" : {
+
+    },
     "Active alerts" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Alertas activas" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alertas activas"
+          }
+        }
+      }
     },
     "Couldn't load the dashboard" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "No se pudo cargar el panel" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo cargar el panel"
+          }
+        }
+      }
     },
     "Dashboard" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Panel" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Panel"
+          }
+        }
+      }
     },
     "Devices" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Dispositivos" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dispositivos"
+          }
+        }
+      }
     },
     "Fleet status" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Estado de la flota" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estado de la flota"
+          }
+        }
+      }
     },
     "No events yet" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Aún no hay eventos" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no hay eventos"
+          }
+        }
+      }
     },
     "Offline" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin conexión" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin conexión"
+          }
+        }
+      }
     },
     "Online" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "En línea" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En línea"
+          }
+        }
+      }
     },
     "Recent events" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Eventos recientes" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eventos recientes"
+          }
+        }
+      }
     }
-  }
+  },
+  "version" : "1.0"
 }
