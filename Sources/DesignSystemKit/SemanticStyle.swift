@@ -32,6 +32,15 @@ private func dsk(_ key: String.LocalizationValue) -> String {
     DSKLocalization.string(key)
 }
 
+/// The **localized**, user-facing alert message, derived from a domain alert's structured fields.
+/// The domain stores a neutral English diagnostic in `Alert.message` that is never shown; the UI renders
+/// this instead so the text follows the device language. (Glance surfaces use the equivalent helper in
+/// SnapshotKit, which can't reach DesignSystemKit.)
+public func localizedAlertMessage(metric: MetricKind, value: MeasuredValue) -> String {
+    let valueText = "\(value)"
+    return DSKLocalization.string("\(metric.localizedName) \(valueText) is outside the acceptable range")
+}
+
 public extension DeviceStatus {
     var tint: Color {
         switch self {

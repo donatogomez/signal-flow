@@ -1,0 +1,27 @@
+{
+  "sourceLanguage" : "en",
+  "version" : "1.0",
+  "strings" : {
+    "%@ %@ is outside the acceptable range" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ %2$@ está fuera del rango aceptable" } } }
+    },
+    "Battery level" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Nivel de batería" } } }
+    },
+    "Carbon dioxide" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Dióxido de carbono" } } }
+    },
+    "Humidity" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Humedad" } } }
+    },
+    "Signal strength" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Intensidad de señal" } } }
+    },
+    "Temperature" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Temperatura" } } }
+    },
+    "Unknown device" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Dispositivo desconocido" } } }
+    }
+  }
+}

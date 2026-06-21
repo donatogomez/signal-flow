@@ -92,9 +92,13 @@ struct LocalizationTests {
         #expect(spanish("Concern") == "Atención")
     }
 
-    @Test("Every catalog key has a complete Spanish translation")
+    @Test("Every translatable catalog key has a complete Spanish translation")
     func noMissingSpanish() {
         for (key, entry) in Self.catalog.strings {
+            // Skip pure format/symbol placeholders auto-extracted by Xcode (e.g. "%lld%%", "%lld %@", "—"):
+            // strip format specifiers first, then a key with no remaining letters is locale-neutral.
+            let withoutFormat = key.replacing(/%(?:\d+\$)?\d*[@a-zA-Z]+|%%/, with: "")
+            guard withoutFormat.contains(where: \.isLetter) else { continue }
             let value = entry.localizations?["es"]?.stringUnit.value
             #expect(value != nil && !(value ?? "").isEmpty, "missing es translation for \"\(key)\"")
         }

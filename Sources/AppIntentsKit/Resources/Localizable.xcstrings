@@ -1,21 +1,89 @@
 {
   "sourceLanguage" : "en",
-  "version" : "1.0",
   "strings" : {
     "%lld critical" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "%lld crítico" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld crítico"
+          }
+        }
+      }
     },
     "%lld of %lld devices online" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "%1$lld de %2$lld dispositivos en línea" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld de %2$lld dispositivos en línea"
+          }
+        }
+      }
     },
     "%lld offline" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "%lld sin conexión" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sin conexión"
+          }
+        }
+      }
     },
     "%lld warning" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "%lld en advertencia" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld en advertencia"
+          }
+        }
+      }
+    },
+    "Critical Alerts" : {
+
+    },
+    "Fleet Status" : {
+
+    },
+    "Fleet Summary" : {
+
     },
     "No devices are reporting yet." : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Aún no hay dispositivos reportando." } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no hay dispositivos reportando."
+          }
+        }
+      }
+    },
+    "Open Critical Alerts" : {
+
+    },
+    "Open Dashboard" : {
+
+    },
+    "Open Fleet Status" : {
+
+    },
+    "Opens SignalFlow on the active alerts console." : {
+
+    },
+    "Opens SignalFlow on the fleet dashboard." : {
+
+    },
+    "Opens SignalFlow on the fleet status list." : {
+
+    },
+    "Reads the latest saved fleet status — how many devices are online, in warning, or critical." : {
+
+    },
+    "Show Fleet Summary" : {
+
     }
-  }
+  },
+  "version" : "1.0"
 }

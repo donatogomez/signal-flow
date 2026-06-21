@@ -77,9 +77,9 @@ public struct WidgetAlert: Identifiable, Sendable, Equatable, Hashable {
             .map { alert in
                 WidgetAlert(
                     id: alert.id,
-                    deviceName: names[alert.deviceID] ?? "Unknown device",
+                    deviceName: names[alert.deviceID] ?? String(localized: "Unknown device", bundle: .module),
                     severity: alert.severity,
-                    message: alert.message,
+                    message: AlertText.message(metric: alert.metric, value: alert.observedValue),
                     raisedAt: alert.raisedAt
                 )
             }
