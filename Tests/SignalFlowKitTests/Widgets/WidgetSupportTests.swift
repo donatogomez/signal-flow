@@ -103,8 +103,11 @@ struct WidgetSupportTests {
         let top = WidgetAlert.top(from: snapshot(devices: [truck], alerts: [warn, critOld, critNew, acked]), limit: 3)
 
         #expect(top.count == 3)
-        #expect(top.map(\.message) == ["Temp critical", "Temp high", "Humidity high"])
-        #expect(top.first?.deviceName == "Reefer 12")
+        // Ordering: unacknowledged first, then most severe, then most recent.
+        #expect(top.map(\.severity) == [.critical, .critical, .warning])
+        #expect(top.map(\.raisedAt) == [Date(timeIntervalSince1970: 100), Date(timeIntervalSince1970: 10), Date(timeIntervalSince1970: 50)])
+        // The message is now a localized, derived string (not the raw domain message).
+        #expect(top.allSatisfy { !$0.message.isEmpty })
         #expect(top.allSatisfy { $0.deviceName == "Reefer 12" })
     }
 

@@ -1,0 +1,17 @@
+{
+  "sourceLanguage" : "en",
+  "version" : "1.0",
+  "strings" : {
+    "Shows persisted fleet status and alerts." : {
+      "comment" : "WidgetKit AppIntent (SignalFlowWidgetConfiguration) description. Must live in the extension's main bundle — AppIntents metadata can't resolve it from WidgetSupportKit's module bundle.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muestra el estado persistido de la flota y las alertas."
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,5 +1,6 @@
 import Foundation
 import DomainKit
+import SnapshotKit
 
 /// Where a critical alert is in its lifecycle, as shown on the Live Activity.
 public enum AlertActivityStatus: String, Codable, Hashable, Sendable, CaseIterable {
@@ -50,7 +51,7 @@ public struct CriticalAlertState: Codable, Hashable, Sendable {
             deviceName: context.deviceName,
             assetName: context.assetName,
             severity: context.alert.severity,
-            reason: context.alert.message,
+            reason: AlertText.message(metric: context.alert.metric, value: context.alert.observedValue),
             startedAt: context.alert.raisedAt,
             status: status
         )

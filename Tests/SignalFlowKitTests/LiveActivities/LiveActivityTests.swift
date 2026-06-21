@@ -48,7 +48,8 @@ struct LiveActivityTests {
         #expect(state.deviceName == "Reefer 12")
         #expect(state.assetName == "Fleet A")
         #expect(state.severity == .critical)
-        #expect(state.reason == "Temperature above safe limit")
+        // The reason is a localized, derived string built from the alert's metric + observed value.
+        #expect(state.reason == "Temperature 12.0 °C is outside the acceptable range")
         #expect(state.startedAt == Date(timeIntervalSince1970: 100))
         #expect(state.status == .active)
         #expect(state.with(status: .resolved).status == .resolved)
@@ -99,14 +100,16 @@ struct LiveActivityTests {
 
     @Test("Updates when the tracked alert's content changes")
     func lifecycleUpdate() throws {
+        // The displayed content is derived from the alert's structured fields, so vary an observable
+        // field (the raise time → startedAt) rather than the now-unused raw message.
         let device = DeviceID(), id = AlertID()
-        let original = try alert(.critical, device: device, id: id, raisedAt: 5, message: "Old reason")
-        let changed = try alert(.critical, device: device, id: id, raisedAt: 5, message: "New reason")
+        let original = try alert(.critical, device: device, id: id, raisedAt: 5)
+        let changed = try alert(.critical, device: device, id: id, raisedAt: 6)
 
         guard case .update(let state) = LiveActivityDecision.decide(tracked: tracked(for: original), criticalContexts: [ctx(changed)]) else {
             Issue.record("expected .update"); return
         }
-        #expect(state.reason == "New reason")
+        #expect(state.startedAt == Date(timeIntervalSince1970: 6))
         #expect(state.status == .active)
     }
 

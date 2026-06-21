@@ -1,146 +1,298 @@
 {
-  "sourceLanguage" : "en",
-  "version" : "1.0",
-  "strings" : {
-    "Battery level" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nivel de batería" } }
+  "sourceLanguage": "en",
+  "strings": {
+    "%@ %@ is outside the acceptable range": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ %2$@ está fuera del rango aceptable"
+          }
+        }
       }
     },
-    "Carbon dioxide" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Dióxido de carbono" } }
+    "%lld%%": {},
+    "Battery level": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nivel de batería"
+          }
+        }
       }
     },
-    "Cold-chain container" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Contenedor de cadena de frío" } }
+    "Carbon dioxide": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dióxido de carbono"
+          }
+        }
       }
     },
-    "Concern" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Atención" } }
+    "Cold-chain container": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contenedor de cadena de frío"
+          }
+        }
       }
     },
-    "Connection lost" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Conexión perdida" } }
+    "Concern": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atención"
+          }
+        }
       }
     },
-    "Critical" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Crítico" } }
+    "Connection lost": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conexión perdida"
+          }
+        }
       }
     },
-    "Degraded" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Degradada" } }
+    "Critical": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crítico"
+          }
+        }
       }
     },
-    "Deterministic" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Determinista" } }
+    "Degraded": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Degradada"
+          }
+        }
       }
     },
-    "Door closed" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Puerta cerrada" } }
+    "Deterministic": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Determinista"
+          }
+        }
       }
     },
-    "Door opened" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Puerta abierta" } }
+    "Door closed": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puerta cerrada"
+          }
+        }
       }
     },
-    "Environmental station" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Estación ambiental" } }
+    "Door opened": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puerta abierta"
+          }
+        }
       }
     },
-    "Greenhouse" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Invernadero" } }
+    "Environmental station": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estación ambiental"
+          }
+        }
       }
     },
-    "Humidity" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Humedad" } }
+    "Greenhouse": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invernadero"
+          }
+        }
       }
     },
-    "Industrial equipment" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Equipo industrial" } }
+    "Humidity": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Humedad"
+          }
+        }
       }
     },
-    "Info" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Información" } }
+    "Industrial equipment": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipo industrial"
+          }
+        }
       }
     },
-    "Nominal" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nominal" } }
+    "Info": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información"
+          }
+        }
       }
     },
-    "Offline" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin conexión" } }
+    "Nominal": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nominal"
+          }
+        }
       }
     },
-    "On-device AI" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "IA en el dispositivo" } }
+    "Offline": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin conexión"
+          }
+        }
       }
     },
-    "Online" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "En línea" } }
+    "On-device AI": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "IA en el dispositivo"
+          }
+        }
       }
     },
-    "Power lost" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin alimentación" } }
+    "Online": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En línea"
+          }
+        }
       }
     },
-    "Power restored" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Alimentación restaurada" } }
+    "Power lost": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin alimentación"
+          }
+        }
       }
     },
-    "Refrigerated truck" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Camión refrigerado" } }
+    "Power restored": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alimentación restaurada"
+          }
+        }
       }
     },
-    "Reconnected" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Reconectado" } }
+    "Reconnected": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reconectado"
+          }
+        }
       }
     },
-    "Signal strength" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Intensidad de señal" } }
+    "Refrigerated truck": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camión refrigerado"
+          }
+        }
       }
     },
-    "Temperature" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Temperatura" } }
+    "Signal strength": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intensidad de señal"
+          }
+        }
       }
     },
-    "Warehouse" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Almacén" } }
+    "Temperature": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temperatura"
+          }
+        }
       }
     },
-    "Warning" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Advertencia" } }
+    "Warehouse": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Almacén"
+          }
+        }
       }
     },
-    "Watch" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Vigilar" } }
+    "Warning": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Advertencia"
+          }
+        }
       }
-    }
-  }
+    },
+    "Watch": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vigilar"
+          }
+        }
+      }
+    },
+    "—": {}
+  },
+  "version": "1.0"
 }
