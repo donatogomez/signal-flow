@@ -1,72 +1,229 @@
 {
   "sourceLanguage" : "en",
-  "version" : "1.0",
   "strings" : {
+    "%lld" : {
+
+    },
     "%lld active alerts" : {
       "localizations" : {
-        "en" : { "variations" : { "plural" : {
-          "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld active alert" } },
-          "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld active alerts" } }
-        } } },
-        "es" : { "variations" : { "plural" : {
-          "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld alerta activa" } },
-          "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld alertas activas" } }
-        } } }
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld active alert"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld active alerts"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld alerta activa"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld alertas activas"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "%lld critical" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "%lld crítico" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld crítico"
+          }
+        }
+      }
     },
     "%lld warning" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "%lld advertencia" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld advertencia"
+          }
+        }
+      }
     },
     "%lld/%lld online" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "%lld/%lld en línea" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld/%lld en línea"
+          }
+        }
+      }
     },
     "Alerts" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Alertas" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alertas"
+          }
+        }
+      }
     },
     "All clear" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Todo en orden" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todo en orden"
+          }
+        }
+      }
     },
     "Critical" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Crítico" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crítico"
+          }
+        }
+      }
     },
     "Device" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Dispositivo" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dispositivo"
+          }
+        }
+      }
     },
     "Fleet" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Flota" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flota"
+          }
+        }
+      }
     },
     "Info" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Información" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Información"
+          }
+        }
+      }
     },
     "No active alerts" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "No hay alertas activas" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay alertas activas"
+          }
+        }
+      }
     },
     "No data" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin datos" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin datos"
+          }
+        }
+      }
     },
     "No fleet data" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin datos de la flota" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin datos de la flota"
+          }
+        }
+      }
     },
     "Offline" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin conexión" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin conexión"
+          }
+        }
+      }
     },
     "Online" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "En línea" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En línea"
+          }
+        }
+      }
     },
     "Open SignalFlow on your iPhone to sync fleet status to your watch." : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Abre SignalFlow en tu iPhone para sincronizar el estado de la flota con tu reloj." } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre SignalFlow en tu iPhone para sincronizar el estado de la flota con tu reloj."
+          }
+        }
+      }
     },
     "Reason" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Motivo" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Motivo"
+          }
+        }
+      }
     },
     "Since" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Desde" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desde"
+          }
+        }
+      }
     },
     "Warning" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Advertencia" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Advertencia"
+          }
+        }
+      }
     }
-  }
+  },
+  "version" : "1.0"
 }

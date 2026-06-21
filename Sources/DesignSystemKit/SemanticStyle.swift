@@ -202,7 +202,15 @@ public extension DeviceEvent.Kind {
         case .disconnected: dsk("Connection lost")
         case .powerLost: dsk("Power lost")
         case .powerRestored: dsk("Power restored")
-        case .custom(let key): key.replacingOccurrences(of: "_", with: " ").capitalized
+        case .custom(let key):
+            // Known simulation/device event keys get a localized title; truly unknown keys fall back to
+            // a prettified version of the raw key (e.g. "threshold_exceeded" would otherwise show the
+            // English "Threshold Exceeded" on every locale).
+            switch key {
+            case "threshold_exceeded": dsk("Threshold exceeded")
+            case "battery_low": dsk("Battery low")
+            default: key.replacingOccurrences(of: "_", with: " ").capitalized
+            }
         }
     }
 
@@ -237,7 +245,12 @@ public extension MetricKind {
         case .carbonDioxide: dsk("Carbon dioxide")
         case .batteryLevel: dsk("Battery level")
         case .signalStrength: dsk("Signal strength")
-        case .custom(let key): key.replacingOccurrences(of: "_", with: " ").capitalized
+        case .custom(let key):
+            // Known custom metrics get a localized name; unknown ones fall back to a prettified key.
+            switch key {
+            case "pressure": dsk("Pressure")
+            default: key.replacingOccurrences(of: "_", with: " ").capitalized
+            }
         }
     }
 

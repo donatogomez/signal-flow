@@ -61,6 +61,13 @@ struct LocalizationTests {
         #expect(MetricKind.temperature.localizedName == DSKLocalization.string("Temperature"))
     }
 
+    @Test("Known custom metric `pressure` maps to the catalog key; unknown customs still prettify")
+    func customMetricNames() {
+        #expect(MetricKind.custom("pressure").localizedName == DSKLocalization.string("Pressure"))
+        // Unknown custom metric keys fall back to a safe prettified label.
+        #expect(MetricKind.custom("soil_moisture").localizedName == "Soil Moisture")
+    }
+
     // MARK: - Spanish catalog content
 
     @Test("Source language is English")
@@ -87,9 +94,38 @@ struct LocalizationTests {
     func spanishDomainConcepts() {
         #expect(spanish("Refrigerated truck") == "Camión refrigerado")
         #expect(spanish("Temperature") == "Temperatura")
+        #expect(spanish("Pressure") == "Presión")
         #expect(spanish("On-device AI") == "IA en el dispositivo")
         #expect(spanish("Power lost") == "Sin alimentación")
         #expect(spanish("Concern") == "Atención")
+    }
+
+    // MARK: - Threshold / alert text is never raw English
+
+    @Test("Custom device-event titles map to localized catalog keys, not the raw English key")
+    func customEventTitles() {
+        #expect(DeviceEvent.Kind.custom("threshold_exceeded").title == DSKLocalization.string("Threshold exceeded"))
+        #expect(DeviceEvent.Kind.custom("battery_low").title == DSKLocalization.string("Battery low"))
+        // Unknown keys still fall back to a prettified form.
+        #expect(DeviceEvent.Kind.custom("foo_bar").title == "Foo Bar")
+    }
+
+    @Test("Threshold/battery event titles have Spanish translations (no raw English)")
+    func spanishEventTitles() {
+        #expect(spanish("Threshold exceeded") == "Umbral superado")
+        #expect(spanish("Battery low") == "Batería baja")
+    }
+
+    @Test("The localized alert message uses the catalog template, never the domain English")
+    func alertMessageIsLocalizedNotRaw() throws {
+        let value = try MeasuredValue(magnitude: 12, unit: .celsius)
+        let message = localizedAlertMessage(metric: .temperature, value: value)
+
+        // Never the threshold-event wording, and never the domain's "(threshold)" diagnostic phrasing.
+        #expect(!message.contains("Threshold exceeded"))
+        #expect(!message.contains("acceptable range ("))
+        // The Spanish template is present in the catalog.
+        #expect(spanish("%@ %@ is outside the acceptable range") == "%1$@ %2$@ está fuera del rango aceptable")
     }
 
     @Test("Every translatable catalog key has a complete Spanish translation")

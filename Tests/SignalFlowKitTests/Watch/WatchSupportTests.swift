@@ -95,6 +95,12 @@ struct WatchSupportTests {
         #expect(snapshot.fleet.critical == 1)
         #expect(snapshot.alerts.count == 1)
         #expect(snapshot.alerts.first?.deviceName == "D1")
+
+        // The watch alert row shows the localized, derived message — never the raw domain message.
+        let message = try #require(snapshot.alerts.first?.message)
+        #expect(message != "Too hot")
+        #expect(!message.contains("Threshold exceeded"))
+        #expect(message == AlertText.message(metric: .temperature, value: critical.observedValue))
     }
 
     @Test("Provider reports no-data for an empty store")
