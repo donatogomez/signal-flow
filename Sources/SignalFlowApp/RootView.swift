@@ -99,6 +99,15 @@ public struct RootView: View {
         }
         .task { await container.start() }
         .task { await container.observeCriticalAlertActivity() }
+        .task { await container.observeWatchSync() }
+        #if DEBUG
+        .task {
+            // Temporary diagnostic: force one watch sync shortly after the dashboard loads, so the
+            // sync path runs and logs even before the periodic loop's first tick.
+            try? await Task.sleep(for: .seconds(2))
+            await container.forceSyncToWatch()
+        }
+        #endif
         .task {
             // A route an intent requested before this view appeared (e.g. cold launch from Shortcuts).
             if let route = navigation.pendingRoute {

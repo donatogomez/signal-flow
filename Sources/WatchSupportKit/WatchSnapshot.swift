@@ -1,5 +1,6 @@
 import Foundation
 import SnapshotKit
+import WatchConnectivityKit
 
 /// The read model the watch app renders, derived from the persisted snapshot.
 ///
@@ -52,5 +53,26 @@ public struct PersistedWatchSnapshotProvider: WatchSnapshotProviding {
             return .empty
         }
         return .from(data)
+    }
+}
+
+/// The real watch provider: reads the latest snapshot **synced from the iPhone** over WatchConnectivity
+/// and persisted locally by ``WatchConnectivityKit/WatchSyncSnapshotStore``. This is what makes the watch
+/// show live fleet data — App Groups don't cross the iPhone/Watch boundary (see docs/27), so the synced
+/// snapshot is the watch's source of truth. No data yet ⇒ ``WatchSnapshot/empty`` (the empty state).
+public struct SyncedWatchSnapshotProvider: WatchSnapshotProviding {
+    private let store: WatchSyncSnapshotStore
+
+    public init(store: WatchSyncSnapshotStore = WatchSyncSnapshotStore()) {
+        self.store = store
+    }
+
+    public func load() async -> WatchSnapshot {
+        guard let synced = store.load(), synced.hasData else {
+            SyncLog.log("watch: SyncedProvider.load — no synced data (showing empty state)")
+            return .empty
+        }
+        SyncLog.log("watch: SyncedProvider.load — devices=\(synced.devices.count) criticalAlerts=\(synced.criticalAlerts.count) fleetTotal=\(synced.fleet.total)")
+        return WatchSnapshot(fleet: synced.fleet, alerts: synced.criticalAlerts, hasData: true)
     }
 }

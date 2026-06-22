@@ -49,7 +49,9 @@ let package = Package(
         .library(name: "LiveActivityKit", targets: ["LiveActivityKit"]),
         // The watchOS companion's UI + models. Linked by the `SignalFlow Watch App` target; reads
         // persisted snapshots through SnapshotKit. Cross-platform SwiftUI (builds on the macOS host too).
-        .library(name: "WatchSupportKit", targets: ["WatchSupportKit"])
+        .library(name: "WatchSupportKit", targets: ["WatchSupportKit"]),
+        // The iPhone↔Watch sync layer. Isolates WatchConnectivity behind a Codable snapshot contract.
+        .library(name: "WatchConnectivityKit", targets: ["WatchConnectivityKit"])
     ],
     targets: [
 
@@ -139,8 +141,17 @@ let package = Package(
         // never links the data engine — so no business logic is duplicated on the watch.
         .target(
             name: "WatchSupportKit",
-            dependencies: ["DomainKit", "SnapshotKit"],
+            dependencies: ["DomainKit", "SnapshotKit", "WatchConnectivityKit"],
             resources: [.process("Resources")],
+            swiftSettings: swift6
+        ),
+
+        // The iPhone↔Watch sync layer. The **only** module that imports WatchConnectivity (guarded with
+        // `#if canImport`, so the macOS host build/CI stays green). Defines the Codable wire snapshot, the
+        // iPhone sender, and the watch receiver + local store. Features never import this or WatchConnectivity.
+        .target(
+            name: "WatchConnectivityKit",
+            dependencies: ["DomainKit", "SnapshotKit", "PersistenceKit"],
             swiftSettings: swift6
         ),
 
@@ -174,11 +185,12 @@ let package = Package(
                 "FeatureAlerts",
                 "FeatureInsights",
                 "FeatureSettings",
-                // glance surfaces: shared read model, widgets, App Intents, and Live Activities
+                // glance surfaces: shared read model, widgets, App Intents, Live Activities, watch sync
                 "SnapshotKit",
                 "WidgetSupportKit",
                 "AppIntentsKit",
-                "LiveActivityKit"
+                "LiveActivityKit",
+                "WatchConnectivityKit"
             ],
             resources: [.process("Resources")],
             swiftSettings: swift6
@@ -205,7 +217,7 @@ let package = Package(
                 "PersistenceKit", "NetworkingKit", "IntelligenceKit", "DesignSystemKit",
                 "FeatureDashboard", "FeatureFleet", "FeatureDeviceDetail", "FeatureInsights",
                 "FeatureAlerts", "SnapshotKit", "WidgetSupportKit", "AppIntentsKit", "LiveActivityKit",
-                "WatchSupportKit", "SignalFlowApp",
+                "WatchSupportKit", "WatchConnectivityKit", "SignalFlowApp",
             ],
             swiftSettings: swift6
         )

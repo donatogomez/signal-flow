@@ -81,14 +81,14 @@ here to keep each platform's CI build hermetic.
 
 ## 27.4 Data delivery & limitations
 
-- **App Group containers are per-device.** The iPhone and the watch don't automatically share the
-  `group.com.signalflow.shared` SwiftData store across the device boundary. In a shipping product, the
-  iPhone would push snapshots to the watch via **WatchConnectivity** (or the watch would sync its own
-  store). That sync layer is intentionally **out of scope** here — so on a fresh watch the store is empty
-  and the app shows its empty state, which is exactly the documented behavior (requirement 5). The read
-  path, models, screens, and navigation are all real and tested; only the cross-device transport is
-  stubbed out as future work.
-- **No physical Apple Watch needed.** All logic is unit-tested on the macOS host, and `WatchSupportKit`
+- **App Groups don't cross the device boundary — so WatchConnectivity is required.** An App Group
+  container is shared between an app and its *extensions on the same device*; it does **not** sync between
+  the iPhone and the Apple Watch (separate devices, separate sandboxes). So the watch cannot read the
+  iPhone's `group.com.signalflow.shared` SwiftData store. The iPhone must **send** the data, and the only
+  supported channel for that is **WatchConnectivity** (`WCSession`). This is now implemented (see
+  *WatchConnectivity sync* below) — a fresh watch shows the empty state only until the first snapshot
+  arrives.
+- **No physical Apple Watch needed.** All sync logic is unit-tested on the macOS host, and `WatchSupportKit`
   (the whole watch UI) is compiled by `swift build`. The `xcodebuild` watch build needs the **watchOS
   simulator runtime** installed (it resolves a watch destination); the SDK alone is not enough. On a
   machine without that runtime, `xcodebuild` reports *"watchOS … is not installed"* during destination
@@ -111,12 +111,40 @@ Series 11 (46mm) simulator:
 The only build console note is benign and expected — `appintentsmetadataprocessor … No AppIntents.framework
 dependency found` — because the watch app intentionally doesn't link App Intents.
 
-**Observed runtime behavior:** the app launches straight into its **empty state** —
-*"Open SignalFlow on your iPhone to sync fleet status to your watch."* This is the **expected** behavior
-today: App Group containers are per-device, and the WatchConnectivity sync that would push the iPhone's
-persisted snapshot to the watch is **intentionally not implemented yet** (see the App Group note at the
-top of this section). The read path, models, screens, navigation, and empty state are all real and
-exercised; only the cross-device transport is pending — a future iteration.
+**Observed runtime behavior:** on a fresh watch the app launches into its **empty state** —
+*"Open SignalFlow on your iPhone to sync fleet status to your watch."* — and, once the paired iPhone
+sends a snapshot over WatchConnectivity, it refreshes to show live fleet status and critical alerts.
+(Exercising the full device-to-device hop requires a paired iPhone + Watch simulator pair or hardware;
+the snapshot build/encode/persist/decode logic is all unit-tested without a watch.)
+
+### WatchConnectivity sync
+
+Because App Groups don't cross the device boundary (above), the iPhone **pushes** a compact snapshot to
+the watch. This lives entirely in a dedicated **`WatchConnectivityKit`** module — the *only* module that
+imports `WatchConnectivity` (CI-enforced, Rule 15); features and even `WatchSupportKit` never import the
+framework directly.
+
+```
+iPhone (SignalFlowApp / AppContainer)                Watch (SignalFlow Watch App)
+  reads DomainKit ports → PersistedSnapshot            WatchSnapshotReceiver (WCSession delegate)
+  WatchSnapshotBuilder.build → WatchSyncSnapshot         └─ decode → WatchSyncSnapshotStore (local JSON, latest-wins)
+  PhoneSnapshotSync.send                                    └─ onUpdate → WatchStore.refresh()
+   └─ WCSession.updateApplicationContext([data])  ──▶    SyncedWatchSnapshotProvider reads the store → UI
+```
+
+- **What's synced** (`WatchSyncSnapshot`, `Codable` — never `JSONSerialization`): the **fleet summary**,
+  per-**device snapshots** (name, asset, status), the **active critical alerts**, and a **`lastUpdated`**
+  timestamp.
+- **Transport:** `updateApplicationContext` — it keeps only the *latest* state and delivers it even when
+  the watch is asleep, so a simple periodic push (on app start + every few seconds while on screen, from
+  `AppContainer.observeWatchSync`) is the simplest reliable strategy. The receiver keeps the newest
+  snapshot by `lastUpdated` and ignores stale/out-of-order deliveries.
+- **Watch persistence:** the received snapshot is written to a small local JSON file
+  (`WatchSyncSnapshotStore`) so it survives relaunches; the watch UI always renders from that store. The
+  watch still **never** starts `DataKit`/`SimulationKit`/`NetworkingKit`/`IntelligenceKit`.
+- **Out of scope:** background/complication push, `transferUserInfo` queues, reachability-based live
+  messaging, two-way commands (e.g. acknowledging an alert from the watch), and per-watch locale of the
+  alert text (the iPhone builds the localized message in its own locale and sends it).
 
 ### Build command (documented for CI)
 
