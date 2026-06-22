@@ -26,7 +26,7 @@ fi
 # glance/integration surfaces (widgets, App Intents, Live Activities) — features stay independent.
 for feature in Sources/Feature*; do
     [ -d "$feature" ] || continue
-    if grep -REn '^\s*import\s+(DataKit|PersistenceKit|NetworkingKit|SimulationKit|IntelligenceKit|FoundationModels|SwiftData|SnapshotKit|WidgetSupportKit|AppIntentsKit|LiveActivityKit|ActivityKit)\b' "$feature" 2>/dev/null; then
+    if grep -REn '^\s*import\s+(DataKit|PersistenceKit|NetworkingKit|SimulationKit|IntelligenceKit|FoundationModels|SwiftData|SnapshotKit|WidgetSupportKit|AppIntentsKit|LiveActivityKit|ActivityKit|WatchConnectivity|WatchConnectivityKit)\b' "$feature" 2>/dev/null; then
         report "$(basename "$feature") must not import a concrete data/intelligence module or a glance surface"
     fi
 done
@@ -102,10 +102,26 @@ if grep -REn '^\s*import\s+(DataKit|SimulationKit|NetworkingKit|IntelligenceKit|
 fi
 
 # Rule 13 — WatchSupportKit (the watchOS companion's UI/models) reads persisted snapshots via SnapshotKit
-# and must stay thin: no business logic, no data engine, no AI, no sibling glance surfaces, no features.
-if grep -REn '^\s*import\s+(DataKit|SimulationKit|NetworkingKit|IntelligenceKit|FoundationModels|WidgetKit|ActivityKit|WidgetSupportKit|AppIntentsKit|LiveActivityKit|Feature[A-Za-z]+|SignalFlowApp)\b' \
+# and the synced snapshot via WatchConnectivityKit. It must stay thin: no business logic, no data engine,
+# no AI, no sibling glance surfaces, no features — and it must NOT import WatchConnectivity directly
+# (that stays isolated inside WatchConnectivityKit; `WatchConnectivity\b` won't match `WatchConnectivityKit`).
+if grep -REn '^\s*import\s+(DataKit|SimulationKit|NetworkingKit|IntelligenceKit|FoundationModels|WidgetKit|ActivityKit|WatchConnectivity|WidgetSupportKit|AppIntentsKit|LiveActivityKit|Feature[A-Za-z]+|SignalFlowApp)\b' \
         Sources/WatchSupportKit 2>/dev/null; then
-    report "WatchSupportKit must depend only on DomainKit + SnapshotKit (read persisted state; no data engine, AI, or features)"
+    report "WatchSupportKit must depend only on DomainKit + SnapshotKit + WatchConnectivityKit (no data engine, AI, raw WatchConnectivity, or features)"
+fi
+
+# Rule 14 — WatchConnectivityKit is the ONLY module allowed to import WatchConnectivity. It reads
+# DomainKit + SnapshotKit + PersistenceKit to build/persist the wire snapshot, but never the live data
+# engine, AI, UI, or features.
+if grep -REn '^\s*import\s+(DataKit|SimulationKit|NetworkingKit|IntelligenceKit|FoundationModels|SwiftUI|DesignSystemKit|WidgetKit|ActivityKit|Feature[A-Za-z]+|SignalFlowApp)\b' \
+        Sources/WatchConnectivityKit 2>/dev/null; then
+    report "WatchConnectivityKit may depend only on DomainKit + SnapshotKit + PersistenceKit (+ WatchConnectivity); no data engine, AI, UI, or features"
+fi
+
+# Rule 15 — WatchConnectivity is owned exclusively by WatchConnectivityKit. No other module may import it.
+wc_violators=$(grep -REln '^\s*import\s+WatchConnectivity\b' Sources 2>/dev/null | grep -v '^Sources/WatchConnectivityKit/' || true)
+if [ -n "$wc_violators" ]; then
+    report "WatchConnectivity may only be imported by WatchConnectivityKit (found: $wc_violators)"
 fi
 
 if [ "$fail" -eq 0 ]; then

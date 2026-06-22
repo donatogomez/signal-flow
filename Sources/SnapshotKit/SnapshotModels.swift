@@ -5,7 +5,7 @@ import PersistenceKit
 /// Aggregated fleet health for glance surfaces (widgets, App Intents) — a pure value type derived
 /// deterministically from a ``PersistedSnapshot``. Counts are bucketed by ``DeviceStatus`` so they match
 /// exactly what the app shows, because both go through the same ``DeviceHealthPolicy``.
-public struct FleetSummary: Sendable, Equatable {
+public struct FleetSummary: Sendable, Equatable, Codable {
     public let online: Int      // DeviceStatus.nominal — connected and healthy
     public let warning: Int     // DeviceStatus.warning
     public let critical: Int    // DeviceStatus.critical
@@ -49,7 +49,7 @@ public struct FleetSummary: Sendable, Equatable {
 
 /// One alert as a glance surface needs it: just the device name, severity, and message — pre-joined so
 /// widgets and intents render without touching repositories.
-public struct WidgetAlert: Identifiable, Sendable, Equatable, Hashable {
+public struct WidgetAlert: Identifiable, Sendable, Equatable, Hashable, Codable {
     public let id: AlertID
     public let deviceName: String
     public let severity: AlertSeverity

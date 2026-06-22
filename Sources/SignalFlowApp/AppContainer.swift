@@ -5,6 +5,7 @@ import DataKit
 import IntelligenceKit
 import PersistenceKit
 import LiveActivityKit
+import WatchConnectivityKit
 
 /// The dependency composition root.
 ///
@@ -24,6 +25,10 @@ public final class AppContainer {
     /// Drives the critical-alert Live Activity. ActivityKit work happens inside the service (guarded for
     /// iOS); on other platforms it's a no-op, so the composition root calls it unconditionally.
     private let liveActivities = CriticalAlertActivityService()
+
+    /// Sends compact fleet snapshots to the paired Apple Watch over WatchConnectivity (iOS-only inside the
+    /// service; a no-op stub elsewhere). Composition root is the only place that knows about it.
+    private let watchSync = PhoneSnapshotSync()
 
     // Domain ports — the entire surface features depend on.
     public var assets: any AssetRepository { source.assets }
@@ -105,5 +110,56 @@ public final class AppContainer {
             }
         }
         return contexts
+    }
+
+    // MARK: - Watch sync
+
+    /// Sends a compact fleet snapshot to the paired Watch on app start and whenever fleet/alert state
+    /// changes, on a steady cadence. WatchConnectivity coalesces to the latest application context, so a
+    /// simple periodic push is the most reliable strategy. Cancellation-safe; tied to a view's `.task`.
+    public func observeWatchSync(pollInterval: Duration = .seconds(5)) async {
+        SyncLog.log("phone: observeWatchSync started (interval=\(pollInterval))")
+        watchSync.start()
+        while !Task.isCancelled {
+            if let snapshot = await currentWatchSnapshot() {
+                watchSync.send(snapshot)
+            }
+            do { try await Task.sleep(for: pollInterval) } catch { break }
+        }
+    }
+
+    /// DEBUG manual trigger: build and push a snapshot immediately, independent of the poll cadence.
+    /// Wired to a temporary debug `.task` in `RootView` so the sync path can be verified right after the
+    /// dashboard loads.
+    public func forceSyncToWatch() async {
+        SyncLog.log("phone: forceSyncToWatch() invoked")
+        watchSync.start()
+        guard let snapshot = await currentWatchSnapshot() else {
+            SyncLog.log("phone: forceSyncToWatch — no snapshot available yet")
+            return
+        }
+        watchSync.send(snapshot)
+    }
+
+    /// Assembles the watch snapshot from the same domain ports the app renders — never the data engine
+    /// internals. Returns `nil` until the catalog is available.
+    private func currentWatchSnapshot() async -> WatchSyncSnapshot? {
+        guard let allAssets = try? await assets.allAssets() else { return nil }
+        var deviceList: [Device] = []
+        var alertList: [Alert] = []
+        for asset in allAssets {
+            guard let assetDevices = try? await devices.devices(inAsset: asset.id) else { continue }
+            deviceList += assetDevices
+            for device in assetDevices {
+                alertList += (try? await alerts.activeAlerts(forDevice: device.id)) ?? []
+            }
+        }
+        let persisted = PersistedSnapshot(
+            assets: allAssets, devices: deviceList, latestReadings: [],
+            events: [], alerts: alertList, insights: []
+        )
+        let watchSnapshot = WatchSnapshotBuilder.build(from: persisted, now: Date())
+        SyncLog.log("phone: built snapshot — devices=\(watchSnapshot.devices.count) criticalAlerts=\(watchSnapshot.criticalAlerts.count) fleetTotal=\(watchSnapshot.fleet.total)")
+        return watchSnapshot
     }
 }
