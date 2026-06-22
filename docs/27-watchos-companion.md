@@ -1,13 +1,13 @@
 # 27. watchOS Companion
 
-A minimal, glanceable Apple Watch companion: **Fleet Summary → Critical Alerts → Device Snapshot**,
-reading the same persisted fleet state the iPhone app maintains. It completes the Apple-ecosystem story
+A glanceable Apple Watch companion: **Fleet Summary → Active Alerts / Devices → Device Snapshot**,
+rendering the fleet state the iPhone syncs over WatchConnectivity. It completes the Apple-ecosystem story
 — the same domain truth now renders on iPhone, Home Screen widgets, Siri/Shortcuts, the Dynamic Island,
-and the wrist.
+and the wrist — and its UI is **fully localized** (English + Spanish), matching the rest of the app.
 
 ```
-swift build ✅   swift test → 182 tests, 38 suites ✅   ./Scripts/check-boundaries.sh ✅
-xcodebuild -scheme SignalFlow -sdk iphonesimulator … → ** BUILD SUCCEEDED ** ✅  (no regression)
+swift build ✅   swift test → 212 tests, 40 suites ✅   ./Scripts/check-boundaries.sh ✅
+xcodebuild -scheme SignalFlow -destination 'platform=iOS Simulator,id=<paired iPhone>' … → ** BUILD SUCCEEDED ** ✅  (embeds + builds the watch app)
 xcodebuild -scheme "SignalFlow Watch App" -destination 'id=<watchOS 26.5 sim>' … → ** BUILD SUCCEEDED ** ✅
   installed on watch simulator ✅   launched ✅   no crash on launch ✅
 ```
@@ -26,11 +26,12 @@ the iOS host and the widget extension. No business logic is duplicated on the wa
 SignalFlow Watch App   (Xcode watchOS target — @main shell: SignalFlowWatchApp → WatchRootView)
         │ links
         ▼
-WatchSupportKit  (SwiftPM, depends on DomainKit + SnapshotKit)
-   ├─ WatchRootView / FleetSummary / CriticalAlerts / DeviceSnapshot   watch-native SwiftUI screens
+WatchSupportKit  (SwiftPM, depends on DomainKit + SnapshotKit + WatchConnectivityKit)
+   ├─ WatchRootView / FleetSummary / CriticalAlerts / Devices / DeviceSnapshot   watch-native SwiftUI screens
    ├─ WatchStore                                                       @Observable, loads a snapshot
-   ├─ FleetSummaryViewModel / AlertListViewModel                       pure projections (tested)
-   └─ WatchSnapshot + PersistedWatchSnapshotProvider                   reads via SnapshotKit
+   ├─ FleetSummaryViewModel / AlertListViewModel / AlertRowViewModel   pure projections (tested)
+   │  DeviceListViewModel / DeviceSnapshotViewModel
+   └─ WatchSnapshot + Synced/PersistedWatchSnapshotProvider            reads synced snapshot / SnapshotKit
         │ depends on
         ▼
    DomainKit   SnapshotKit ──→ PersistenceKit ──→ SwiftData
@@ -45,12 +46,18 @@ else.
 
 ### Project integration
 
-The `SignalFlow Watch App` target is **standalone** in the Xcode project: it has its own scheme and is
-**not** embedded in (nor a dependency of) the iOS app target. That's a deliberate CI choice — building
-`-scheme SignalFlow -sdk iphonesimulator` stays byte-for-byte unchanged and never triggers a watch
-build, so existing CI can't regress. The watch builds via its own command (below). Making it an embedded
-companion later is a one-line project change (add an "Embed Watch Content" phase); it's kept separate
-here to keep each platform's CI build hermetic.
+The `SignalFlow Watch App` target is **embedded** in the iOS app: the app target has an _Embed Watch
+Content_ copy-files phase (`$(CONTENTS_FOLDER_PATH)/Watch`) plus a target dependency on the watch app.
+Installing the iPhone app therefore installs its companion watch app, which is what makes
+`WCSession.isWatchAppInstalled` report `true` — without the embed, the phone has no companion to sync to
+(`WCErrorCodeWatchAppNotInstalled`). The watch's bundle id (`com.signalflow.SignalFlow.watchkitapp`) is
+prefixed by the iOS app's, and its `Info.plist` carries `WKApplication` + `WKCompanionAppBundleIdentifier`.
+
+**Build consequence:** the iOS build graph now also builds the watch app for `watchsimulator`, so the iOS
+build must target a **concrete iPhone simulator that has a paired watch** (`xcrun simctl list pairs`). The
+`generic/platform=iOS Simulator` destination can't resolve a paired watch and mis-targets the watch's
+Swift-package products to `iphonesimulator` (`Build input file cannot be found: …WatchSupportKit.o`); a
+concrete paired destination builds cleanly. The watch app still also builds on its own scheme (below).
 
 ## 27.2 Why the watch reads persisted snapshots (and never runs DataKit/SimulationKit)
 
@@ -68,16 +75,44 @@ here to keep each platform's CI build hermetic.
 ## 27.3 UI decisions for watchOS
 
 - **Glanceable, severity-first.** The Fleet Summary leads with a single large headline
-  (`"1 critical"` / `"2 warning"` / `"All clear"`) coloured by the worst state, then compact stat rows.
-- **Navigation is a `NavigationStack`.** Fleet Summary → (NavigationLink) Critical Alerts →
-  (`navigationDestination(for: WidgetAlert.self)`) Device Snapshot. Severity drives ordering: alerts are
-  sorted most-severe-then-most-recent.
+  (`"1 critical"` / `"2 warnings"` / `"All clear"`) coloured by the worst state, then compact stat rows
+  (online / warning / critical / offline) and an *"Updated <relative>"* freshness line.
+- **Three screens, one `NavigationStack`.** Fleet Summary → **Active Alerts** *and* **Devices** (both
+  reachable from the summary) → **Device Snapshot**. Navigation is value-based
+  (`navigationDestination(for: WidgetAlert.self)` / `WatchDeviceSnapshot.self`); tapping an alert resolves
+  its device (joined by name) so the snapshot shows full device detail, falling back to an alert-only view
+  when the device isn't in the synced set.
+- **Device Snapshot shows the operational detail a glance needs:** status, battery (with a charging
+  bolt), connectivity, *last seen*, and a few **telemetry highlights** (newest reading per metric,
+  environmental-signals first, capped at three) — all *if present*, so a sparse device degrades cleanly.
+- **Severity is visual everywhere.** Status/severity drive both an SF Symbol and a tint (green / orange /
+  red / grey); alerts sort most-severe-then-most-recent, devices sort worst-status-first then by name.
 - **Native components only.** `List`, `Label`, `ContentUnavailableView`, `LabeledContent`,
   monospaced-digit counts. No custom chrome, no iOS-only modifiers — the views compile on watchOS *and*
   the macOS host (so they're built by `swift build` and the logic is unit-tested in CI).
-- **Clear empty state.** When the persisted store has no devices yet, the watch shows a
-  `ContentUnavailableView` — *"Open SignalFlow on your iPhone to sync fleet status to your watch."* — so
-  the absence of data is explained rather than looking broken.
+- **Clear empty states.** No synced fleet yet → *"Open SignalFlow on your iPhone to sync fleet status to
+  your watch."*; no active alerts → a reassuring seal; no devices → a neutral placeholder.
+
+### Localization (English + Spanish)
+
+The watch UI is fully localized through `WatchSupportKit`'s string catalog
+(`Sources/WatchSupportKit/Resources/Localizable.xcstrings`) — the fleet headline (pluralized:
+`"2 warnings"` → `"2 advertencias"`), the `"x/y online"` summary (`"8/10 en línea"`), the
+online/offline/warning/critical/degraded labels (`"En línea"` / `"Sin conexión"` / `"Advertencia"` /
+`"Crítico"`), the device-snapshot field labels (battery, connectivity, last seen, telemetry), and every
+empty state. Telemetry metric names reuse `SnapshotKit.AlertText.metricName` (the same catalog the widgets
+and Live Activity use), so the watch never re-translates domain semantics. **`DomainKit` stays
+language-neutral** — its `displayName`s remain English diagnostics; localization lives entirely in the
+presentation layer (`WatchSupportKit` / `SnapshotKit`).
+
+**Root cause of the earlier English-only watch UI.** The Spanish translations shipped (the
+`SignalFlowKit_WatchSupportKit.bundle` carried `es.lproj`), but the **watch app bundle advertised only its
+development region**, so watchOS launched it in English and `String(localized:bundle:.module)` resolved
+`en.lproj` even on a Spanish device. The fix is `CFBundleLocalizations = [en, es]` in the watch
+`Info.plist` (mirroring how the widget extension declares Spanish): the app now advertises Spanish, runs in
+Spanish on a Spanish device, and the package bundles' `es.lproj` resolves. *(SwiftPM copies `.xcstrings`
+in uncompiled, so on the macOS test host `String(localized:)` only ever yields the English source; the
+Spanish/plural translations are therefore verified by reading the catalog directly — see §27.6.)*
 
 ## 27.4 Data delivery & limitations
 
@@ -93,8 +128,9 @@ here to keep each platform's CI build hermetic.
   simulator runtime** installed (it resolves a watch destination); the SDK alone is not enough. On a
   machine without that runtime, `xcodebuild` reports *"watchOS … is not installed"* during destination
   resolution — that's an environment/component gap, not a project error.
-- **Standalone, not embedded** (see §27.1) — installing on a real paired watch would require the
-  embed-watch-content step; the target builds, installs, and runs in the watchOS Simulator as-is.
+- **Embedded companion** (see §27.1) — the watch app is embedded in the iOS app, so installing the iPhone
+  app installs it on a paired watch and `WCSession.isWatchAppInstalled` reports `true`. The target also
+  builds, installs, and runs in the watchOS Simulator standalone.
 
 ### Verified on the watchOS 26.5 Simulator
 
@@ -133,8 +169,10 @@ iPhone (SignalFlowApp / AppContainer)                Watch (SignalFlow Watch App
 ```
 
 - **What's synced** (`WatchSyncSnapshot`, `Codable` — never `JSONSerialization`): the **fleet summary**,
-  per-**device snapshots** (name, asset, status), the **active critical alerts**, and a **`lastUpdated`**
-  timestamp.
+  per-**device snapshots** (name, asset, status, **battery, connectivity, last-seen, and the newest
+  telemetry highlights**), the **active critical alerts**, and a **`lastUpdated`** timestamp. The
+  enriched per-device fields are what the Device Snapshot screen renders; they're built on the iPhone by
+  `WatchSnapshotBuilder` from the same persisted `Device` + readings the app shows.
 - **Transport:** `updateApplicationContext` — it keeps only the *latest* state and delivers it even when
   the watch is asleep, so a simple periodic push (on app start + every few seconds while on screen, from
   `AppContainer.observeWatchSync`) is the simplest reliable strategy. The receiver keeps the newest
@@ -142,15 +180,19 @@ iPhone (SignalFlowApp / AppContainer)                Watch (SignalFlow Watch App
 - **Watch persistence:** the received snapshot is written to a small local JSON file
   (`WatchSyncSnapshotStore`) so it survives relaunches; the watch UI always renders from that store. The
   watch still **never** starts `DataKit`/`SimulationKit`/`NetworkingKit`/`IntelligenceKit`.
-- **Out of scope:** background/complication push, `transferUserInfo` queues, reachability-based live
-  messaging, two-way commands (e.g. acknowledging an alert from the watch), and per-watch locale of the
-  alert text (the iPhone builds the localized message in its own locale and sends it).
+- **Out of scope:** **acknowledging (or otherwise acting on) alerts from the watch** — the companion is
+  read-only by design; mutating fleet state from the wrist would need a two-way `WCSession` command path
+  back to the iPhone's use cases, which isn't built. Also out of scope: background/complication push,
+  `transferUserInfo` queues, reachability-based live messaging, and per-watch locale of the **alert
+  message** text (the iPhone builds that localized string in its own locale and sends it; the watch's own
+  chrome — labels, headline, statuses — *is* localized on-device, see §27.3).
 
 ### Build command (documented for CI)
 
 Run on a machine with the watchOS simulator runtime installed (e.g. GitHub's `macos` runners, or locally
 via *Xcode → Settings → Components*). Target a **concrete simulator by `id`** — the generic destination
-needs the runtime to enumerate devices, and several same-named watches make `name=` ambiguous:
+needs the runtime to enumerate devices, and several same-named watches make `name=` ambiguous. (The iOS
+app build also embeds the watch app; target a paired iPhone simulator there — see §27.1.)
 
 ```bash
 # list the available watch simulators and pick an id
@@ -191,5 +233,21 @@ boundary enforced in CI, and zero changes to the domain or data layers.
 | `providerReadsPersistedSnapshot` | snapshot provider behavior over a **real in-memory SwiftData** store |
 | `providerEmptyStore` | provider reports no-data for an empty store |
 | `storeRefresh` | the `WatchStore` loads through its provider |
+| `watchLabelMapping` | status / severity / connectivity map to the right catalog labels (key selection) |
+| `onlineCountSummary` | the `"x/y online"` summary uses the localizable online key |
+| `spanishCatalogLabels` | **Spanish labels** present & correct in the shipped catalog (online/offline/warning/critical/degraded, device-snapshot fields, empty states) |
+| `spanishCatalogHeadlinePlurals` | **headline localization** — `%lld warning` / `%lld critical` pluralized in Spanish (and English) |
+| `spanishCatalogOnlineCount` | **online count localization** — `%lld/%lld online` → `%lld/%lld en línea` |
+| `alertRowModel` | **alert row** — device name, passthrough message, severity label |
+| `deviceSnapshotModel` | **device snapshot model** — status, battery (rounded %), connectivity, last-seen, telemetry highlights |
+| `deviceSnapshotModelMinimal` | device snapshot copes with absent battery / telemetry |
+| `deviceListOrdering` | **severity ordering** — devices sort worst-status-first, then by name |
+| `deviceListEmpty` | empty state — no synced devices |
 
-All run on the macOS host — no Apple Watch required.
+`Tests/SignalFlowKitTests/WatchConnectivity/WatchConnectivitySyncTests.swift` additionally covers
+`buildsEnrichedDeviceSnapshots` — the iPhone builder populating battery / connectivity / newest-per-metric
+telemetry and round-tripping them through the `Codable` wire format.
+
+Spanish strings are asserted by reading `Localizable.xcstrings` directly (SwiftPM ships it uncompiled, so
+`String(localized:)` on the macOS host only yields the English source — see §27.3). All run on the macOS
+host — no Apple Watch required.

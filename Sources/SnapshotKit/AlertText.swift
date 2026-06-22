@@ -9,13 +9,16 @@ import DomainKit
 /// metric + observed value, so the text follows the device language. SnapshotKit owns this for the
 /// glance surfaces because they can't reach DesignSystemKit; the app features use the equivalent helper
 /// in DesignSystemKit. (The small overlap in the two catalogs is the price of the boundary.)
+///
 public enum AlertText {
     public static func message(metric: MetricKind, value: MeasuredValue) -> String {
         let valueText = "\(value)"
         return String(localized: "\(metricName(metric)) \(valueText) is outside the acceptable range", bundle: .module)
     }
 
-    static func metricName(_ metric: MetricKind) -> String {
+    /// The localized, human-readable name of a metric. `public` so other glance surfaces (the watch's
+    /// device snapshot) can label telemetry highlights through the same catalog.
+    public static func metricName(_ metric: MetricKind) -> String {
         switch metric {
         case .temperature: String(localized: "Temperature", bundle: .module)
         case .humidity: String(localized: "Humidity", bundle: .module)

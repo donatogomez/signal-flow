@@ -10,22 +10,30 @@ import WatchConnectivityKit
 public struct WatchSnapshot: Sendable, Equatable {
     public let fleet: FleetSummary
     public let alerts: [WidgetAlert]
+    /// Per-device snapshots, present when the data came over WatchConnectivity (the App-Group reader can't
+    /// supply them). Drives the Devices list and Device Snapshot screen; empty otherwise.
+    public let devices: [WatchDeviceSnapshot]
     public let hasData: Bool
 
-    public init(fleet: FleetSummary, alerts: [WidgetAlert], hasData: Bool) {
+    public init(fleet: FleetSummary, alerts: [WidgetAlert], devices: [WatchDeviceSnapshot] = [], hasData: Bool) {
         self.fleet = fleet
         self.alerts = alerts
+        self.devices = devices
         self.hasData = hasData
     }
 
     /// No fleet has been persisted yet — the iPhone app needs to run first.
-    public static let empty = WatchSnapshot(fleet: .empty, alerts: [], hasData: false)
+    public static let empty = WatchSnapshot(fleet: .empty, alerts: [], devices: [], hasData: false)
 
     /// Builds a watch snapshot from a `SnapshotKit` read model. A fleet with no devices is treated as
-    /// "no data yet" so the UI can show its empty state.
+    /// "no data yet" so the UI can show its empty state. The App-Group read model carries no per-device
+    /// snapshots, so `devices` is empty on this path (the live watch path uses the synced provider below).
     public static func from(_ data: WidgetData) -> WatchSnapshot {
-        WatchSnapshot(fleet: data.fleet, alerts: data.alerts, hasData: data.fleet.total > 0)
+        WatchSnapshot(fleet: data.fleet, alerts: data.alerts, devices: [], hasData: data.fleet.total > 0)
     }
+
+    /// The freshest data time, if known — drives the "Updated" label on the Fleet Summary.
+    public var lastUpdated: Date? { fleet.lastUpdated }
 }
 
 /// Reads a ``WatchSnapshot`` from persisted state. Injectable so tests can drive it from an in-memory store.
@@ -73,6 +81,6 @@ public struct SyncedWatchSnapshotProvider: WatchSnapshotProviding {
             return .empty
         }
         SyncLog.log("watch: SyncedProvider.load — devices=\(synced.devices.count) criticalAlerts=\(synced.criticalAlerts.count) fleetTotal=\(synced.fleet.total)")
-        return WatchSnapshot(fleet: synced.fleet, alerts: synced.criticalAlerts, hasData: true)
+        return WatchSnapshot(fleet: synced.fleet, alerts: synced.criticalAlerts, devices: synced.devices, hasData: true)
     }
 }
