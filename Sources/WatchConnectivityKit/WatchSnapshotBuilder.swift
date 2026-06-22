@@ -10,6 +10,7 @@ public enum WatchSnapshotBuilder {
     public static func build(from snapshot: PersistedSnapshot, now: Date = Date(), alertLimit: Int = 8) -> WatchSyncSnapshot {
         let alertsByDevice = Dictionary(grouping: snapshot.alerts, by: \.deviceID)
         let assetNames = Dictionary(snapshot.assets.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
+        let readingsByDevice = Dictionary(grouping: snapshot.latestReadings, by: \.deviceID)
 
         let devices = snapshot.devices.map { device in
             WatchDeviceSnapshot(
@@ -19,7 +20,10 @@ public enum WatchSnapshotBuilder {
                 status: DeviceHealthPolicy.status(
                     connectivity: device.connectivity,
                     activeAlerts: alertsByDevice[device.id] ?? []
-                )
+                ),
+                battery: device.battery,
+                connectivity: device.connectivity,
+                telemetry: highlights(from: readingsByDevice[device.id] ?? [])
             )
         }
 
@@ -32,5 +36,28 @@ public enum WatchSnapshotBuilder {
             criticalAlerts: criticalAlerts,
             lastUpdated: now
         )
+    }
+
+    /// The few telemetry highlights worth a glance: the newest reading per metric, ordered by a stable
+    /// metric priority (the environmental signals first), capped so the watch screen stays uncluttered.
+    static func highlights(from readings: [TelemetryReading], limit: Int = 3) -> [WatchTelemetryHighlight] {
+        let newestPerMetric = Dictionary(readings.map { ($0.metric, $0) }, uniquingKeysWith: { a, b in
+            a.recordedAt >= b.recordedAt ? a : b
+        })
+        return newestPerMetric.values
+            .sorted { priority($0.metric) < priority($1.metric) }
+            .prefix(limit)
+            .map { WatchTelemetryHighlight(metric: $0.metric, value: $0.value) }
+    }
+
+    private static func priority(_ metric: MetricKind) -> Int {
+        switch metric {
+        case .temperature: 0
+        case .humidity: 1
+        case .carbonDioxide: 2
+        case .signalStrength: 3
+        case .batteryLevel: 4
+        case .custom: 5
+        }
     }
 }

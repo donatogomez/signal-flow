@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
     "%lld" : {
 
     },
@@ -46,20 +56,80 @@
     },
     "%lld critical" : {
       "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld critical"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld critical"
+                }
+              }
+            }
+          }
+        },
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld crítico"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld crítico"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld críticos"
+                }
+              }
+            }
           }
         }
       }
     },
     "%lld warning" : {
       "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld warning"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld warnings"
+                }
+              }
+            }
+          }
+        },
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld advertencia"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld advertencia"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld advertencias"
+                }
+              }
+            }
           }
         }
       }
@@ -94,6 +164,26 @@
         }
       }
     },
+    "Battery" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Batería"
+          }
+        }
+      }
+    },
+    "Connectivity" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectividad"
+          }
+        }
+      }
+    },
     "Critical" : {
       "localizations" : {
         "es" : {
@@ -104,12 +194,32 @@
         }
       }
     },
+    "Degraded" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Degradada"
+          }
+        }
+      }
+    },
     "Device" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dispositivo"
+          }
+        }
+      }
+    },
+    "Devices" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dispositivos"
           }
         }
       }
@@ -134,6 +244,16 @@
         }
       }
     },
+    "Last seen" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visto por última vez"
+          }
+        }
+      }
+    },
     "No active alerts" : {
       "localizations" : {
         "es" : {
@@ -150,6 +270,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sin datos"
+          }
+        }
+      }
+    },
+    "No devices" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin dispositivos"
           }
         }
       }
@@ -210,6 +340,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Desde"
+          }
+        }
+      }
+    },
+    "Telemetry" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telemetría"
+          }
+        }
+      }
+    },
+    "Updated" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actualizado"
           }
         }
       }

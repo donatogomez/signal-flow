@@ -41,11 +41,33 @@ jobs:
 
       # Builds the thin Xcode app target for the simulator, proving the runnable iOS app stays green.
       # The SwiftPM package (built/tested in `verify`) holds all the logic; this only adds the host.
-      - name: Build SignalFlow.app for iOS Simulator
+      #
+      # The watch app is embedded in the iOS app (Embed Watch Content + target dependency), so this build
+      # also builds the watch app for watchsimulator — which validates the watchOS target too. That means
+      # a plain 'generic/platform=iOS Simulator' destination no longer works: it can't resolve a paired
+      # watch and mis-targets the watch's Swift-package products to iphonesimulator
+      # ("Build input file cannot be found: …WatchSupportKit.o"). So we build against a concrete iPhone
+      # simulator that has a paired watch — discovering one (and pairing if needed) first.
+      - name: Build SignalFlow.app for iOS Simulator (embeds the watch app)
         run: |
+          set -euo pipefail
+
+          PHONE_UDID=$(xcrun simctl list devices available --json \
+            | jq -r '[.devices | to_entries[] | select(.key | test("iOS")) | .value[] | select(.name | test("iPhone"))][0].udid')
+          WATCH_UDID=$(xcrun simctl list devices available --json \
+            | jq -r '[.devices | to_entries[] | select(.key | test("watchOS")) | .value[] | select(.name | test("Watch"))][0].udid')
+          echo "iPhone simulator: $PHONE_UDID"
+          echo "Apple Watch simulator: $WATCH_UDID"
+          test -n "$PHONE_UDID" && test "$PHONE_UDID" != "null" || { echo "::error::no iPhone simulator available"; exit 1; }
+
+          # Ensure the iPhone has a paired watch so xcodebuild builds the embedded watch app for
+          # watchsimulator. `pair` is a no-op-ish if already paired; tolerate its error.
+          if [ -n "$WATCH_UDID" ] && [ "$WATCH_UDID" != "null" ]; then
+            xcrun simctl pair "$WATCH_UDID" "$PHONE_UDID" || true
+          fi
+
           xcodebuild build \
             -project App/SignalFlow.xcodeproj \
             -scheme SignalFlow \
-            -sdk iphonesimulator \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination "platform=iOS Simulator,id=$PHONE_UDID" \
             CODE_SIGNING_ALLOWED=NO

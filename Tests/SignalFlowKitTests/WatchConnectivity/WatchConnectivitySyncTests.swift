@@ -75,6 +75,41 @@ struct WatchConnectivitySyncTests {
         #expect(synced.hasData)
     }
 
+    @Test("iPhone enriches each device snapshot with battery, connectivity, and telemetry highlights")
+    func buildsEnrichedDeviceSnapshots() throws {
+        let asset = try Asset(id: assetID, name: "Fleet A", kind: .greenhouse, deviceIDs: [])
+        let device = try Device(
+            assetID: assetID,
+            name: "Greenhouse 1",
+            battery: try BatteryStatus(percentage: 42, isCharging: false),
+            connectivity: ConnectivityStatus(state: .degraded, lastSeenAt: Date(timeIntervalSince1970: 900))
+        )
+        let readings = [
+            TelemetryReading(deviceID: device.id, metric: .humidity, value: try MeasuredValue(magnitude: 60, unit: .percent), recordedAt: Date(timeIntervalSince1970: 10)),
+            TelemetryReading(deviceID: device.id, metric: .temperature, value: try MeasuredValue(magnitude: 21, unit: .celsius), recordedAt: Date(timeIntervalSince1970: 20)),
+            // an older temperature reading must be superseded by the newer one above
+            TelemetryReading(deviceID: device.id, metric: .temperature, value: try MeasuredValue(magnitude: 5, unit: .celsius), recordedAt: Date(timeIntervalSince1970: 1)),
+        ]
+        let persisted = PersistedSnapshot(
+            assets: [asset], devices: [device],
+            latestReadings: readings, events: [], alerts: [], insights: []
+        )
+
+        let synced = WatchSnapshotBuilder.build(from: persisted, now: Date(timeIntervalSince1970: 500))
+        let snap = try #require(synced.devices.first)
+
+        #expect(snap.battery?.percentage == 42)
+        #expect(snap.connectivity.state == .degraded)
+        #expect(snap.lastSeenAt == Date(timeIntervalSince1970: 900))
+        // Newest reading per metric, environmental-priority ordered (temperature before humidity).
+        #expect(snap.telemetry.map(\.metric) == [.temperature, .humidity])
+        #expect(snap.telemetry.first?.value.magnitude == 21)
+
+        // And it still round-trips with the new fields populated.
+        let decoded = try WatchSnapshotCodec.decode(WatchSnapshotCodec.encode(synced))
+        #expect(decoded == synced)
+    }
+
     // MARK: - Watch receiving logic (local store)
 
     @Test("Store saves and loads the snapshot; empty store loads nil")

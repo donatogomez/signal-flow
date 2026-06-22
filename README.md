@@ -254,15 +254,19 @@ From the command line (what CI runs):
 xcodebuild build \
   -project App/SignalFlow.xcodeproj \
   -scheme SignalFlow \
-  -sdk iphonesimulator \
-  -destination 'generic/platform=iOS Simulator' \
+  -destination 'platform=iOS Simulator,id=<paired iPhone simulator udid>' \
   CODE_SIGNING_ALLOWED=NO
 ```
 
-The **watchOS companion** is a standalone target with its own scheme (it doesn't affect the iOS build).
-On a machine with the watchOS simulator runtime installed — verified building, installing, and launching
-on the **watchOS 26.5 Simulator** — target a concrete simulator by `id` (`name=` is ambiguous across
-same-named watches):
+The **watchOS companion** is now **embedded** in the iOS app (an _Embed Watch Content_ phase + target
+dependency), so installing the iPhone app installs the watch app and `WCSession.isWatchAppInstalled`
+reports `true`. Because the iOS build graph now also builds the watch app, target a **concrete iPhone
+simulator that has a paired watch** — the `generic/platform=iOS Simulator` destination can't resolve the
+paired watch and mis-targets the watch's package products (`xcrun simctl list pairs` shows the pairs).
+
+You can still build the watch app on its own scheme. On a machine with the watchOS simulator runtime
+installed — verified building, installing, and launching on the **watchOS 26.5 Simulator** — target a
+concrete simulator by `id` (`name=` is ambiguous across same-named watches):
 
 ```bash
 xcrun simctl list devices available | grep -i watch   # pick a watch simulator udid

@@ -24,6 +24,7 @@ public final class WatchStore {
 
     public var fleet: FleetSummaryViewModel { FleetSummaryViewModel(snapshot) }
     public var alertList: AlertListViewModel { AlertListViewModel(snapshot) }
+    public var deviceList: DeviceListViewModel { DeviceListViewModel(snapshot) }
     public var hasData: Bool { snapshot.hasData }
 
     /// Re-reads the persisted snapshot. Cheap and idempotent; safe to call from `.task`/refresh.
