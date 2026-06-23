@@ -11,7 +11,7 @@
 [![UI](https://img.shields.io/badge/UI-SwiftUI%20only-blue)](#)
 [![Tests](https://img.shields.io/badge/tests-222%20passing-success)](#how-to-run-the-tests)
 [![3rd-party deps](https://img.shields.io/badge/3rd--party%20deps-0-lightgrey)](#)
-[![License](https://img.shields.io/badge/license-MIT-blue)](#license)
+[![License](https://img.shields.io/badge/license-Source%20Available-blue)](#license)
 
 SignalFlow monitors a fleet of remote IoT devices — greenhouses, refrigerated trucks, warehouses,
 environmental stations — turning a firehose of sensor telemetry into **real-time situational
@@ -393,4 +393,9 @@ branch strategy: [Git Workflow & CI](docs/14-git-workflow-and-ci.md).
 
 ## License
 
-MIT (portfolio / educational use).
+**Source-available — not open source.** © 2026 Donato Gómez. All rights reserved.
+
+The source is published so it can be **viewed and studied for portfolio review and educational
+purposes**. Commercial use, redistribution, resale, hosting, sublicensing, and competing or derivative
+products are **not permitted without prior written permission**. See [LICENSE](LICENSE) for the full
+terms.
