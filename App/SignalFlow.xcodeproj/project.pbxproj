@@ -19,6 +19,9 @@
 		1A000000000000000000005D /* WatchSupportKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1A000000000000000000005C /* WatchSupportKit */; };
 		1A0000000000000000000074 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000073 /* Localizable.xcstrings */; };
 		1A0000000000000000000090 /* SignalFlow Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000054 /* SignalFlow Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		1A00000000000000000000AA /* SignalFlowWatchWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00000000000000000000A6 /* SignalFlowWatchWidgetBundle.swift */; };
+		1A00000000000000000000AB /* WatchWidgetSupportKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1A00000000000000000000AC /* WatchWidgetSupportKit */; };
+		1A00000000000000000000AF /* SignalFlowWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1A00000000000000000000A9 /* SignalFlowWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +39,10 @@
 		1A0000000000000000000053 /* SignalFlowWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SignalFlowWatch.entitlements; sourceTree = "<group>"; };
 		1A0000000000000000000054 /* SignalFlow Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SignalFlow Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A0000000000000000000073 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		1A00000000000000000000A6 /* SignalFlowWatchWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalFlowWatchWidgetBundle.swift; sourceTree = "<group>"; };
+		1A00000000000000000000A7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		1A00000000000000000000A8 /* SignalFlowWatchWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SignalFlowWatchWidgets.entitlements; sourceTree = "<group>"; };
+		1A00000000000000000000A9 /* SignalFlowWatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SignalFlowWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,6 +71,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		1A00000000000000000000A5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A00000000000000000000AB /* WatchWidgetSupportKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -89,6 +104,17 @@
 			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		1A00000000000000000000AE /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				1A00000000000000000000AF /* SignalFlowWatchWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -98,6 +124,7 @@
 				1A0000000000000000000004 /* SignalFlow */,
 				1A0000000000000000000021 /* SignalFlowWidgets */,
 				1A0000000000000000000050 /* SignalFlowWatch */,
+				1A00000000000000000000AD /* SignalFlowWatchWidgets */,
 				1A0000000000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -108,6 +135,7 @@
 				1A0000000000000000000006 /* SignalFlow.app */,
 				1A0000000000000000000025 /* SignalFlowWidgets.appex */,
 				1A0000000000000000000054 /* SignalFlow Watch App.app */,
+				1A00000000000000000000A9 /* SignalFlowWatchWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -142,6 +170,16 @@
 				1A0000000000000000000053 /* SignalFlowWatch.entitlements */,
 			);
 			path = SignalFlowWatch;
+			sourceTree = "<group>";
+		};
+		1A00000000000000000000AD /* SignalFlowWatchWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				1A00000000000000000000A6 /* SignalFlowWatchWidgetBundle.swift */,
+				1A00000000000000000000A7 /* Info.plist */,
+				1A00000000000000000000A8 /* SignalFlowWatchWidgets.entitlements */,
+			);
+			path = SignalFlowWatchWidgets;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -198,10 +236,12 @@
 			buildPhases = (
 				1A0000000000000000000056 /* Sources */,
 				1A0000000000000000000057 /* Frameworks */,
+				1A00000000000000000000AE /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				1A00000000000000000000B1 /* PBXTargetDependency */,
 			);
 			name = "SignalFlow Watch App";
 			packageProductDependencies = (
@@ -210,6 +250,25 @@
 			productName = "SignalFlow Watch App";
 			productReference = 1A0000000000000000000054 /* SignalFlow Watch App.app */;
 			productType = "com.apple.product-type.application";
+		};
+		1A00000000000000000000A0 /* SignalFlowWatchWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1A00000000000000000000A1 /* Build configuration list for PBXNativeTarget "SignalFlowWatchWidgets" */;
+			buildPhases = (
+				1A00000000000000000000A4 /* Sources */,
+				1A00000000000000000000A5 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SignalFlowWatchWidgets;
+			packageProductDependencies = (
+				1A00000000000000000000AC /* WatchWidgetSupportKit */,
+			);
+			productName = SignalFlowWatchWidgets;
+			productReference = 1A00000000000000000000A9 /* SignalFlowWatchWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -228,6 +287,9 @@
 						CreatedOnToolsVersion = 26.0;
 					};
 					1A0000000000000000000055 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					1A00000000000000000000A0 = {
 						CreatedOnToolsVersion = 26.0;
 					};
 				};
@@ -252,6 +314,7 @@
 				1A0000000000000000000005 /* SignalFlow */,
 				1A0000000000000000000026 /* SignalFlowWidgets */,
 				1A0000000000000000000055 /* SignalFlow Watch App */,
+				1A00000000000000000000A0 /* SignalFlowWatchWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -298,6 +361,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				1A000000000000000000005B /* SignalFlowWatchApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1A00000000000000000000A4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A00000000000000000000AA /* SignalFlowWatchWidgetBundle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -499,6 +570,58 @@
 			};
 			name = Release;
 		};
+		1A00000000000000000000A2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = SignalFlowWatchWidgets/SignalFlowWatchWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SignalFlowWatchWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.signalflow.SignalFlow.watchkitapp.widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		1A00000000000000000000A3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = SignalFlowWatchWidgets/SignalFlowWatchWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SignalFlowWatchWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.signalflow.SignalFlow.watchkitapp.widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -538,6 +661,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		1A00000000000000000000A1 /* Build configuration list for PBXNativeTarget "SignalFlowWatchWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1A00000000000000000000A2 /* Debug */,
+				1A00000000000000000000A3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -568,6 +700,11 @@
 			package = 1A0000000000000000000014 /* XCLocalSwiftPackageReference "SignalFlowKit" */;
 			productName = WatchSupportKit;
 		};
+		1A00000000000000000000AC /* WatchWidgetSupportKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A0000000000000000000014 /* XCLocalSwiftPackageReference "SignalFlowKit" */;
+			productName = WatchWidgetSupportKit;
+		};
 /* End XCSwiftPackageProductDependency section */
 
 /* Begin PBXContainerItemProxy section */
@@ -585,6 +722,13 @@
 			remoteGlobalIDString = 1A0000000000000000000055;
 			remoteInfo = "SignalFlow Watch App";
 		};
+		1A00000000000000000000B0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1A0000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1A00000000000000000000A0;
+			remoteInfo = SignalFlowWatchWidgets;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXTargetDependency section */
@@ -597,6 +741,11 @@
 			isa = PBXTargetDependency;
 			target = 1A0000000000000000000055 /* SignalFlow Watch App */;
 			targetProxy = 1A0000000000000000000092 /* PBXContainerItemProxy */;
+		};
+		1A00000000000000000000B1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1A00000000000000000000A0 /* SignalFlowWatchWidgets */;
+			targetProxy = 1A00000000000000000000B0 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 	};

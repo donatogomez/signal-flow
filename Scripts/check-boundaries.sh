@@ -124,6 +124,15 @@ if [ -n "$wc_violators" ]; then
     report "WatchConnectivity may only be imported by WatchConnectivityKit (found: $wc_violators)"
 fi
 
+# Rule 16 — WatchWidgetSupportKit (watchOS complications / Smart Stack) renders the synced snapshot only.
+# It reads DomainKit + SnapshotKit + WatchConnectivityKit (+ WidgetKit/SwiftUI), and must never reach the
+# live data engine, AI, PersistenceKit/SwiftData, raw WatchConnectivity, a sibling glance surface, a
+# feature, or the app — so the complication can't diverge from the watch's reconciled, synced truth.
+if grep -REn '^\s*import\s+(DataKit|SimulationKit|NetworkingKit|IntelligenceKit|FoundationModels|PersistenceKit|SwiftData|WatchConnectivity|WidgetSupportKit|AppIntentsKit|LiveActivityKit|DesignSystemKit|Feature[A-Za-z]+|SignalFlowApp)\b' \
+        Sources/WatchWidgetSupportKit 2>/dev/null; then
+    report "WatchWidgetSupportKit may depend only on DomainKit + SnapshotKit + WatchConnectivityKit (+ WidgetKit/SwiftUI); no data engine, AI, SwiftData, raw WatchConnectivity, sibling surfaces, or features"
+fi
+
 if [ "$fail" -eq 0 ]; then
     echo "✅ architecture boundaries respected"
 fi
