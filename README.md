@@ -9,7 +9,7 @@
 [![Swift](https://img.shields.io/badge/Swift-6-orange)](#)
 [![Strict Concurrency](https://img.shields.io/badge/strict%20concurrency-complete-green)](#)
 [![UI](https://img.shields.io/badge/UI-SwiftUI%20only-blue)](#)
-[![Tests](https://img.shields.io/badge/tests-201%20passing-success)](#how-to-run-the-tests)
+[![Tests](https://img.shields.io/badge/tests-222%20passing-success)](#how-to-run-the-tests)
 [![3rd-party deps](https://img.shields.io/badge/3rd--party%20deps-0-lightgrey)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
@@ -137,7 +137,7 @@ Details: [Technical Architecture](docs/03-technical-architecture.md) · [Concurr
 
 ## Module graph
 
-A single local Swift Package (`SignalFlowKit`) with **23 build targets + a test target**. Boundaries
+A single local Swift Package (`SignalFlowKit`) with **24 build targets + a test target**. Boundaries
 are enforced by the build graph *and* a CI check — a feature target cannot even name the data layer.
 
 ```mermaid
@@ -147,6 +147,7 @@ flowchart TD
         APPLIB["SignalFlowApp<br/>AppContainer · RootView"]
         WIDGETHOST["SignalFlowWidgets · Xcode app-extension"]
         WATCHHOST["SignalFlow Watch App · Xcode watchOS target"]
+        WATCHWIDGETHOST["SignalFlowWatchWidgets · Xcode watchOS extension"]
     end
     subgraph FeatureLayer["Features"]
         F1[FeatureDashboard]
@@ -160,6 +161,7 @@ flowchart TD
         AI["AppIntentsKit<br/>(App Intents · Siri)"]
         LA["LiveActivityKit<br/>(ActivityKit · Dynamic Island)"]
         WATCH["WatchSupportKit<br/>(watchOS UI + models)"]
+        WWS["WatchWidgetSupportKit<br/>(watch complications + Smart Stack)"]
         WC["WatchConnectivityKit<br/>(iPhone↔Watch sync)"]
         SK["SnapshotKit<br/>(shared read model + routes)"]
     end
@@ -177,6 +179,8 @@ flowchart TD
     HOST --> APPLIB
     WIDGETHOST --> WS
     WATCHHOST --> WATCH
+    WATCHHOST --> WATCHWIDGETHOST
+    WATCHWIDGETHOST --> WWS
     APPLIB --> F1 & F2 & F3 & F4 & F5
     APPLIB --> WS & AI & SK & LA & WC
     APPLIB --> DK
@@ -191,6 +195,8 @@ flowchart TD
     LA --> SK
     WATCH --> SK
     WATCH --> WC
+    WWS --> SK
+    WWS --> WC
     WC --> SK
     WC --> PERSIST
     SK --> DOM
@@ -210,11 +216,14 @@ flowchart TD
     class DOM domain;
 ```
 
-The glance surfaces (Widgets, App Intents, Live Activities, **the watchOS app**) read **persisted /
-deterministic state only**; none has an edge to `DataKit`, `SimulationKit`, `NetworkingKit`, or
-`IntelligenceKit` (CI-enforced). The app and the `SignalFlowWidgets` extension share one SwiftData store
-via an App Group. See [WidgetKit](docs/24-widgetkit.md), [App Intents](docs/25-app-intents.md),
-[Live Activities](docs/26-live-activities.md), and [watchOS Companion](docs/27-watchos-companion.md).
+The glance surfaces (Widgets, App Intents, Live Activities, **the watchOS app**, **watch complications /
+Smart Stack**) read **persisted / deterministic / synced state only**; none has an edge to `DataKit`,
+`SimulationKit`, `NetworkingKit`, or `IntelligenceKit` (CI-enforced). The app and the `SignalFlowWidgets`
+extension share one SwiftData store via an App Group; the watch surfaces read the snapshot synced over
+WatchConnectivity (App Groups don't cross the device boundary). See [WidgetKit](docs/24-widgetkit.md),
+[App Intents](docs/25-app-intents.md), [Live Activities](docs/26-live-activities.md),
+[watchOS Companion](docs/27-watchos-companion.md), and
+[watch Complications & Smart Stack](docs/29-watch-complications.md).
 
 The thin Xcode app target ([`App/SignalFlow.xcodeproj`](App/SignalFlow.xcodeproj)) hosts the package's
 composition root and adds nothing but the bundle, asset catalog, and a synthesized Info.plist.
@@ -287,8 +296,8 @@ swift run SignalFlowHost
 ## How to run the tests
 
 ```bash
-swift build                    # compiles all 23 build targets (Swift 6, strict concurrency)
-swift test                     # Swift Testing suite — 201 tests, 40 suites
+swift build                    # compiles all 24 build targets (Swift 6, strict concurrency)
+swift test                     # Swift Testing suite — 222 tests, 41 suites
 ./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
 ```
 
@@ -322,10 +331,11 @@ The same three commands run locally and in CI, so a green local run means a gree
 - ✅ **WidgetKit** — `SignalFlowWidgets` extension with _Fleet Status_ and _Critical Alerts_ widgets (small + medium). Reads **persisted state only** (`SnapshotKit → PersistenceKit`, no DataKit/Simulation/Networking), shares one SwiftData store with the app via an **App Group**, refreshes on a deterministic `TimelineProvider`, and deep-links into Dashboard/Alerts. See [WidgetKit](docs/24-widgetkit.md).
 - ✅ **App Intents** — `AppIntentsKit` with _Open Dashboard / Fleet Status / Critical Alerts_ navigation intents + a _Show Fleet Summary_ data intent, surfaced to Shortcuts/Siri/Spotlight via an `AppShortcutsProvider`. Reads **persisted state only** through the shared `SnapshotKit`; a single `DeepLinkRoute` contract powers widget, intent, and URL navigation. See [App Intents](docs/25-app-intents.md).
 - ✅ **Live Activities & Dynamic Island** — `LiveActivityKit` surfaces an ongoing **critical alert** on the Lock Screen / StandBy and across all Dynamic Island presentations (compact / minimal / expanded). Lifecycle (start on critical, update on change, end on acknowledge/resolve) is a pure, tested state machine over **deterministic** alert state — never AI; ActivityKit is `#if os(iOS)`-guarded so CI needs no device. Taps deep-link to the device via the shared `DeepLink`. See [Live Activities](docs/26-live-activities.md).
-- ✅ **watchOS companion** — a thin `SignalFlow Watch App` over `WatchSupportKit`: glanceable _Fleet Summary → Critical Alerts → Device Snapshot_, never running the data engine. Standalone target with its own scheme, so the iOS CI build is unchanged. **Verified building on the watchOS 26.5 Simulator** (iPhone + watch). See [watchOS Companion](docs/27-watchos-companion.md).
+- ✅ **watchOS companion** — a thin `SignalFlow Watch App` over `WatchSupportKit`: glanceable _Fleet Summary → Active Alerts → Devices → Device Snapshot_, never running the data engine. **Embedded** in the iOS app (Embed Watch Content + target dependency). **Verified building on the watchOS 26.5 Simulator** (iPhone + watch). See [watchOS Companion](docs/27-watchos-companion.md).
 - ✅ **WatchConnectivity sync** — `WatchConnectivityKit` (the only module that imports WatchConnectivity, CI-enforced) sends a compact `Codable` fleet snapshot (summary · device snapshots · critical alerts · timestamp) from the iPhone to the paired Watch via `WCSession.updateApplicationContext` (latest-wins); the watch persists it locally and renders from it. Explains why App Groups don't cross the device boundary. See [watchOS Companion](docs/27-watchos-companion.md).
+- ✅ **watch complications & Smart Stack** — `WatchWidgetSupportKit` + a `SignalFlowWatchWidgets` WidgetKit extension embedded in the watch app: a glanceable _Fleet Health_ complication across all accessory families (circular · inline · rectangular · corner), reading the **synced** snapshot (never the data engine), with a severity-ranked, stale-damped **Smart Stack relevance** score and an honest stale/fresh treatment. See [watch Complications & Smart Stack](docs/29-watch-complications.md).
 - ✅ **Localization (English + Spanish)** — full localization across every surface via Apple's modern stack only (`String(localized:)`, `LocalizedStringResource`, **String Catalogs**), no `NSLocalizedString`/legacy `.strings`. Domain enums stay language-neutral; localized labels live in `DesignSystemKit` and per-module `.xcstrings`. ~152 keys, each with a complete Spanish translation. See [Localization](docs/28-localization.md).
-- ✅ Architecture boundaries enforced by a CI check; **201 Swift Testing tests** passing.
+- ✅ Architecture boundaries enforced by a CI check; **222 Swift Testing tests** passing.
 
 **Upcoming**
 - ⬜️ Real backend wiring + auth (swap `URLSessionHTTPClient` in at the composition root).
@@ -358,6 +368,7 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 | | | 26 | [Live Activities](docs/26-live-activities.md) |
 | | | 27 | [watchOS Companion](docs/27-watchos-companion.md) |
 | | | 28 | [Localization](docs/28-localization.md) |
+| | | 29 | [watch Complications & Smart Stack](docs/29-watch-complications.md) |
 | | | | [Architecture Decision Records](docs/adr) |
 
 ## Portfolio value

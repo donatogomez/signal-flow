@@ -51,7 +51,11 @@ let package = Package(
         // persisted snapshots through SnapshotKit. Cross-platform SwiftUI (builds on the macOS host too).
         .library(name: "WatchSupportKit", targets: ["WatchSupportKit"]),
         // The iPhone↔Watch sync layer. Isolates WatchConnectivity behind a Codable snapshot contract.
-        .library(name: "WatchConnectivityKit", targets: ["WatchConnectivityKit"])
+        .library(name: "WatchConnectivityKit", targets: ["WatchConnectivityKit"]),
+        // watchOS complications + Smart Stack widget. Linked by the `SignalFlowWatchWidgets` watchOS
+        // WidgetKit extension; renders the synced snapshot only. WidgetKit/SwiftUI usage that's watchOS-
+        // specific is `#if os(watchOS)`-guarded so the package still builds/tests on the macOS host.
+        .library(name: "WatchWidgetSupportKit", targets: ["WatchWidgetSupportKit"])
     ],
     targets: [
 
@@ -155,6 +159,17 @@ let package = Package(
             swiftSettings: swift6
         ),
 
+        // watchOS complications + Smart Stack widget. A pure, deterministic projection of the synced
+        // snapshot (entry generation, freshness, relevance, top-alert) — unit-tested on the macOS host —
+        // plus `#if os(watchOS)` WidgetKit views/provider. Reads the watch-side synced store via
+        // WatchConnectivityKit; never the data engine, AI, or raw WatchConnectivity. (Boundary Rule 16.)
+        .target(
+            name: "WatchWidgetSupportKit",
+            dependencies: ["DomainKit", "SnapshotKit", "WatchConnectivityKit"],
+            resources: [.process("Resources")],
+            swiftSettings: swift6
+        ),
+
         // MARK: - Features (vertical slices — Domain + DesignSystem only, never Data)
 
         .target(name: "FeatureDashboard", dependencies: ["DomainKit", "DesignSystemKit"], resources: [.process("Resources")], swiftSettings: swift6),
@@ -217,7 +232,7 @@ let package = Package(
                 "PersistenceKit", "NetworkingKit", "IntelligenceKit", "DesignSystemKit",
                 "FeatureDashboard", "FeatureFleet", "FeatureDeviceDetail", "FeatureInsights",
                 "FeatureAlerts", "SnapshotKit", "WidgetSupportKit", "AppIntentsKit", "LiveActivityKit",
-                "WatchSupportKit", "WatchConnectivityKit", "SignalFlowApp",
+                "WatchSupportKit", "WatchConnectivityKit", "WatchWidgetSupportKit", "SignalFlowApp",
             ],
             swiftSettings: swift6
         )
