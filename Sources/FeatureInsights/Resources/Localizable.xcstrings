@@ -62,12 +62,12 @@
         }
       }
     },
-    "Recommendations" : {
+    "Insights" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recomendaciones"
+            "value" : "Insights"
           }
         }
       }

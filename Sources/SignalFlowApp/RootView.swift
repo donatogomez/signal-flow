@@ -95,7 +95,7 @@ public struct RootView: View {
                     insights: container.insights
                 )
             }
-            .tabItem { Label(loc("Recommendations"), systemImage: "sparkles") }
+            .tabItem { Label(loc("Insights"), systemImage: "sparkles") }
             .tag(Tab.insights)
         }
         .tint(.signalFlowAccent)

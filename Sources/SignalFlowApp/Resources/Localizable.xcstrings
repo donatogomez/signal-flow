@@ -11,8 +11,8 @@
     "Overview" : {
       "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Resumen" } } }
     },
-    "Recommendations" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Recomendaciones" } } }
+    "Insights" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Insights" } } }
     }
   }
 }
