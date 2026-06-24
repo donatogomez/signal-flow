@@ -77,12 +77,12 @@
         }
       }
     },
-    "Fleet" : {
+    "Devices" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Flota"
+            "value" : "Dispositivos"
           }
         }
       }

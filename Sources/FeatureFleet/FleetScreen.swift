@@ -43,7 +43,7 @@ public struct FleetScreen: View {
             }
         }
         .listStyle(.plain)
-        .navigationTitle(loc("Fleet"))
+        .navigationTitle(loc("Devices"))
         .searchable(text: $model.searchText, prompt: Text(loc("Search devices or assets")))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {

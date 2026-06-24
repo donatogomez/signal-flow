@@ -34,12 +34,12 @@
         }
       }
     },
-    "Dashboard" : {
+    "Overview" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Panel"
+            "value" : "Resumen"
           }
         }
       }

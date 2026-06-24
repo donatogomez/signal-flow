@@ -41,7 +41,7 @@ public struct DashboardScreen: View {
             .padding(Spacing.lg)
             .animation(.default, value: model.phase)
         }
-        .navigationTitle(loc("Dashboard"))
+        .navigationTitle(loc("Overview"))
         .task { await model.observe() }
     }
 

@@ -31,7 +31,7 @@ public struct InsightsScreen: View {
             .padding(Spacing.lg)
             .animation(.default, value: model.phase)
         }
-        .navigationTitle(loc("Insights"))
+        .navigationTitle(loc("Recommendations"))
         .task {
             await model.loadDevices()
             await model.generateInsight()

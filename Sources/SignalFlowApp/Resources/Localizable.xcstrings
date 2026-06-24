@@ -5,14 +5,14 @@
     "Alerts" : {
       "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Alertas" } } }
     },
-    "Dashboard" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Panel" } } }
+    "Devices" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Dispositivos" } } }
     },
-    "Fleet" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Flota" } } }
+    "Overview" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Resumen" } } }
     },
-    "Insights" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Análisis" } } }
+    "Recommendations" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Recomendaciones" } } }
     }
   }
 }
