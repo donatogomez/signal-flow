@@ -5,6 +5,9 @@
     "%@ trend" : {
       "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Tendencia de %@" } } }
     },
+    "Acknowledged" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Confirmada" } } }
+    },
     "Active alerts" : {
       "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Alertas activas" } } }
     },
@@ -16,6 +19,9 @@
     },
     "Device" : {
       "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Dispositivo" } } }
+    },
+    "Loading device" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Cargando el dispositivo" } } }
     },
     "No active alerts" : {
       "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "No hay alertas activas" } } }
