@@ -16,24 +16,40 @@ public struct DashboardScreen: View {
         _model = State(initialValue: DashboardModel(assets: assets, devices: devices, alerts: alerts, events: events))
     }
 
-    private let columns = [GridItem(.adaptive(minimum: 150), spacing: Spacing.md)]
+    /// A stable 2-up grid: four headline tiles read as a balanced 2×2 block rather than reflowing
+    /// between two and three columns at different widths.
+    private let columns = [
+        GridItem(.flexible(), spacing: Spacing.md),
+        GridItem(.flexible(), spacing: Spacing.md)
+    ]
 
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.xl) {
-                if case .failed(let message) = model.phase {
-                    ContentUnavailableView(loc("Couldn't load the dashboard"), systemImage: "exclamationmark.triangle", description: Text(message))
-                        .frame(maxWidth: .infinity)
-                } else {
-                    statTiles
-                    statusBreakdown
-                    recentEvents
+                switch model.phase {
+                case .failed(let message):
+                    errorState(message)
+                case .loading:
+                    content(placeholder: true)
+                        .redacted(reason: .placeholder)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(loc("Loading dashboard"))
+                case .loaded:
+                    content(placeholder: false)
                 }
             }
             .padding(Spacing.lg)
+            .animation(.default, value: model.phase)
         }
         .navigationTitle(loc("Dashboard"))
         .task { await model.observe() }
+    }
+
+    @ViewBuilder
+    private func content(placeholder: Bool) -> some View {
+        statTiles
+        statusBreakdown
+        recentEvents(placeholder: placeholder)
     }
 
     private var statTiles: some View {
@@ -52,18 +68,33 @@ public struct DashboardScreen: View {
 
     private var statusBreakdown: some View {
         CardSection(loc("Fleet status"), systemImage: "chart.bar.fill") {
-            VStack(spacing: Spacing.sm) {
-                StatusBreakdownRow(label: DeviceStatus.nominal.label, count: model.stats.nominal, tint: DeviceStatus.nominal.tint)
-                StatusBreakdownRow(label: DeviceStatus.warning.label, count: model.stats.warning, tint: DeviceStatus.warning.tint)
-                StatusBreakdownRow(label: DeviceStatus.critical.label, count: model.stats.critical, tint: DeviceStatus.critical.tint)
-                StatusBreakdownRow(label: DeviceStatus.offline.label, count: model.stats.offline, tint: DeviceStatus.offline.tint)
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                FleetProportionBar(segments: [
+                    (model.stats.nominal, DeviceStatus.nominal.tint),
+                    (model.stats.warning, DeviceStatus.warning.tint),
+                    (model.stats.critical, DeviceStatus.critical.tint),
+                    (model.stats.offline, DeviceStatus.offline.tint)
+                ])
+                VStack(spacing: Spacing.sm) {
+                    StatusBreakdownRow(label: DeviceStatus.nominal.label, count: model.stats.nominal, tint: DeviceStatus.nominal.tint)
+                    StatusBreakdownRow(label: DeviceStatus.warning.label, count: model.stats.warning, tint: DeviceStatus.warning.tint)
+                    StatusBreakdownRow(label: DeviceStatus.critical.label, count: model.stats.critical, tint: DeviceStatus.critical.tint)
+                    StatusBreakdownRow(label: DeviceStatus.offline.label, count: model.stats.offline, tint: DeviceStatus.offline.tint)
+                }
             }
         }
     }
 
-    private var recentEvents: some View {
+    private func recentEvents(placeholder: Bool) -> some View {
         CardSection(loc("Recent events"), systemImage: "clock.arrow.circlepath") {
-            if model.recentEvents.isEmpty {
+            if placeholder {
+                // Skeleton rows; redaction greys them while the first load is in flight.
+                VStack(spacing: Spacing.md) {
+                    ForEach(0..<3, id: \.self) { _ in
+                        EventListRow(kind: .connected, occurredAt: .now)
+                    }
+                }
+            } else if model.recentEvents.isEmpty {
                 EmptyHint(loc("No events yet"), systemImage: "tray")
             } else {
                 VStack(spacing: Spacing.md) {
@@ -73,6 +104,44 @@ public struct DashboardScreen: View {
                 }
             }
         }
+    }
+
+    private func errorState(_ message: String) -> some View {
+        ContentUnavailableView(
+            loc("Couldn't load the dashboard"),
+            systemImage: "exclamationmark.triangle",
+            description: Text(message)
+        )
+        .frame(maxWidth: .infinity, minHeight: 320)
+    }
+}
+
+/// A thin segmented capsule showing the fleet's status mix at a glance — the Fleet-status card's
+/// visual anchor. Purely decorative (the rows below convey the same counts textually), so it's hidden
+/// from VoiceOver.
+private struct FleetProportionBar: View {
+    let segments: [(count: Int, tint: Color)]
+
+    private var total: CGFloat { max(CGFloat(segments.reduce(0) { $0 + $1.count }), 1) }
+
+    var body: some View {
+        Capsule()
+            .fill(.quaternary)
+            .frame(height: 8)
+            .overlay(alignment: .leading) {
+                GeometryReader { proxy in
+                    HStack(spacing: 0) {
+                        ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
+                            if segment.count > 0 {
+                                segment.tint
+                                    .frame(width: proxy.size.width * CGFloat(segment.count) / total)
+                            }
+                        }
+                    }
+                }
+            }
+            .clipShape(Capsule())
+            .accessibilityHidden(true)
     }
 }
 
@@ -89,6 +158,8 @@ private struct StatusBreakdownRow: View {
             Text("\(count)").fontWeight(.semibold).monospacedDigit()
         }
         .font(.subheadline)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(label))
+        .accessibilityValue(Text("\(count)"))
     }
 }
-

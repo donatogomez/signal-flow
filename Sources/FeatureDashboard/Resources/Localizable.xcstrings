@@ -54,6 +54,16 @@
         }
       }
     },
+    "Loading dashboard" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cargando el panel"
+          }
+        }
+      }
+    },
     "No events yet" : {
       "localizations" : {
         "es" : {

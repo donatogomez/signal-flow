@@ -147,6 +147,9 @@ public struct StatTile: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Spacing.cardPadding)
         .cardSurface()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(title))
+        .accessibilityValue(Text(value))
     }
 }
 

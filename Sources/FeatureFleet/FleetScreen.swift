@@ -24,12 +24,16 @@ public struct FleetScreen: View {
         List {
             switch model.phase {
             case .loading where model.rows.isEmpty:
-                ProgressView().frame(maxWidth: .infinity).listRowSeparator(.hidden)
+                ForEach(0..<6, id: \.self) { _ in
+                    FleetRowPlaceholder()
+                        .listRowSeparator(.hidden)
+                }
             case .failed(let message):
                 ContentUnavailableView(loc("Couldn't load the fleet"), systemImage: "exclamationmark.triangle", description: Text(message))
+                    .listRowSeparator(.hidden)
             default:
                 if model.visibleRows.isEmpty {
-                    ContentUnavailableView(loc("No matching devices"), systemImage: "magnifyingglass")
+                    emptyState.listRowSeparator(.hidden)
                 } else {
                     ForEach(model.visibleRows) { row in
                         Button { onOpenDevice(row.id) } label: { FleetRowView(row: row) }
@@ -57,15 +61,37 @@ public struct FleetScreen: View {
         }
         .task { await model.observe() }
     }
+
+    /// Distinguishes "the fleet is genuinely empty" from "search/filter excluded everything" — the same
+    /// list shape, but honest, helpful copy for each.
+    @ViewBuilder
+    private var emptyState: some View {
+        if model.rows.isEmpty {
+            ContentUnavailableView(
+                loc("No devices"),
+                systemImage: "shippingbox",
+                description: Text(loc("Devices will appear here once they report in."))
+            )
+        } else {
+            ContentUnavailableView(
+                loc("No matching devices"),
+                systemImage: "magnifyingglass",
+                description: Text(loc("Try a different search or filter."))
+            )
+        }
+    }
 }
 
-/// A single fleet row. Information-dense but scannable: identity on the left, status on the right.
+/// A single fleet row. Information-dense but scannable: a status-tinted asset glyph leads (health at a
+/// glance), identity in the middle, and a shape-based status cue + chevron trail.
 struct FleetRowView: View {
     let row: FleetRow
 
     var body: some View {
         HStack(spacing: Spacing.md) {
-            IconBadge(row.assetKind.symbol)
+            // Status tints the leading badge so the list is scannable by health down the left edge;
+            // the asset symbol still conveys the device's type.
+            IconBadge(row.assetKind.symbol, tint: row.status.tint)
 
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text(row.deviceName).font(.body.weight(.medium))
@@ -79,20 +105,43 @@ struct FleetRowView: View {
                         Label("\(row.activeAlertCount)", systemImage: "bell.badge.fill")
                             .font(.caption)
                             .foregroundStyle(.red)
+                            .accessibilityLabel(Text("\(row.activeAlertCount) ") + Text(loc("Alerts")))
                     }
                 }
             }
 
             Spacer(minLength: Spacing.sm)
 
+            // Shape-based status cue (distinguishable without color) for the trailing edge.
             Image(systemName: row.status.symbol)
                 .foregroundStyle(row.status.tint)
                 .accessibilityLabel(row.status.label)
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
         }
-        .padding(.vertical, Spacing.xs)
+        .padding(.vertical, Spacing.sm)
         .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// A neutral skeleton row shown while the first fleet load is in flight — grey shapes that match the
+/// real row's silhouette, so the list doesn't jump when data arrives.
+private struct FleetRowPlaceholder: View {
+    var body: some View {
+        HStack(spacing: Spacing.md) {
+            RoundedRectangle(cornerRadius: Radius.icon, style: .continuous)
+                .fill(.quaternary)
+                .frame(width: 30, height: 30)
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                Capsule().fill(.quaternary).frame(width: 150, height: 11)
+                Capsule().fill(.quaternary).frame(width: 96, height: 9)
+            }
+            Spacer()
+        }
+        .padding(.vertical, Spacing.sm)
+        .accessibilityHidden(true)
     }
 }
