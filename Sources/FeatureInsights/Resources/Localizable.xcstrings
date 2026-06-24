@@ -26,6 +26,9 @@
     "Metric" : {
       "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Métrica" } } }
     },
+    "No devices to analyze" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "No hay dispositivos para analizar" } } }
+    },
     "Not enough data" : {
       "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Datos insuficientes" } } }
     },

@@ -175,6 +175,16 @@ public extension InsightSeverity {
         case .concern: dsk("Concern")
         }
     }
+
+    /// A severity-distinct SF Symbol — mirrors the device-status shapes users already learn, so an
+    /// insight's priority reads by shape (not colour alone).
+    var symbol: String {
+        switch self {
+        case .nominal: "checkmark.circle.fill"
+        case .watch: "exclamationmark.triangle.fill"
+        case .concern: "exclamationmark.octagon.fill"
+        }
+    }
 }
 
 public extension InsightSource {
