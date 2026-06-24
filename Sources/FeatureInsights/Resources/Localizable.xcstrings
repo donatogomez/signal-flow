@@ -1,54 +1,167 @@
 {
   "sourceLanguage" : "en",
-  "version" : "1.0",
   "strings" : {
     "Confidence %@" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Confianza %@" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confianza %@"
+          }
+        }
+      }
     },
     "Couldn't generate an insight" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "No se pudo generar un análisis" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo generar un análisis"
+          }
+        }
+      }
     },
     "Device" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Dispositivo" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dispositivo"
+          }
+        }
+      }
     },
     "Generated on-device by Apple Intelligence. Telemetry never leaves your device." : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Generado en el dispositivo por Apple Intelligence. La telemetría nunca sale de tu dispositivo." } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generado en el dispositivo por Apple Intelligence. La telemetría nunca sale de tu dispositivo."
+          }
+        }
+      }
     },
     "Generating on-device insight…" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Generando análisis en el dispositivo…" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generando análisis en el dispositivo…"
+          }
+        }
+      }
     },
     "Insight" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Análisis" } } }
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Análisis"
+          }
+        }
+      }
     },
     "Insights" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Análisis" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Análisis"
+          }
+        }
+      }
     },
     "Metric" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Métrica" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Métrica"
+          }
+        }
+      }
     },
     "No devices to analyze" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "No hay dispositivos para analizar" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay dispositivos para analizar"
+          }
+        }
+      }
     },
     "Not enough data" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Datos insuficientes" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datos insuficientes"
+          }
+        }
+      }
     },
     "On-device AI is unavailable — showing a deterministic insight instead." : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "La IA en el dispositivo no está disponible — mostrando un análisis determinista." } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La IA en el dispositivo no está disponible — mostrando un análisis determinista."
+          }
+        }
+      }
     },
     "Potential anomaly" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Posible anomalía" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posible anomalía"
+          }
+        }
+      }
     },
     "Recommendation" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Recomendación" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recomendación"
+          }
+        }
+      }
     },
     "Subject" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Sujeto" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sujeto"
+          }
+        }
+      }
     },
     "Summary" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Resumen" } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resumen"
+          }
+        }
+      }
     },
     "This device hasn't reported enough %@ readings yet." : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Este dispositivo aún no ha reportado suficientes lecturas de %@." } } }
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este dispositivo aún no ha reportado suficientes lecturas de %@."
+          }
+        }
+      }
     }
-  }
+  },
+  "version" : "1.0"
 }

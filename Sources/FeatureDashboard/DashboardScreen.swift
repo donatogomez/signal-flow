@@ -47,22 +47,55 @@ public struct DashboardScreen: View {
 
     @ViewBuilder
     private func content(placeholder: Bool) -> some View {
+        healthHero
         statTiles
         statusBreakdown
         recentEvents(placeholder: placeholder)
     }
 
+    /// The one-second fleet-health glance: when anything is firing, a loud red banner dominates the top
+    /// of the screen; when the fleet is clear, a calm green "all clear" reassures. This is the primary
+    /// operational signal, so it leads and outweighs the device counts below.
+    private var healthHero: some View {
+        let alerts = model.stats.activeAlerts
+        let firing = alerts > 0
+        return HStack(spacing: Spacing.lg) {
+            IconBadge(firing ? "bell.badge.fill" : "checkmark.seal.fill", tint: firing ? .red : .green, size: 52)
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
+                if firing {
+                    Text("\(alerts)")
+                        .font(.system(.largeTitle, design: .rounded).weight(.bold))
+                        .foregroundStyle(.red)
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                    Text(loc("Active alerts"))
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(loc("All systems nominal"))
+                        .font(.title2.weight(.semibold))
+                        .foregroundStyle(.green)
+                }
+            }
+            Spacer(minLength: Spacing.sm)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Spacing.cardPadding)
+        .cardSurface()
+        .accessibilityElement(children: .combine)
+    }
+
     private var statTiles: some View {
         LazyVGrid(columns: columns, spacing: Spacing.md) {
-            StatTile(title: loc("Devices"), value: "\(model.stats.totalDevices)", systemImage: "shippingbox.fill")
-            StatTile(title: loc("Online"), value: "\(model.stats.online)", systemImage: "wifi", tint: .green)
-            StatTile(title: loc("Offline"), value: "\(model.stats.offline)", systemImage: "wifi.slash", tint: .secondary)
             StatTile(
                 title: loc("Active alerts"),
                 value: "\(model.stats.activeAlerts)",
                 systemImage: "bell.fill",
                 tint: model.stats.activeAlerts > 0 ? .red : .primary
             )
+            StatTile(title: loc("Devices"), value: "\(model.stats.totalDevices)", systemImage: "shippingbox.fill")
+            StatTile(title: loc("Online"), value: "\(model.stats.online)", systemImage: "wifi", tint: .green)
+            StatTile(title: loc("Offline"), value: "\(model.stats.offline)", systemImage: "wifi.slash", tint: .secondary)
         }
     }
 

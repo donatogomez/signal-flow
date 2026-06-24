@@ -49,7 +49,8 @@ struct LiveActivityTests {
         #expect(state.assetName == "Fleet A")
         #expect(state.severity == .critical)
         // The reason is a localized, derived string built from the alert's metric + observed value.
-        #expect(state.reason == "Temperature 12.0 °C is outside the acceptable range")
+        // The value is rendered operator-friendly (≤1 decimal, whole when exact) — "12 °C", not "12.0 °C".
+        #expect(state.reason == "Temperature 12 °C is outside the acceptable range")
         #expect(state.startedAt == Date(timeIntervalSince1970: 100))
         // It is never the raw domain message, nor the threshold-event English.
         #expect(state.reason != a.message)

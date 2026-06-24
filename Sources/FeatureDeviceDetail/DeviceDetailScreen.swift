@@ -193,7 +193,7 @@ private struct TrendChart: View {
 
     private var latestValueText: String? {
         guard let latest else { return nil }
-        let value = String(format: "%.1f", latest.value)
+        let value = latest.value.formatted(.number.precision(.fractionLength(0...1)))
         return series.unitSymbol.isEmpty ? value : "\(value) \(series.unitSymbol)"
     }
 

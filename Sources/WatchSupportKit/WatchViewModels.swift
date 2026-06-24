@@ -124,7 +124,7 @@ public struct DeviceSnapshotViewModel: Equatable, Sendable {
     public var telemetry: [TelemetryRow] {
         device.telemetry.map { highlight in
             let name = AlertText.metricName(highlight.metric)
-            return TelemetryRow(id: name, name: name, value: highlight.value.description)
+            return TelemetryRow(id: name, name: name, value: MeasurementText.string(highlight.value))
         }
     }
 }

@@ -58,7 +58,7 @@ public final class DeviceDetailModel {
                     ReadingRow(
                         id: reading.metric.displayName,
                         metric: reading.metric,
-                        valueText: "\(Self.format(reading.value.magnitude)) \(reading.value.unit.symbol)".trimmingCharacters(in: .whitespaces),
+                        valueText: formattedMeasurement(reading.value),
                         recordedAt: reading.recordedAt
                     )
                 }
@@ -96,6 +96,4 @@ public final class DeviceDetailModel {
         }
         return series
     }
-
-    private static func format(_ value: Double) -> String { String(format: "%.1f", value) }
 }

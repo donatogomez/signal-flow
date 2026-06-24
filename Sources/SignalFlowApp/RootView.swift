@@ -99,6 +99,10 @@ public struct RootView: View {
             .tag(Tab.insights)
         }
         .tint(.signalFlowAccent)
+        // Dark by default: SignalFlow is an operational monitoring surface (Grafana/Datadog-style), where
+        // a dark canvas keeps status colour the brightest thing on screen. Semantic + accent colours are
+        // appearance-adaptive, so the surfaces remain accessible.
+        .preferredColorScheme(.dark)
         .task { await container.start() }
         .task { await container.observeCriticalAlertActivity() }
         .task { await container.observeWatchSync() }

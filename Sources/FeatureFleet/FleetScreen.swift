@@ -94,7 +94,8 @@ struct FleetRowView: View {
             IconBadge(row.assetKind.symbol, tint: row.status.tint)
 
             VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text(row.deviceName).font(.body.weight(.medium))
+                // Unhealthy devices read heavier so they stand out; healthy devices recede to regular weight.
+                Text(row.deviceName).font(.body.weight(row.status == .nominal ? .regular : .semibold))
                 Text(verbatim: "\(row.assetName) · \(row.assetKind.localizedName)")
                     .font(.caption)
                     .foregroundStyle(.secondary)

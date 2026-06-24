@@ -50,7 +50,7 @@ public struct BatteryLabel: View {
 
     public var body: some View {
         if let battery {
-            Label("\(Int(battery.percentage))%", systemImage: battery.symbol)
+            Label("\(Int(battery.percentage.rounded()))%", systemImage: battery.symbol)
                 .font(.caption)
                 .foregroundStyle(battery.tint)
                 .monospacedDigit()

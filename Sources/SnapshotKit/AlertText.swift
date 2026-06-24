@@ -12,7 +12,7 @@ import DomainKit
 ///
 public enum AlertText {
     public static func message(metric: MetricKind, value: MeasuredValue) -> String {
-        let valueText = "\(value)"
+        let valueText = MeasurementText.string(value)
         return String(localized: "\(metricName(metric)) \(valueText) is outside the acceptable range", bundle: .module)
     }
 
