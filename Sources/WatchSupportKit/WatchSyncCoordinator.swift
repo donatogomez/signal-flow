@@ -24,7 +24,6 @@ public final class WatchSyncCoordinator {
 
     /// Activates the WatchConnectivity session and loads whatever's already been synced/persisted.
     public func start() async {
-        SyncLog.log("watch: coordinator start()")
         receiver.start()
         await store.refresh()
     }

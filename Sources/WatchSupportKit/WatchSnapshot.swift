@@ -76,11 +76,7 @@ public struct SyncedWatchSnapshotProvider: WatchSnapshotProviding {
     }
 
     public func load() async -> WatchSnapshot {
-        guard let synced = store.load(), synced.hasData else {
-            SyncLog.log("watch: SyncedProvider.load — no synced data (showing empty state)")
-            return .empty
-        }
-        SyncLog.log("watch: SyncedProvider.load — devices=\(synced.devices.count) criticalAlerts=\(synced.criticalAlerts.count) fleetTotal=\(synced.fleet.total)")
+        guard let synced = store.load(), synced.hasData else { return .empty }
         return WatchSnapshot(fleet: synced.fleet, alerts: synced.criticalAlerts, devices: synced.devices, hasData: true)
     }
 }

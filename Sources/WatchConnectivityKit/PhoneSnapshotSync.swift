@@ -14,43 +14,25 @@ public final class PhoneSnapshotSync: NSObject, WCSessionDelegate, @unchecked Se
     public override init() { super.init() }
 
     public func start() {
-        SyncLog.log("phone: start() — WCSession.isSupported=\(WCSession.isSupported())")
         guard WCSession.isSupported() else { return }
         let session = WCSession.default
         session.delegate = self
         session.activate()
-        SyncLog.log("phone: activate() requested — state=\(session.activationState.rawValue)")
     }
 
     /// Sends the snapshot as the session's application context (latest-wins). No-ops if the session isn't
     /// activated yet — the caller's periodic sync will retry once it is.
     public func send(_ snapshot: WatchSyncSnapshot) {
-        guard WCSession.isSupported() else { SyncLog.log("phone: send skipped — WC unsupported"); return }
+        guard WCSession.isSupported() else { return }
         let session = WCSession.default
-        #if os(iOS)
-        SyncLog.log("phone: send() — state=\(session.activationState.rawValue) paired=\(session.isPaired) watchAppInstalled=\(session.isWatchAppInstalled) reachable=\(session.isReachable)")
-        #else
-        SyncLog.log("phone: send() — state=\(session.activationState.rawValue) reachable=\(session.isReachable)")
-        #endif
-        guard session.activationState == .activated else { SyncLog.log("phone: send skipped — session not activated"); return }
-        guard let data = try? WatchSnapshotCodec.encode(snapshot) else { SyncLog.log("phone: send skipped — encode failed"); return }
-        do {
-            try session.updateApplicationContext([WatchSnapshotCodec.applicationContextKey: data])
-            SyncLog.log("phone: updateApplicationContext OK — \(data.count) bytes, devices=\(snapshot.devices.count) criticalAlerts=\(snapshot.criticalAlerts.count)")
-        } catch {
-            SyncLog.log("phone: updateApplicationContext THREW — \(error.localizedDescription)")
-        }
+        guard session.activationState == .activated else { return }
+        guard let data = try? WatchSnapshotCodec.encode(snapshot) else { return }
+        try? session.updateApplicationContext([WatchSnapshotCodec.applicationContextKey: data])
     }
 
     // MARK: WCSessionDelegate
 
-    public func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
-        #if os(iOS)
-        SyncLog.log("phone: activationDidComplete — state=\(activationState.rawValue) paired=\(session.isPaired) watchAppInstalled=\(session.isWatchAppInstalled) reachable=\(session.isReachable) error=\(error?.localizedDescription ?? "nil")")
-        #else
-        SyncLog.log("phone: activationDidComplete — state=\(activationState.rawValue) error=\(error?.localizedDescription ?? "nil")")
-        #endif
-    }
+    public func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {}
 
     #if os(iOS)
     public func sessionDidBecomeInactive(_ session: WCSession) {}

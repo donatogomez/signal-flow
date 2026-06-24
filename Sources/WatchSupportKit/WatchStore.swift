@@ -1,7 +1,6 @@
 import Foundation
 import Observation
 import SnapshotKit
-import WatchConnectivityKit
 
 /// The watch app's single source of UI state. Thin by design: it loads a ``WatchSnapshot`` from the
 /// injected provider and exposes the pure view models — it holds **no** business logic of its own.
@@ -31,6 +30,5 @@ public final class WatchStore {
     public func refresh() async {
         snapshot = await provider.load()
         phase = .loaded
-        SyncLog.log("watch: WatchStore.refresh — hasData=\(snapshot.hasData) fleetTotal=\(snapshot.fleet.total) alerts=\(snapshot.alerts.count)")
     }
 }

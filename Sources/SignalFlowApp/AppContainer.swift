@@ -118,7 +118,6 @@ public final class AppContainer {
     /// changes, on a steady cadence. WatchConnectivity coalesces to the latest application context, so a
     /// simple periodic push is the most reliable strategy. Cancellation-safe; tied to a view's `.task`.
     public func observeWatchSync(pollInterval: Duration = .seconds(5)) async {
-        SyncLog.log("phone: observeWatchSync started (interval=\(pollInterval))")
         watchSync.start()
         while !Task.isCancelled {
             if let snapshot = await currentWatchSnapshot() {
@@ -126,19 +125,6 @@ public final class AppContainer {
             }
             do { try await Task.sleep(for: pollInterval) } catch { break }
         }
-    }
-
-    /// DEBUG manual trigger: build and push a snapshot immediately, independent of the poll cadence.
-    /// Wired to a temporary debug `.task` in `RootView` so the sync path can be verified right after the
-    /// dashboard loads.
-    public func forceSyncToWatch() async {
-        SyncLog.log("phone: forceSyncToWatch() invoked")
-        watchSync.start()
-        guard let snapshot = await currentWatchSnapshot() else {
-            SyncLog.log("phone: forceSyncToWatch — no snapshot available yet")
-            return
-        }
-        watchSync.send(snapshot)
     }
 
     /// Assembles the watch snapshot from the same domain ports the app renders — never the data engine
@@ -158,8 +144,6 @@ public final class AppContainer {
             assets: allAssets, devices: deviceList, latestReadings: [],
             events: [], alerts: alertList, insights: []
         )
-        let watchSnapshot = WatchSnapshotBuilder.build(from: persisted, now: Date())
-        SyncLog.log("phone: built snapshot — devices=\(watchSnapshot.devices.count) criticalAlerts=\(watchSnapshot.criticalAlerts.count) fleetTotal=\(watchSnapshot.fleet.total)")
-        return watchSnapshot
+        return WatchSnapshotBuilder.build(from: persisted, now: Date())
     }
 }

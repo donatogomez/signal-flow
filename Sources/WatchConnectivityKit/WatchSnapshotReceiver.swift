@@ -20,24 +20,20 @@ public final class WatchSnapshotReceiver: NSObject, WCSessionDelegate, @unchecke
     }
 
     public func start() {
-        SyncLog.log("watch: receiver start() — WCSession.isSupported=\(WCSession.isSupported())")
         guard WCSession.isSupported() else { return }
         let session = WCSession.default
         session.delegate = self
         session.activate()
-        SyncLog.log("watch: activate() requested — state=\(session.activationState.rawValue)")
     }
 
     // MARK: WCSessionDelegate
 
     public func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
-        SyncLog.log("watch: activationDidComplete — state=\(activationState.rawValue) error=\(error?.localizedDescription ?? "nil")")
         // The OS retains the latest application context across launches — ingest whatever's already there.
         ingest(session.receivedApplicationContext)
     }
 
     public func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
-        SyncLog.log("watch: didReceiveApplicationContext — keys=[\(Array(applicationContext.keys).joined(separator: ", "))]")
         ingest(applicationContext)
     }
 
@@ -48,17 +44,9 @@ public final class WatchSnapshotReceiver: NSObject, WCSessionDelegate, @unchecke
     #endif
 
     private func ingest(_ context: [String: Any]) {
-        guard let data = context[WatchSnapshotCodec.applicationContextKey] as? Data else {
-            SyncLog.log("watch: ingest — no snapshot data under key '\(WatchSnapshotCodec.applicationContextKey)'")
-            return
-        }
-        guard let snapshot = try? WatchSnapshotCodec.decode(data) else {
-            SyncLog.log("watch: ingest — decode failed (\(data.count) bytes)")
-            return
-        }
-        let stored = store.ingest(snapshot)
-        SyncLog.log("watch: ingest — devices=\(snapshot.devices.count) criticalAlerts=\(snapshot.criticalAlerts.count) persisted=\(stored) lastUpdated=\(snapshot.lastUpdated)")
-        guard stored else { return }   // ignore stale snapshots
+        guard let data = context[WatchSnapshotCodec.applicationContextKey] as? Data,
+              let snapshot = try? WatchSnapshotCodec.decode(data) else { return }
+        guard store.ingest(snapshot) else { return }   // ignore stale snapshots
         onUpdate()
     }
 }
