@@ -24,7 +24,7 @@ public struct InsightsScreen: View {
     public var body: some View {
         @Bindable var model = model
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.xl) {
                 CardSection(loc("Subject"), systemImage: "scope") {
                     VStack(spacing: Spacing.md) {
                         Picker(loc("Device"), selection: $model.selectedDeviceID) {

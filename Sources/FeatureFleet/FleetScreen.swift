@@ -65,10 +65,7 @@ struct FleetRowView: View {
 
     var body: some View {
         HStack(spacing: Spacing.md) {
-            Image(systemName: row.assetKind.symbol)
-                .font(.title3)
-                .foregroundStyle(.secondary)
-                .frame(width: 30)
+            IconBadge(row.assetKind.symbol)
 
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text(row.deviceName).font(.body.weight(.medium))

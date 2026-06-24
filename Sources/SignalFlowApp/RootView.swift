@@ -1,5 +1,6 @@
 import SwiftUI
 import DomainKit
+import DesignSystemKit
 import FeatureDashboard
 import FeatureFleet
 import FeatureDeviceDetail
@@ -97,6 +98,7 @@ public struct RootView: View {
             .tabItem { Label(loc("Insights"), systemImage: "sparkles") }
             .tag(Tab.insights)
         }
+        .tint(.signalFlowAccent)
         .task { await container.start() }
         .task { await container.observeCriticalAlertActivity() }
         .task { await container.observeWatchSync() }

@@ -20,7 +20,7 @@ public struct DashboardScreen: View {
 
     public var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.xl) {
                 if case .failed(let message) = model.phase {
                     ContentUnavailableView(loc("Couldn't load the dashboard"), systemImage: "exclamationmark.triangle", description: Text(message))
                         .frame(maxWidth: .infinity)
