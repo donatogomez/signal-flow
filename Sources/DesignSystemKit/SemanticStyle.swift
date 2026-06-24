@@ -86,6 +86,16 @@ public extension AlertSeverity {
         case .critical: dsk("Critical")
         }
     }
+
+    /// A severity-distinct SF Symbol — mirrors the device-status shapes, so an alert's severity reads by
+    /// shape (not colour alone).
+    var symbol: String {
+        switch self {
+        case .info: "info.circle.fill"
+        case .warning: "exclamationmark.triangle.fill"
+        case .critical: "exclamationmark.octagon.fill"
+        }
+    }
 }
 
 public extension ConnectivityStatus.State {
