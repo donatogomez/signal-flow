@@ -173,7 +173,7 @@ struct WidgetSupportTests {
     func alertsTimeline() {
         let now = Date(timeIntervalSince1970: 1000)
         let alerts = (0..<6).map {
-            WidgetAlert(id: AlertID(), deviceName: "D1", severity: .critical, message: "m", raisedAt: Date(timeIntervalSince1970: TimeInterval($0)))
+            WidgetAlert(id: AlertID(), deviceName: "D1", severity: .critical, metric: .temperature, message: "m", raisedAt: Date(timeIntervalSince1970: TimeInterval($0)))
         }
         let data = WidgetData(fleet: .empty, alerts: alerts, generatedAt: now)
 

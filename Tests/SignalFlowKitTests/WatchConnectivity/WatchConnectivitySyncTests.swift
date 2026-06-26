@@ -29,7 +29,7 @@ struct WatchConnectivitySyncTests {
         WatchSyncSnapshot(
             fleet: FleetSummary(online: 3, warning: 1, critical: 1, offline: 0, lastUpdated: nil),
             devices: [WatchDeviceSnapshot(id: DeviceID(), name: "D1", assetName: "Fleet A", status: .critical)],
-            criticalAlerts: [WidgetAlert(id: AlertID(), deviceName: "D1", severity: .critical, message: "m", raisedAt: Date(timeIntervalSince1970: 1))],
+            criticalAlerts: [WidgetAlert(id: AlertID(), deviceName: "D1", severity: .critical, metric: .temperature, message: "m", raisedAt: Date(timeIntervalSince1970: 1))],
             lastUpdated: lastUpdated
         )
     }
@@ -73,6 +73,82 @@ struct WatchConnectivitySyncTests {
         #expect(synced.criticalAlerts.allSatisfy { $0.severity == .critical })
         #expect(synced.lastUpdated == Date(timeIntervalSince1970: 500))
         #expect(synced.hasData)
+    }
+
+    @Test("The watch inbox receives warnings as well as criticals (info stays on the phone)")
+    func buildsIncludeWarnings() throws {
+        let asset = try Asset(id: assetID, name: "Fleet A", kind: .refrigeratedTruck, deviceIDs: [])
+        let dev = try device("D1", .online)
+        func alert(_ severity: AlertSeverity) throws -> Alert {
+            Alert(deviceID: dev.id, ruleID: AlertRuleID(), metric: .temperature, severity: severity,
+                  message: "m", observedValue: try MeasuredValue(magnitude: 5, unit: .celsius), raisedAt: Date(timeIntervalSince1970: 1))
+        }
+        let persisted = PersistedSnapshot(
+            assets: [asset], devices: [dev], latestReadings: [],
+            events: [], alerts: [try alert(.warning), try alert(.critical), try alert(.info)], insights: []
+        )
+
+        let synced = WatchSnapshotBuilder.build(from: persisted, now: Date(timeIntervalSince1970: 500))
+        let severities = Set(synced.criticalAlerts.map(\.severity))
+
+        #expect(severities.contains(.warning))
+        #expect(severities.contains(.critical))
+        #expect(!severities.contains(.info)) // info-level notices stay on the phone
+    }
+
+    @Test("primaryMetric picks the highest-priority metric present")
+    func primaryMetricSelection() throws {
+        let dev = DeviceID()
+        func reading(_ metric: MetricKind) throws -> TelemetryReading {
+            TelemetryReading(deviceID: dev, metric: metric, value: try MeasuredValue(magnitude: 1, unit: .celsius), recordedAt: .distantPast)
+        }
+        #expect(WatchSnapshotBuilder.primaryMetric(of: [try reading(.humidity), try reading(.temperature)]) == .temperature)
+        #expect(WatchSnapshotBuilder.primaryMetric(of: [try reading(.batteryLevel), try reading(.humidity)]) == .humidity)
+        #expect(WatchSnapshotBuilder.primaryMetric(of: []) == nil)
+    }
+
+    @Test("Builder attaches the primary metric's recent history (sparkline + span) to its highlight")
+    func buildAttachesTrend() throws {
+        let asset = try Asset(id: assetID, name: "Fleet A", kind: .refrigeratedTruck, deviceIDs: [])
+        let dev = try device("D1", .online)
+        func temp(_ magnitude: Double, _ seconds: TimeInterval) throws -> TelemetryReading {
+            TelemetryReading(deviceID: dev.id, metric: .temperature, value: try MeasuredValue(magnitude: magnitude, unit: .celsius), recordedAt: Date(timeIntervalSince1970: seconds))
+        }
+        let series = [try temp(8, 0), try temp(9, 600), try temp(10, 1200), try temp(12.4, 1800)] // 0…1800s = 30 min
+        let persisted = PersistedSnapshot(
+            assets: [asset], devices: [dev], latestReadings: [series.last!],
+            events: [], alerts: [], insights: []
+        )
+
+        let synced = WatchSnapshotBuilder.build(from: persisted, now: Date(timeIntervalSince1970: 2000), history: [dev.id: series])
+        let highlight = try #require(synced.devices.first?.telemetry.first)
+
+        #expect(highlight.metric == .temperature)
+        #expect(highlight.history == [8, 9, 10, 12.4])
+        #expect(highlight.spanMinutes == 30)
+    }
+
+    @Test("Builder attaches a separate trend to each metric (temperature and humidity)")
+    func buildAttachesTrendPerMetric() throws {
+        let asset = try Asset(id: assetID, name: "Fleet A", kind: .greenhouse, deviceIDs: [])
+        let dev = try device("D1", .online)
+        func reading(_ metric: MetricKind, _ unit: MeasurementUnit, _ magnitude: Double, _ seconds: TimeInterval) throws -> TelemetryReading {
+            TelemetryReading(deviceID: dev.id, metric: metric, value: try MeasuredValue(magnitude: magnitude, unit: unit), recordedAt: Date(timeIntervalSince1970: seconds))
+        }
+        let tempSeries = [try reading(.temperature, .celsius, 8, 0), try reading(.temperature, .celsius, 12, 600)]
+        let humSeries = [try reading(.humidity, .percent, 40, 0), try reading(.humidity, .percent, 43, 600)]
+        let persisted = PersistedSnapshot(
+            assets: [asset], devices: [dev],
+            latestReadings: [tempSeries.last!, humSeries.last!], events: [], alerts: [], insights: []
+        )
+
+        let synced = WatchSnapshotBuilder.build(from: persisted, now: Date(timeIntervalSince1970: 2000),
+                                                history: [dev.id: tempSeries + humSeries])
+        let snap = try #require(synced.devices.first)
+
+        #expect(snap.telemetry.map(\.metric) == [.temperature, .humidity])
+        #expect(snap.telemetry.first { $0.metric == .temperature }?.history == [8, 12])
+        #expect(snap.telemetry.first { $0.metric == .humidity }?.history == [40, 43])
     }
 
     @Test("iPhone enriches each device snapshot with battery, connectivity, and telemetry highlights")

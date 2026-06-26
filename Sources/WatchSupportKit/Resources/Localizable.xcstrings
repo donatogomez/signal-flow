@@ -1,20 +1,8 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%@ %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ %2$@"
-          }
-        }
-      }
-    },
-    "%lld" : {
-
-    },
     "%lld active alerts" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -134,6 +122,16 @@
         }
       }
     },
+    "%lld/%lld healthy" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld/%lld en orden"
+          }
+        }
+      }
+    },
     "%lld/%lld online" : {
       "localizations" : {
         "es" : {
@@ -165,6 +163,7 @@
       }
     },
     "Battery" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -175,11 +174,22 @@
       }
     },
     "Connectivity" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Conectividad"
+          }
+        }
+      }
+    },
+    "Caution" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aviso"
           }
         }
       }
@@ -215,6 +225,7 @@
       }
     },
     "Devices" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -224,12 +235,25 @@
         }
       }
     },
-    "Fleet" : {
+    "Healthy" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Flota"
+            "value" : "En orden"
+          }
+        }
+      }
+    },
+    "i" : {
+
+    },
+    "in %lld min" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "en %lld min"
           }
         }
       }
@@ -245,6 +269,7 @@
       }
     },
     "Last seen" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -324,7 +349,19 @@
         }
       }
     },
+    "Overview" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resumen"
+          }
+        }
+      }
+    },
     "Reason" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -335,6 +372,7 @@
       }
     },
     "Since" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -345,6 +383,7 @@
       }
     },
     "Telemetry" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -355,6 +394,7 @@
       }
     },
     "Updated" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -363,6 +403,9 @@
           }
         }
       }
+    },
+    "v" : {
+
     },
     "Warning" : {
       "localizations" : {

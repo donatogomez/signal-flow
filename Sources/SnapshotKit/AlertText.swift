@@ -16,6 +16,22 @@ public enum AlertText {
         return String(localized: "\(metricName(metric)) \(valueText) is outside the acceptable range", bundle: .module)
     }
 
+    /// A glanceable **one-to-two word** label for the metric in trouble ("Temperatura", "Batería baja"),
+    /// for tight surfaces like the watch device list where the full sentence won't fit. Unlike
+    /// ``metricName(_:)``, battery/signal carry their always-true direction so the two words actually
+    /// describe the problem.
+    public static func shortLabel(_ metric: MetricKind) -> String {
+        switch metric {
+        case .temperature: String(localized: "Temperature", bundle: .module)
+        case .humidity: String(localized: "Humidity", bundle: .module)
+        case .carbonDioxide: String(localized: "CO₂", bundle: .module)
+        case .batteryLevel: String(localized: "Low battery", bundle: .module)
+        case .signalStrength: String(localized: "Weak signal", bundle: .module)
+        case .custom("pressure"): String(localized: "Pressure", bundle: .module)
+        case .custom(let key): key.replacingOccurrences(of: "_", with: " ").capitalized
+        }
+    }
+
     /// The localized, human-readable name of a metric. `public` so other glance surfaces (the watch's
     /// device snapshot) can label telemetry highlights through the same catalog.
     public static func metricName(_ metric: MetricKind) -> String {

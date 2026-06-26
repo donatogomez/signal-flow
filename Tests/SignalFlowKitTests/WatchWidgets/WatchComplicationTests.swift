@@ -11,7 +11,7 @@ struct WatchComplicationTests {
     // MARK: - Builders
 
     private func alert(_ severity: AlertSeverity, device: String, raisedAt: TimeInterval) -> WidgetAlert {
-        WidgetAlert(id: AlertID(), deviceName: device, severity: severity, message: "m", raisedAt: Date(timeIntervalSince1970: raisedAt))
+        WidgetAlert(id: AlertID(), deviceName: device, severity: severity, metric: .temperature, message: "m", raisedAt: Date(timeIntervalSince1970: raisedAt))
     }
 
     private func snapshot(
