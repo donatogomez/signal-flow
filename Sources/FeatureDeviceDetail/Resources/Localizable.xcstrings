@@ -2,6 +2,9 @@
   "sourceLanguage" : "en",
   "version" : "1.0",
   "strings" : {
+    "%@ in %lld min" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ en %2$lld min" } } }
+    },
     "%@ trend" : {
       "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Tendencia de %@" } } }
     },

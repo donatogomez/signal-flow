@@ -250,6 +250,52 @@ public struct HealthGauge: View {
     }
 }
 
+// MARK: - Metric hero
+
+/// A Stocks/Health-style hero for one metric: the metric name, a large dominant value, and an optional
+/// change caption with a direction glyph. Typographic only — no chrome — so a screen drops it at the top
+/// of a card. The value scales with Dynamic Type (`.largeTitle`). One combined accessibility element.
+public struct MetricHeroValue: View {
+    private let title: String
+    private let value: String
+    private let caption: String?
+    private let captionSymbol: String?
+
+    public init(title: String, value: String, caption: String? = nil, captionSymbol: String? = nil) {
+        self.title = title
+        self.value = value
+        self.caption = caption
+        self.captionSymbol = captionSymbol
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            Text(title)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.system(.largeTitle, design: .rounded).weight(.bold))
+                .monospacedDigit()
+                .contentTransition(.numericText())
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
+            if let caption {
+                if let captionSymbol {
+                    Label(caption, systemImage: captionSymbol)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(caption)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+}
+
 /// A neutral, in-card empty-state placeholder. A compact, centered icon-over-text layout that mirrors
 /// the system `ContentUnavailableView` language (used for full-screen empties), so empty states read
 /// consistently whether they're a whole screen or a single card section.

@@ -31,8 +31,12 @@ public struct DeviceDetailScreen: View {
                     loadingSkeleton
                 case .loaded:
                     header
-                    currentTelemetry
-                    trendCharts
+                    if model.readings.isEmpty {
+                        waitingForTelemetry
+                    } else {
+                        primaryMetricCard
+                        vitalsCard
+                    }
                     activeAlerts
                     recentEvents
                 }
@@ -64,26 +68,83 @@ public struct DeviceDetailScreen: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var currentTelemetry: some View {
-        CardSection(loc("Current telemetry"), systemImage: "gauge.with.dots.needle.bottom.50percent") {
-            if model.readings.isEmpty {
-                EmptyHint(loc("Waiting for telemetry"), systemImage: "antenna.radiowaves.left.and.right.slash")
-            } else {
+    /// The screen's answer to "what is happening?": the most important metric as a large value with its
+    /// change, and its single trend chart — one calm card, no competing charts.
+    @ViewBuilder
+    private var primaryMetricCard: some View {
+        if let reading = primaryReading {
+            VStack(alignment: .leading, spacing: Spacing.lg) {
+                MetricHeroValue(
+                    title: reading.metric.localizedName,
+                    value: reading.valueText,
+                    caption: primaryDelta?.text,
+                    captionSymbol: primaryDelta?.symbol
+                )
+                if let trend = primaryTrend, !trend.isEmpty {
+                    TrendChart(series: trend)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(Spacing.cardPadding)
+            .cardSurface()
+        }
+    }
+
+    /// Supporting vitals: the device's other current readings as plain rows (the primary metric is the
+    /// hero above, so it's not repeated here). Hidden when there's nothing else to show.
+    @ViewBuilder
+    private var vitalsCard: some View {
+        let others = otherReadings
+        if !others.isEmpty {
+            CardSection(loc("Current telemetry"), systemImage: "gauge.with.dots.needle.bottom.50percent") {
                 VStack(spacing: Spacing.md) {
-                    ForEach(model.readings) { reading in
-                        TelemetryRowView(reading: reading)
-                    }
+                    ForEach(others) { TelemetryRowView(reading: $0) }
                 }
             }
         }
     }
 
-    private var trendCharts: some View {
-        ForEach(model.trends, id: \.metric) { series in
-            CardSection(loc("\(series.metric.localizedName) trend"), systemImage: series.metric.symbol) {
-                TrendChart(series: series)
-            }
+    private var waitingForTelemetry: some View {
+        EmptyHint(loc("Waiting for telemetry"), systemImage: "antenna.radiowaves.left.and.right.slash")
+            .frame(maxWidth: .infinity)
+            .padding(Spacing.cardPadding)
+            .cardSurface()
+    }
+
+    // MARK: Primary-metric selection (view-layer presentation; no model changes)
+
+    /// Priority order for the hero metric — environmental signals first, infrastructure last.
+    private static let metricPriority: [MetricKind] = [.temperature, .humidity, .carbonDioxide, .batteryLevel, .signalStrength]
+
+    private var primaryReading: ReadingRow? {
+        for metric in Self.metricPriority {
+            if let row = model.readings.first(where: { $0.metric == metric }) { return row }
         }
+        return model.readings.first
+    }
+
+    private var primaryTrend: TrendSeries? {
+        guard let primaryReading else { return nil }
+        return model.trends.first { $0.metric == primaryReading.metric }
+    }
+
+    private var otherReadings: [ReadingRow] {
+        model.readings.filter { $0.id != primaryReading?.id }
+    }
+
+    /// The hero's change caption — signed value + a direction glyph over the charted window. Neutral
+    /// (`.secondary`) so it states the change without implying good/bad. `nil` when there's no trend.
+    private var primaryDelta: (text: String, symbol: String)? {
+        guard let series = primaryTrend, series.points.count >= 2,
+              let first = series.points.first, let last = series.points.last else { return nil }
+        let diff = last.value - first.value
+        let minutes = max(Int((last.date.timeIntervalSince(first.date) / 60).rounded()), 0)
+        let magnitude = abs(diff).formatted(.number.precision(.fractionLength(0...1)))
+        let unit = series.unitSymbol.isEmpty ? "" : " \(series.unitSymbol)"
+        let sign = diff > 0 ? "+" : (diff < 0 ? "−" : "")
+        let valueText = "\(sign)\(magnitude)\(unit)"
+        let symbol = diff > 0 ? "arrow.up.right" : (diff < 0 ? "arrow.down.right" : "arrow.right")
+        return (loc("\(valueText) in \(minutes) min"), symbol)
     }
 
     private var activeAlerts: some View {
@@ -106,7 +167,7 @@ public struct DeviceDetailScreen: View {
                 EmptyHint(loc("No events yet"), systemImage: "tray")
             } else {
                 VStack(spacing: Spacing.md) {
-                    ForEach(model.events) { event in
+                    ForEach(model.events.prefix(4)) { event in
                         EventListRow(kind: event.kind, occurredAt: event.occurredAt)
                     }
                 }
@@ -208,19 +269,13 @@ private struct TrendChart: View {
                 .foregroundStyle(series.metric.lineTint)
             }
             if let latest {
+                // A marker on the latest sample so the line reads as live data; the value itself is the
+                // hero above, so it isn't repeated as an annotation here.
                 PointMark(
                     x: .value(loc("Time"), latest.date),
                     y: .value(series.metric.localizedName, latest.value)
                 )
                 .foregroundStyle(series.metric.lineTint)
-                .annotation(position: .top, alignment: .trailing) {
-                    if let latestValueText {
-                        Text(latestValueText)
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                }
             }
         }
         .chartYAxis { AxisMarks(position: .leading) }
