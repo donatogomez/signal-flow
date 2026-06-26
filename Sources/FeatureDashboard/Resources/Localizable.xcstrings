@@ -14,6 +14,16 @@
         }
       }
     },
+    "All systems nominal" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todos los sistemas en orden"
+          }
+        }
+      }
+    },
     "Couldn't load the dashboard" : {
       "localizations" : {
         "es" : {
@@ -24,12 +34,12 @@
         }
       }
     },
-    "Dashboard" : {
+    "Overview" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Panel"
+            "value" : "Resumen"
           }
         }
       }
@@ -50,6 +60,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Estado de la flota"
+          }
+        }
+      }
+    },
+    "Loading dashboard" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cargando el panel"
           }
         }
       }

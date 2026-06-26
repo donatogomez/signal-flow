@@ -53,15 +53,31 @@ public struct WidgetAlert: Identifiable, Sendable, Equatable, Hashable, Codable 
     public let id: AlertID
     public let deviceName: String
     public let severity: AlertSeverity
+    /// The metric in trouble — lets tight surfaces render a short label (e.g. "Batería baja") instead of
+    /// the full sentence.
+    public let metric: MetricKind
     public let message: String
     public let raisedAt: Date
 
-    public init(id: AlertID, deviceName: String, severity: AlertSeverity, message: String, raisedAt: Date) {
+    public init(id: AlertID, deviceName: String, severity: AlertSeverity, metric: MetricKind, message: String, raisedAt: Date) {
         self.id = id
         self.deviceName = deviceName
         self.severity = severity
+        self.metric = metric
         self.message = message
         self.raisedAt = raisedAt
+    }
+
+    // `metric` was added after the wire format shipped; decode it leniently so a snapshot synced/persisted
+    // by an older build (without the field) still loads instead of failing the whole snapshot.
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(AlertID.self, forKey: .id)
+        deviceName = try c.decode(String.self, forKey: .deviceName)
+        severity = try c.decode(AlertSeverity.self, forKey: .severity)
+        metric = try c.decodeIfPresent(MetricKind.self, forKey: .metric) ?? .temperature
+        message = try c.decode(String.self, forKey: .message)
+        raisedAt = try c.decode(Date.self, forKey: .raisedAt)
     }
 
     /// The most pressing active alerts, joined with device names and capped at `limit`.
@@ -79,6 +95,7 @@ public struct WidgetAlert: Identifiable, Sendable, Equatable, Hashable, Codable 
                     id: alert.id,
                     deviceName: names[alert.deviceID] ?? String(localized: "Unknown device", bundle: .module),
                     severity: alert.severity,
+                    metric: alert.metric,
                     message: AlertText.message(metric: alert.metric, value: alert.observedValue),
                     raisedAt: alert.raisedAt
                 )

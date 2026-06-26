@@ -110,6 +110,7 @@ public struct DeviceSnapshotViewModel: Equatable, Sendable {
     public var isCharging: Bool { device.battery?.isCharging ?? false }
 
     public var connectivityLabel: String { device.connectivity.state.watchLabel }
+    public var connectivityState: ConnectivityStatus.State { device.connectivity.state }
     public var lastSeenAt: Date? { device.connectivity.lastSeenAt }
 
     /// Localized metric name + formatted value, e.g. ("Temperature", "12.0 °C").
@@ -124,8 +125,47 @@ public struct DeviceSnapshotViewModel: Equatable, Sendable {
     public var telemetry: [TelemetryRow] {
         device.telemetry.map { highlight in
             let name = AlertText.metricName(highlight.metric)
-            return TelemetryRow(id: name, name: name, value: highlight.value.description)
+            return TelemetryRow(id: name, name: name, value: MeasurementText.string(highlight.value))
         }
+    }
+
+    /// One metric projected for a glance page: localized name, formatted value, and — when a recent
+    /// series is present — the sparkline history plus a "▲ Δ in N min" trend delta. `id` is the localized
+    /// name, which is unique per metric (so it's stable for `ForEach`).
+    public struct PrimaryMetric: Equatable, Sendable, Identifiable {
+        public let name: String
+        public let value: String
+        public let history: [Double]
+        public let isRising: Bool
+        public let deltaText: String?
+        public var id: String { name }
+        public var hasTrend: Bool { history.count >= 2 }
+    }
+
+    /// Every synced metric, projected in priority order — one per paged "metric" screen. The iPhone syncs
+    /// the device's primary metric (and humidity when present), each with its own trend.
+    public var metricPages: [PrimaryMetric] {
+        device.telemetry.map(Self.project)
+    }
+
+    /// The single most important metric (the first page after the overview).
+    public var primaryMetric: PrimaryMetric? {
+        device.telemetry.first.map(Self.project)
+    }
+
+    private static func project(_ highlight: WatchTelemetryHighlight) -> PrimaryMetric {
+        let name = AlertText.metricName(highlight.metric)
+        let value = MeasurementText.string(highlight.value)
+        guard highlight.history.count >= 2,
+              let first = highlight.history.first, let last = highlight.history.last else {
+            return PrimaryMetric(name: name, value: value, history: [], isRising: false, deltaText: nil)
+        }
+        let delta = last - first
+        let arrow = delta > 0 ? "↑" : (delta < 0 ? "↓" : "→")
+        let deltaValue = (try? MeasuredValue(magnitude: abs(delta), unit: highlight.value.unit))
+            .map { MeasurementText.string($0) } ?? ""
+        let deltaText = "\(arrow) \(deltaValue) \(loc("in \(highlight.spanMinutes) min"))"
+        return PrimaryMetric(name: name, value: value, history: highlight.history, isRising: delta >= 0, deltaText: deltaText)
     }
 }
 

@@ -32,6 +32,36 @@
         }
       }
     },
+    "CO₂": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CO₂"
+          }
+        }
+      }
+    },
+    "Low battery": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Batería baja"
+          }
+        }
+      }
+    },
+    "Weak signal": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Señal débil"
+          }
+        }
+      }
+    },
     "Humidity": {
       "localizations": {
         "es": {

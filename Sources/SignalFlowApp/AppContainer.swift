@@ -129,21 +129,55 @@ public final class AppContainer {
 
     /// Assembles the watch snapshot from the same domain ports the app renders — never the data engine
     /// internals. Returns `nil` until the catalog is available.
+    ///
+    /// As well as the fleet/alert rollup, it sends each device's **latest primary-metric reading** plus a
+    /// short **recent history** of that metric, so the watch's Device Detail can show a live value and a
+    /// mini-trend sparkline. Telemetry is read through the `TelemetryRepository` port like every other
+    /// surface — no data-engine internals.
     private func currentWatchSnapshot() async -> WatchSyncSnapshot? {
         guard let allAssets = try? await assets.allAssets() else { return nil }
         var deviceList: [Device] = []
         var alertList: [Alert] = []
+        var latestReadings: [TelemetryReading] = []
+        var historyByDevice: [DeviceID: [TelemetryReading]] = [:]
+
         for asset in allAssets {
             guard let assetDevices = try? await devices.devices(inAsset: asset.id) else { continue }
             deviceList += assetDevices
             for device in assetDevices {
                 alertList += (try? await alerts.activeAlerts(forDevice: device.id)) ?? []
+
+                let latest = (try? await telemetry.latestReadings(forDevice: device.id)) ?? []
+                // Show the device's primary metric and, when present, humidity — each as its own paged
+                // metric screen on the watch, with its own recent history for a sparkline.
+                var metricsToSync: [MetricKind] = []
+                if let primary = WatchSnapshotBuilder.primaryMetric(of: latest) { metricsToSync.append(primary) }
+                if latest.contains(where: { $0.metric == .humidity }), !metricsToSync.contains(.humidity) {
+                    metricsToSync.append(.humidity)
+                }
+
+                var deviceHistory: [TelemetryReading] = []
+                for metric in metricsToSync {
+                    if let reading = latest.first(where: { $0.metric == metric }) { latestReadings.append(reading) }
+                    deviceHistory += await recentHistory(deviceID: device.id, metric: metric)
+                }
+                if !deviceHistory.isEmpty { historyByDevice[device.id] = deviceHistory }
             }
         }
+
         let persisted = PersistedSnapshot(
-            assets: allAssets, devices: deviceList, latestReadings: [],
+            assets: allAssets, devices: deviceList, latestReadings: latestReadings,
             events: [], alerts: alertList, insights: []
         )
-        return WatchSnapshotBuilder.build(from: persisted, now: Date())
+        return WatchSnapshotBuilder.build(from: persisted, now: Date(), history: historyByDevice)
+    }
+
+    /// Recent readings for one metric, oldest-first, for the watch sparkline. Reads through the telemetry
+    /// port over a wide range (the simulated history is small in a session); the builder trims to its
+    /// point cap.
+    private func recentHistory(deviceID: DeviceID, metric: MetricKind) async -> [TelemetryReading] {
+        guard let range = try? TimeRange(start: Date(timeIntervalSince1970: 0), end: Date(timeIntervalSince1970: 4_000_000_000)),
+              let readings = try? await telemetry.readings(forDevice: deviceID, metric: metric, in: range) else { return [] }
+        return readings.sorted { $0.recordedAt < $1.recordedAt }
     }
 }

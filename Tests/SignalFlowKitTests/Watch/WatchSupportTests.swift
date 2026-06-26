@@ -17,7 +17,7 @@ struct WatchSupportTests {
         raisedAt: TimeInterval,
         message: String = "Threshold breached"
     ) -> WidgetAlert {
-        WidgetAlert(id: AlertID(), deviceName: device, severity: severity, message: message, raisedAt: Date(timeIntervalSince1970: raisedAt))
+        WidgetAlert(id: AlertID(), deviceName: device, severity: severity, metric: .temperature, message: message, raisedAt: Date(timeIntervalSince1970: raisedAt))
     }
 
     private func snapshot(fleet: FleetSummary, alerts: [WidgetAlert]) -> WatchSnapshot {
@@ -237,6 +237,42 @@ struct WatchSupportTests {
         #expect(vm.telemetry.count == 2)
         #expect(vm.telemetry.first?.name == "Temperature")
         #expect(vm.telemetry.first?.value.contains("°C") == true)
+    }
+
+    @Test("Primary metric exposes the value, sparkline history, and a rising trend delta")
+    func primaryMetricTrend() throws {
+        let device = WatchDeviceSnapshot(
+            id: DeviceID(), name: "Reefer 27", assetName: "Fleet A", status: .critical,
+            battery: nil, connectivity: ConnectivityStatus(state: .online),
+            telemetry: [WatchTelemetryHighlight(
+                metric: .temperature,
+                value: try MeasuredValue(magnitude: 12.4, unit: .celsius),
+                history: [8, 9, 10, 12.4], spanMinutes: 30
+            )]
+        )
+        let primary = try #require(DeviceSnapshotViewModel(device).primaryMetric)
+        // Value is locale-formatted (e.g. "12.4 °C" or "12,4 °C"), so assert separator-agnostically.
+        #expect(primary.value.contains("12"))
+        #expect(primary.value.contains("°C"))
+        #expect(primary.history == [8, 9, 10, 12.4])
+        #expect(primary.hasTrend)
+        #expect(primary.isRising)
+        let delta = try #require(primary.deltaText)
+        #expect(delta.contains("↑"))
+        #expect(delta.contains("4"))     // |12.4 − 8| = 4.4
+        #expect(delta.contains("°C"))
+        #expect(delta.contains("min"))   // "in 30 min" (English source on the test host)
+    }
+
+    @Test("Primary metric omits the delta when there is no recent series")
+    func primaryMetricNoTrend() throws {
+        let device = WatchDeviceSnapshot(
+            id: DeviceID(), name: "D1", assetName: nil, status: .nominal,
+            telemetry: [WatchTelemetryHighlight(metric: .temperature, value: try MeasuredValue(magnitude: 8, unit: .celsius))]
+        )
+        let primary = try #require(DeviceSnapshotViewModel(device).primaryMetric)
+        #expect(primary.hasTrend == false)
+        #expect(primary.deltaText == nil)
     }
 
     @Test("Device snapshot model copes with absent battery/telemetry")

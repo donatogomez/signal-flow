@@ -4,6 +4,9 @@
     "%lld" : {
 
     },
+    "%lld " : {
+
+    },
     "Alerts" : {
       "localizations" : {
         "es" : {
@@ -54,6 +57,16 @@
         }
       }
     },
+    "Devices will appear here once they report in." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los dispositivos aparecerán aquí cuando informen."
+          }
+        }
+      }
+    },
     "Filter" : {
       "localizations" : {
         "es" : {
@@ -64,12 +77,12 @@
         }
       }
     },
-    "Fleet" : {
+    "Devices" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Flota"
+            "value" : "Dispositivos"
           }
         }
       }
@@ -80,6 +93,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nombre"
+          }
+        }
+      }
+    },
+    "No devices" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin dispositivos"
           }
         }
       }
@@ -150,6 +173,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Estado"
+          }
+        }
+      }
+    },
+    "Try a different search or filter." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prueba con otra búsqueda o filtro."
           }
         }
       }

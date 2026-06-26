@@ -1,5 +1,6 @@
 import SwiftUI
 import DomainKit
+import DesignSystemKit
 import FeatureDashboard
 import FeatureFleet
 import FeatureDeviceDetail
@@ -50,7 +51,7 @@ public struct RootView: View {
                     events: container.events
                 )
             }
-            .tabItem { Label(loc("Dashboard"), systemImage: "square.grid.2x2.fill") }
+            .tabItem { Label(loc("Overview"), systemImage: "square.grid.2x2.fill") }
             .tag(Tab.dashboard)
 
             NavigationStack(path: $fleetPath) {
@@ -70,7 +71,7 @@ public struct RootView: View {
                     )
                 }
             }
-            .tabItem { Label(loc("Fleet"), systemImage: "list.bullet.rectangle.fill") }
+            .tabItem { Label(loc("Devices"), systemImage: "list.bullet.rectangle.fill") }
             .tag(Tab.fleet)
 
             NavigationStack {
@@ -97,6 +98,11 @@ public struct RootView: View {
             .tabItem { Label(loc("Insights"), systemImage: "sparkles") }
             .tag(Tab.insights)
         }
+        .tint(.signalFlowAccent)
+        // Dark by default: SignalFlow is an operational monitoring surface (Grafana/Datadog-style), where
+        // a dark canvas keeps status colour the brightest thing on screen. Semantic + accent colours are
+        // appearance-adaptive, so the surfaces remain accessible.
+        .preferredColorScheme(.dark)
         .task { await container.start() }
         .task { await container.observeCriticalAlertActivity() }
         .task { await container.observeWatchSync() }

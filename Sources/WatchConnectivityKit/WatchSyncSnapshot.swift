@@ -2,16 +2,24 @@ import Foundation
 import DomainKit
 import SnapshotKit
 
-/// One compact telemetry highlight the watch can show on a device snapshot: the metric and its latest
-/// value. Pure `Codable` so it crosses the WatchConnectivity boundary cheaply; the watch localizes the
+/// One compact telemetry highlight the watch can show on a device snapshot: the metric, its latest
+/// value, and an optional short recent **history** (oldest→newest magnitudes) for a sparkline + trend
+/// delta. Pure `Codable` so it crosses the WatchConnectivity boundary cheaply; the watch localizes the
 /// metric name (via `SnapshotKit.AlertText`) and formats the value at render time.
 public struct WatchTelemetryHighlight: Codable, Sendable, Equatable, Hashable {
     public let metric: MetricKind
     public let value: MeasuredValue
+    /// Recent magnitudes for this metric, oldest→newest, for the watch's mini trend. Empty when no
+    /// history is available; a sparkline is shown only when there are at least two points.
+    public let history: [Double]
+    /// Minutes spanned by `history` (0 when absent) — drives the "▲ Δ in N min" trend label.
+    public let spanMinutes: Int
 
-    public init(metric: MetricKind, value: MeasuredValue) {
+    public init(metric: MetricKind, value: MeasuredValue, history: [Double] = [], spanMinutes: Int = 0) {
         self.metric = metric
         self.value = value
+        self.history = history
+        self.spanMinutes = spanMinutes
     }
 }
 

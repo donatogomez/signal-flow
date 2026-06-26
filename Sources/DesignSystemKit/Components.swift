@@ -50,7 +50,7 @@ public struct BatteryLabel: View {
 
     public var body: some View {
         if let battery {
-            Label("\(Int(battery.percentage))%", systemImage: battery.symbol)
+            Label("\(Int(battery.percentage.rounded()))%", systemImage: battery.symbol)
                 .font(.caption)
                 .foregroundStyle(battery.tint)
                 .monospacedDigit()
@@ -59,6 +59,31 @@ public struct BatteryLabel: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
+}
+
+// MARK: - Leading icon
+
+/// A tinted, rounded-square SF Symbol container for list/row leading glyphs — the Apple "settings row"
+/// treatment. Lifts a bare glyph into a deliberate, scannable icon without adding decoration.
+public struct IconBadge: View {
+    private let systemImage: String
+    private let tint: Color
+    private let size: CGFloat
+
+    public init(_ systemImage: String, tint: Color = .accentColor, size: CGFloat = 30) {
+        self.systemImage = systemImage
+        self.tint = tint
+        self.size = size
+    }
+
+    public var body: some View {
+        Image(systemName: systemImage)
+            .font(.system(size: size * 0.46, weight: .semibold))
+            .foregroundStyle(tint)
+            .frame(width: size, height: size)
+            .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: Radius.icon, style: .continuous))
+            .accessibilityHidden(true)
     }
 }
 
@@ -88,8 +113,8 @@ public struct CardSection<Content: View>: View {
             content
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Spacing.lg)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .padding(Spacing.cardPadding)
+        .cardSurface()
     }
 }
 
@@ -120,8 +145,11 @@ public struct StatTile: View {
                 .contentTransition(.numericText())
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Spacing.lg)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .padding(Spacing.cardPadding)
+        .cardSurface()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(title))
+        .accessibilityValue(Text(value))
     }
 }
 
@@ -166,9 +194,7 @@ public struct EventListRow: View {
 
     public var body: some View {
         HStack(spacing: Spacing.md) {
-            Image(systemName: kind.symbol)
-                .foregroundStyle(kind.tint)
-                .frame(width: 24)
+            IconBadge(kind.symbol, tint: kind.tint)
             VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text(kind.title).font(.subheadline.weight(.medium))
                 if let deviceName {
@@ -183,7 +209,9 @@ public struct EventListRow: View {
     }
 }
 
-/// A neutral empty-state placeholder.
+/// A neutral, in-card empty-state placeholder. A compact, centered icon-over-text layout that mirrors
+/// the system `ContentUnavailableView` language (used for full-screen empties), so empty states read
+/// consistently whether they're a whole screen or a single card section.
 public struct EmptyHint: View {
     private let title: String
     private let systemImage: String
@@ -194,10 +222,18 @@ public struct EmptyHint: View {
     }
 
     public var body: some View {
-        Label(title, systemImage: systemImage)
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.vertical, Spacing.md)
+        VStack(spacing: Spacing.sm) {
+            Image(systemName: systemImage)
+                .font(.title2)
+                .foregroundStyle(.tertiary)
+            Text(title)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.vertical, Spacing.lg)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
     }
 }

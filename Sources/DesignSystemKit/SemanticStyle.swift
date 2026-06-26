@@ -32,12 +32,22 @@ private func dsk(_ key: String.LocalizationValue) -> String {
     DSKLocalization.string(key)
 }
 
+/// Operator-friendly rendering of a domain ``MeasuredValue`` for the in-app UI. **Presentation only** —
+/// the underlying value keeps full precision; operators see at most one decimal place (a whole number
+/// when the fraction is zero), locale-aware, with the unit symbol. Mirrors `SnapshotKit.MeasurementText`
+/// for the glance surfaces; the small duplication is the price of the module boundary (DesignSystemKit
+/// must not depend on SnapshotKit).
+public func formattedMeasurement(_ value: MeasuredValue) -> String {
+    let number = value.magnitude.formatted(.number.precision(.fractionLength(0...1)))
+    return value.unit.symbol.isEmpty ? number : "\(number) \(value.unit.symbol)"
+}
+
 /// The **localized**, user-facing alert message, derived from a domain alert's structured fields.
 /// The domain stores a neutral English diagnostic in `Alert.message` that is never shown; the UI renders
 /// this instead so the text follows the device language. (Glance surfaces use the equivalent helper in
 /// SnapshotKit, which can't reach DesignSystemKit.)
 public func localizedAlertMessage(metric: MetricKind, value: MeasuredValue) -> String {
-    let valueText = "\(value)"
+    let valueText = formattedMeasurement(value)
     return DSKLocalization.string("\(metric.localizedName) \(valueText) is outside the acceptable range")
 }
 
@@ -84,6 +94,16 @@ public extension AlertSeverity {
         case .info: dsk("Info")
         case .warning: dsk("Warning")
         case .critical: dsk("Critical")
+        }
+    }
+
+    /// A severity-distinct SF Symbol — mirrors the device-status shapes, so an alert's severity reads by
+    /// shape (not colour alone).
+    var symbol: String {
+        switch self {
+        case .info: "info.circle.fill"
+        case .warning: "exclamationmark.triangle.fill"
+        case .critical: "exclamationmark.octagon.fill"
         }
     }
 }
@@ -173,6 +193,16 @@ public extension InsightSeverity {
         case .nominal: dsk("Nominal")
         case .watch: dsk("Watch")
         case .concern: dsk("Concern")
+        }
+    }
+
+    /// A severity-distinct SF Symbol — mirrors the device-status shapes users already learn, so an
+    /// insight's priority reads by shape (not colour alone).
+    var symbol: String {
+        switch self {
+        case .nominal: "checkmark.circle.fill"
+        case .watch: "exclamationmark.triangle.fill"
+        case .concern: "exclamationmark.octagon.fill"
         }
     }
 }

@@ -37,7 +37,10 @@ public struct AlertsScreen: View {
                         ForEach(AlertSeverityFilter.allCases) { Text($0.title).tag($0) }
                     }
                 } label: {
-                    Label(loc("Filter"), systemImage: "line.3.horizontal.decrease.circle")
+                    // The icon fills when a filter is applied, so an active filter is visible on screen.
+                    Label(loc("Filter"), systemImage: model.severityFilter == .all
+                        ? "line.3.horizontal.decrease.circle"
+                        : "line.3.horizontal.decrease.circle.fill")
                 }
             }
         }
@@ -48,7 +51,12 @@ public struct AlertsScreen: View {
     private var list: some View {
         switch model.phase {
         case .loading where model.active.isEmpty && model.history.isEmpty:
-            ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+            List {
+                ForEach(0..<6, id: \.self) { _ in
+                    AlertRowPlaceholder().listRowSeparator(.hidden)
+                }
+            }
+            .listStyle(.plain)
         case .failed(let message):
             ContentUnavailableView(loc("Couldn't load alerts"), systemImage: "exclamationmark.triangle", description: Text(message))
         default:
@@ -81,35 +89,49 @@ public struct AlertsScreen: View {
     }
 }
 
-/// A single alert row: severity, message, device/asset context, time, and acknowledge state/action.
+/// A single alert row: a leading severity badge (scannable by shape + colour), the message, device/asset
+/// context, time, and the acknowledge state/action. Resolved or acknowledged alerts go visually quiet
+/// (neutral badge, muted severity) while staying fully readable, so unacknowledged alerts stand out.
 private struct AlertRowView: View {
     let row: AlertRow
     let isHistory: Bool
     let onAcknowledge: () -> Void
 
+    /// Quiet once the alert no longer needs attention — acknowledged, or anything in History.
+    private var quiet: Bool { row.isAcknowledged || isHistory }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            HStack(alignment: .firstTextBaseline) {
-                SeverityTag(row.severity)
-                Spacer()
-                Text(row.raisedAt, format: .relative(presentation: .named))
+        HStack(alignment: .top, spacing: Spacing.md) {
+            IconBadge(row.severity.symbol, tint: quiet ? .secondary : row.severity.tint)
+
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(row.severity.label)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(quiet ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+                        Spacer()
+                        Text(row.raisedAt, format: .relative(presentation: .named))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Text(row.message)
+                        .font(.subheadline)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Label {
+                        Text(verbatim: "\(row.deviceName) · \(row.assetName)")
+                    } icon: {
+                        Image(systemName: row.assetKind.symbol)
+                    }
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                }
+                .accessibilityElement(children: .combine)
+
+                footer
             }
-
-            Text(row.message)
-                .font(.subheadline)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Label {
-                Text(verbatim: "\(row.deviceName) · \(row.assetName)")
-            } icon: {
-                Image(systemName: row.assetKind.symbol)
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-
-            footer
         }
         .padding(.vertical, Spacing.xs)
         .contentShape(Rectangle())
@@ -132,5 +154,28 @@ private struct AlertRowView: View {
             .buttonStyle(.bordered)
             .controlSize(.small)
         }
+    }
+}
+
+/// A neutral skeleton row shown while the first alert load is in flight — matches the real row's
+/// silhouette (leading badge + stacked text), consistent with Fleet's loading state.
+private struct AlertRowPlaceholder: View {
+    var body: some View {
+        HStack(alignment: .top, spacing: Spacing.md) {
+            RoundedRectangle(cornerRadius: Radius.icon, style: .continuous)
+                .fill(.quaternary)
+                .frame(width: 30, height: 30)
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                HStack {
+                    Capsule().fill(.quaternary).frame(width: 70, height: 11)
+                    Spacer()
+                    Capsule().fill(.quaternary).frame(width: 48, height: 9)
+                }
+                Capsule().fill(.quaternary).frame(height: 11).frame(maxWidth: .infinity)
+                Capsule().fill(.quaternary).frame(width: 150, height: 9)
+            }
+        }
+        .padding(.vertical, Spacing.xs)
+        .accessibilityHidden(true)
     }
 }
