@@ -14,6 +14,29 @@ public struct FleetStats: Sendable, Equatable {
     public var critical = 0
 
     public static let empty = FleetStats()
+
+    /// Share of the fleet that is fully healthy (nominal), 0…1 — the gauge's fill. 0 when the fleet is empty.
+    public var healthFraction: Double {
+        totalDevices > 0 ? Double(nominal) / Double(totalDevices) : 0
+    }
+
+    /// A coarse health band for the gauge's colour + word. Bands are deliberately wide so the headline is
+    /// stable — a single device flipping status doesn't change the word.
+    public var healthBand: HealthBand {
+        guard totalDevices > 0 else { return .unknown }
+        switch healthFraction {
+        case 0.8...: return .excellent
+        case 0.6..<0.8: return .good
+        case 0.4..<0.6: return .attention
+        default: return .critical
+        }
+    }
+}
+
+/// The qualitative health word shown beside the gauge. Pure presentation; the view maps it to a semantic
+/// colour and a localized label.
+public enum HealthBand: Sendable, Equatable {
+    case excellent, good, attention, critical, unknown
 }
 
 /// A render-ready recent-event row. Carries the domain `kind` (the view maps it to a label/icon/tint

@@ -48,7 +48,8 @@ public struct RootView: View {
                     assets: container.assets,
                     devices: container.devices,
                     alerts: container.alerts,
-                    events: container.events
+                    events: container.events,
+                    onShowAlerts: { selection = .alerts }
                 )
             }
             .tabItem { Label(loc("Overview"), systemImage: "square.grid.2x2.fill") }

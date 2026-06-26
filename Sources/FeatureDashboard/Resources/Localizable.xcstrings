@@ -24,6 +24,136 @@
         }
       }
     },
+    "At risk" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En riesgo"
+          }
+        }
+      }
+    },
+    "Based on %lld devices" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Based on %lld device"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Based on %lld devices"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Basado en %lld dispositivo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Basado en %lld dispositivos"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Critical" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crítica"
+          }
+        }
+      }
+    },
+    "Excellent" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Excelente"
+          }
+        }
+      }
+    },
+    "Fleet health" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salud de la flota"
+          }
+        }
+      }
+    },
+    "Healthy" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saludable"
+          }
+        }
+      }
+    },
+    "No active alerts" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin alertas activas"
+          }
+        }
+      }
+    },
+    "No data" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin datos"
+          }
+        }
+      }
+    },
+    "Opens Alerts" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre Alertas"
+          }
+        }
+      }
+    },
+    "Requires attention" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requiere atención"
+          }
+        }
+      }
+    },
     "Couldn't load the dashboard" : {
       "localizations" : {
         "es" : {

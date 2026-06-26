@@ -209,6 +209,47 @@ public struct EventListRow: View {
     }
 }
 
+// MARK: - Health gauge
+
+/// A calm circular health gauge: a faint track with a tinted arc for the fraction and the percentage in
+/// the centre — the Activity-ring idiom, no gradients or glass. Appearance-adaptive (system `.quaternary`
+/// track + the caller's semantic tint). Purely visual: it's accessibility-hidden so the **caller** can
+/// compose one element whose spoken value carries localized context (e.g. "Fleet health, 82%, Excellent").
+public struct HealthGauge: View {
+    private let fraction: Double
+    private let tint: Color
+    private let lineWidth: CGFloat
+    private let diameter: CGFloat
+
+    public init(fraction: Double, tint: Color, lineWidth: CGFloat = 12, diameter: CGFloat = 128) {
+        self.fraction = fraction
+        self.tint = tint
+        self.lineWidth = lineWidth
+        self.diameter = diameter
+    }
+
+    private var clamped: Double { min(max(fraction, 0), 1) }
+
+    public var body: some View {
+        ZStack {
+            Circle()
+                .stroke(.quaternary, style: StrokeStyle(lineWidth: lineWidth))
+            Circle()
+                .trim(from: 0, to: clamped)
+                .stroke(tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .animation(.snappy, value: clamped)
+            Text(clamped, format: .percent.precision(.fractionLength(0)))
+                .font(.system(.title, design: .rounded).weight(.bold))
+                .monospacedDigit()
+                .contentTransition(.numericText())
+                .foregroundStyle(tint)
+        }
+        .frame(width: diameter, height: diameter)
+        .accessibilityHidden(true)
+    }
+}
+
 /// A neutral, in-card empty-state placeholder. A compact, centered icon-over-text layout that mirrors
 /// the system `ContentUnavailableView` language (used for full-screen empties), so empty states read
 /// consistently whether they're a whole screen or a single card section.
