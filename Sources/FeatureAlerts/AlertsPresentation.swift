@@ -9,6 +9,10 @@ public struct AlertRow: Identifiable, Sendable, Hashable {
     public let assetName: String
     public let assetKind: AssetKind
     public let severity: AlertSeverity
+    /// The metric in trouble + its observed value, already formatted by the presentation layer — so the
+    /// inbox can surface the value cleanly without re-parsing the localized message.
+    public let metric: MetricKind
+    public let valueText: String
     public let message: String
     public let raisedAt: Date
     public let acknowledgedAt: Date?
@@ -16,14 +20,16 @@ public struct AlertRow: Identifiable, Sendable, Hashable {
     public var isAcknowledged: Bool { acknowledgedAt != nil }
 }
 
-/// The two lists the screen offers.
+/// The three inbox states the screen offers. `active`/`acknowledged` are both still-firing alerts, split
+/// by whether the operator has acknowledged them; `resolved` is the cleared history.
 public enum AlertTab: String, CaseIterable, Sendable, Identifiable {
-    case active, history
+    case active, acknowledged, resolved
     public var id: String { rawValue }
     public var title: String {
         switch self {
         case .active: loc("Active")
-        case .history: loc("History")
+        case .acknowledged: loc("Acknowledged")
+        case .resolved: loc("Resolved")
         }
     }
 }

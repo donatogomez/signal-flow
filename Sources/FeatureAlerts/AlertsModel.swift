@@ -44,9 +44,16 @@ public final class AlertsModel {
         self.now = now
     }
 
-    /// The rows the view renders for the current tab + filter.
+    /// The rows the view renders for the current tab + filter. Active and acknowledged are both drawn from
+    /// the still-firing `active` set, split by acknowledgement; resolved is the cleared `history`.
     public var visibleAlerts: [AlertRow] {
-        (tab == .active ? active : history).filter { severityFilter.matches($0.severity) }
+        let base: [AlertRow]
+        switch tab {
+        case .active: base = active.filter { !$0.isAcknowledged }
+        case .acknowledged: base = active.filter { $0.isAcknowledged }
+        case .resolved: base = history
+        }
+        return base.filter { severityFilter.matches($0.severity) }
     }
 
     public var unacknowledgedActiveCount: Int { active.lazy.filter { !$0.isAcknowledged }.count }
@@ -104,7 +111,9 @@ public final class AlertsModel {
         AlertRow(
             id: alert.id, deviceID: alert.deviceID,
             deviceName: ctx.deviceName, assetName: ctx.assetName, assetKind: ctx.kind,
-            severity: alert.severity, message: localizedAlertMessage(metric: alert.metric, value: alert.observedValue),
+            severity: alert.severity,
+            metric: alert.metric, valueText: formattedMeasurement(alert.observedValue),
+            message: localizedAlertMessage(metric: alert.metric, value: alert.observedValue),
             raisedAt: alert.raisedAt, acknowledgedAt: alert.acknowledgedAt
         )
     }

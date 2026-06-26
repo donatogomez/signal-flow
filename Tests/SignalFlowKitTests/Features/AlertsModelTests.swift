@@ -78,7 +78,7 @@ struct AlertsModelTests {
         )
 
         await model.refresh()
-        model.tab = .history
+        model.tab = .resolved
 
         #expect(model.history.count == 1)
         #expect(model.visibleAlerts.count == 1)

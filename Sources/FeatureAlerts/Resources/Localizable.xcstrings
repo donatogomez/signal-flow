@@ -142,6 +142,26 @@
         }
       }
     },
+    "No acknowledged alerts": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay alertas confirmadas"
+          }
+        }
+      }
+    },
+    "No resolved alerts": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay alertas resueltas"
+          }
+        }
+      }
+    },
     "No alerts match this filter": {
       "localizations": {
         "es": {

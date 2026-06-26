@@ -65,7 +65,7 @@ public struct AlertsScreen: View {
             } else {
                 List {
                     ForEach(model.visibleAlerts) { row in
-                        AlertRowView(row: row, isHistory: model.tab == .history) {
+                        AlertRowView(row: row, tab: model.tab) {
                             Task { await model.acknowledge(row.id) }
                         }
                     }
@@ -75,60 +75,70 @@ public struct AlertsScreen: View {
         }
     }
 
+    @ViewBuilder
     private var emptyState: some View {
-        Group {
-            if model.severityFilter != .all {
-                ContentUnavailableView(loc("No alerts match this filter"), systemImage: "line.3.horizontal.decrease.circle")
-            } else if model.tab == .active {
+        if model.severityFilter != .all {
+            ContentUnavailableView(loc("No alerts match this filter"), systemImage: "line.3.horizontal.decrease.circle")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            switch model.tab {
+            case .active:
                 ContentUnavailableView(loc("No active alerts"), systemImage: "checkmark.seal", description: Text(loc("Everything in the fleet looks healthy.")))
-            } else {
-                ContentUnavailableView(loc("No alert history"), systemImage: "clock.arrow.circlepath", description: Text(loc("Resolved alerts will appear here.")))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            case .acknowledged:
+                ContentUnavailableView(loc("No acknowledged alerts"), systemImage: "checkmark.circle")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            case .resolved:
+                ContentUnavailableView(loc("No resolved alerts"), systemImage: "clock.arrow.circlepath", description: Text(loc("Resolved alerts will appear here.")))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
-/// A single alert row: a leading severity badge (scannable by shape + colour), the message, device/asset
-/// context, time, and the acknowledge state/action. Resolved or acknowledged alerts go visually quiet
-/// (neutral badge, muted severity) while staying fully readable, so unacknowledged alerts stand out.
+/// A single alert, inbox-style: a leading severity badge (shape + colour), the severity label with the
+/// observed value surfaced on the trailing edge, the metric + device context and relative time, then a
+/// per-state footer (an Acknowledge action while active; a quiet status label once acknowledged/resolved).
+/// Acknowledged and resolved alerts read quieter but stay fully legible.
 private struct AlertRowView: View {
     let row: AlertRow
-    let isHistory: Bool
+    let tab: AlertTab
     let onAcknowledge: () -> Void
 
-    /// Quiet once the alert no longer needs attention — acknowledged, or anything in History.
-    private var quiet: Bool { row.isAcknowledged || isHistory }
+    /// Active alerts are the ones needing action; acknowledged and resolved recede.
+    private var quiet: Bool { tab != .active }
+
+    private var accessibilityLabel: String {
+        "\(row.severity.label). \(row.message). \(row.deviceName), \(row.assetName)"
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: Spacing.md) {
             IconBadge(row.severity.symbol, tint: quiet ? .secondary : row.severity.tint)
 
             VStack(alignment: .leading, spacing: Spacing.sm) {
-                VStack(alignment: .leading, spacing: Spacing.xs) {
-                    HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                    HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
                         Text(row.severity.label)
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(quiet ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
-                        Spacer()
-                        Text(row.raisedAt, format: .relative(presentation: .named))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        Spacer(minLength: Spacing.sm)
+                        Text(row.valueText)
+                            .font(.subheadline.weight(.semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(quiet ? AnyShapeStyle(.secondary) : AnyShapeStyle(row.severity.tint))
                     }
-
-                    Text(row.message)
-                        .font(.subheadline)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    Label {
-                        Text(verbatim: "\(row.deviceName) · \(row.assetName)")
-                    } icon: {
-                        Image(systemName: row.assetKind.symbol)
+                    HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
+                        Text(verbatim: "\(row.metric.localizedName) · \(row.deviceName)")
+                            .lineLimit(1)
+                        Spacer(minLength: Spacing.sm)
+                        Text(row.raisedAt, format: .relative(presentation: .named))
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 }
-                .accessibilityElement(children: .combine)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(accessibilityLabel)
 
                 footer
             }
@@ -139,20 +149,21 @@ private struct AlertRowView: View {
 
     @ViewBuilder
     private var footer: some View {
-        if isHistory {
-            Label(row.isAcknowledged ? loc("Resolved · was acknowledged") : loc("Resolved"), systemImage: "checkmark.circle")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        } else if row.isAcknowledged {
-            Label(loc("Acknowledged"), systemImage: "checkmark.circle.fill")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        } else {
+        switch tab {
+        case .active:
             Button(action: onAcknowledge) {
                 Label(loc("Acknowledge"), systemImage: "checkmark.circle")
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
+        case .acknowledged:
+            Label(loc("Acknowledged"), systemImage: "checkmark.circle.fill")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        case .resolved:
+            Label(row.isAcknowledged ? loc("Resolved · was acknowledged") : loc("Resolved"), systemImage: "checkmark.circle")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 }
