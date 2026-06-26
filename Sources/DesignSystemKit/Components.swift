@@ -250,6 +250,73 @@ public struct HealthGauge: View {
     }
 }
 
+// MARK: - Filter chips
+
+/// A horizontal, single-select row of filter chips — the visible, Dynamic-Type-friendly alternative to a
+/// filter buried in a menu. The selected chip fills with its tint and bolds; each chip can carry an SF
+/// Symbol tinted by its semantic colour, so status reads by shape **and** colour, never colour alone.
+/// Chips expose their selected state to VoiceOver.
+public struct FilterChips<Option: Hashable>: View {
+    private let options: [Option]
+    @Binding private var selection: Option
+    private let label: (Option) -> String
+    private let symbol: (Option) -> String?
+    private let tint: (Option) -> Color
+
+    public init(
+        _ options: [Option],
+        selection: Binding<Option>,
+        label: @escaping (Option) -> String,
+        symbol: @escaping (Option) -> String? = { _ in nil },
+        tint: @escaping (Option) -> Color = { _ in .accentColor }
+    ) {
+        self.options = options
+        self._selection = selection
+        self.label = label
+        self.symbol = symbol
+        self.tint = tint
+    }
+
+    public var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Spacing.sm) {
+                ForEach(options, id: \.self) { option in
+                    chip(option, selected: option == selection)
+                }
+            }
+            .padding(.horizontal, Spacing.lg)
+        }
+    }
+
+    private func chip(_ option: Option, selected: Bool) -> some View {
+        let tintColor = tint(option)
+        return Button {
+            selection = option
+        } label: {
+            HStack(spacing: Spacing.xs) {
+                if let symbol = symbol(option) {
+                    Image(systemName: symbol)
+                        .foregroundStyle(tintColor)
+                        .accessibilityHidden(true)
+                }
+                Text(label(option))
+                    .foregroundStyle(selected ? tintColor : Color.primary)
+            }
+            .font(.subheadline.weight(selected ? .semibold : .regular))
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.sm)
+            .background(
+                Capsule().fill(selected ? AnyShapeStyle(tintColor.opacity(0.16)) : AnyShapeStyle(.quaternary))
+            )
+            .overlay(
+                Capsule().strokeBorder(selected ? tintColor.opacity(0.5) : .clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+    }
+}
+
 // MARK: - Metric hero
 
 /// A Stocks/Health-style hero for one metric: the metric name, a large dominant value, and an optional

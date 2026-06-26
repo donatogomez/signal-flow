@@ -21,28 +21,20 @@ public struct FleetScreen: View {
 
     public var body: some View {
         @Bindable var model = model
-        List {
-            switch model.phase {
-            case .loading where model.rows.isEmpty:
-                ForEach(0..<6, id: \.self) { _ in
-                    FleetRowPlaceholder()
-                        .listRowSeparator(.hidden)
-                }
-            case .failed(let message):
-                ContentUnavailableView(loc("Couldn't load the fleet"), systemImage: "exclamationmark.triangle", description: Text(message))
-                    .listRowSeparator(.hidden)
-            default:
-                if model.visibleRows.isEmpty {
-                    emptyState.listRowSeparator(.hidden)
-                } else {
-                    ForEach(model.visibleRows) { row in
-                        Button { onOpenDevice(row.id) } label: { FleetRowView(row: row) }
-                            .buttonStyle(.plain)
-                    }
-                }
-            }
+        VStack(spacing: 0) {
+            // Status filter is visible up front as chips (not hidden in a menu), so the active filter is
+            // always on screen and one tap away.
+            FilterChips(
+                FleetStatusFilter.allCases,
+                selection: $model.statusFilter,
+                label: { $0.title },
+                symbol: { $0.chipSymbol },
+                tint: { $0.chipTint }
+            )
+            .padding(.vertical, Spacing.sm)
+
+            list
         }
-        .listStyle(.plain)
         .navigationTitle(loc("Devices"))
         .searchable(text: $model.searchText, prompt: Text(loc("Search devices or assets")))
         .toolbar {
@@ -51,15 +43,53 @@ public struct FleetScreen: View {
                     Picker(loc("Sort"), selection: $model.sort) {
                         ForEach(FleetSort.allCases) { Text($0.title).tag($0) }
                     }
-                    Picker(loc("Filter"), selection: $model.statusFilter) {
-                        ForEach(FleetStatusFilter.allCases) { Text($0.title).tag($0) }
-                    }
                 } label: {
-                    Label(loc("Sort & filter"), systemImage: "line.3.horizontal.decrease.circle")
+                    Label(loc("Sort"), systemImage: "arrow.up.arrow.down")
                 }
             }
         }
         .task { await model.observe() }
+    }
+
+    /// The list, grouped attention-first: devices that need looking at, then the healthy ones (which
+    /// recede). Each group keeps the model's current sort order. A specific status filter collapses to the
+    /// single relevant group.
+    private var list: some View {
+        let visible = model.visibleRows
+        let attention = visible.filter { $0.status != .nominal }
+        let healthy = visible.filter { $0.status == .nominal }
+        return List {
+            switch model.phase {
+            case .loading where model.rows.isEmpty:
+                ForEach(0..<6, id: \.self) { _ in
+                    FleetRowPlaceholder().listRowSeparator(.hidden)
+                }
+            case .failed(let message):
+                ContentUnavailableView(loc("Couldn't load the fleet"), systemImage: "exclamationmark.triangle", description: Text(message))
+                    .listRowSeparator(.hidden)
+            default:
+                if visible.isEmpty {
+                    emptyState.listRowSeparator(.hidden)
+                } else {
+                    if !attention.isEmpty {
+                        Section(loc("Needs attention")) {
+                            ForEach(attention) { deviceRow($0) }
+                        }
+                    }
+                    if !healthy.isEmpty {
+                        Section(loc("Healthy")) {
+                            ForEach(healthy) { deviceRow($0) }
+                        }
+                    }
+                }
+            }
+        }
+        .listStyle(.plain)
+    }
+
+    private func deviceRow(_ row: FleetRow) -> some View {
+        Button { onOpenDevice(row.id) } label: { FleetRowView(row: row) }
+            .buttonStyle(.plain)
     }
 
     /// Distinguishes "the fleet is genuinely empty" from "search/filter excluded everything" — the same
@@ -82,41 +112,35 @@ public struct FleetScreen: View {
     }
 }
 
-/// A single fleet row. Information-dense but scannable: a status-tinted asset glyph leads (health at a
-/// glance), identity in the middle, and a shape-based status cue + chevron trail.
+/// A single fleet row, built for one-second scanning: a status glyph (shape + semantic tint) leads, the
+/// device name and its asset sit in the middle, and an alert-count badge trails. The status word lives in
+/// the VoiceOver label (not duplicated on screen).
 struct FleetRowView: View {
     let row: FleetRow
 
     var body: some View {
         HStack(spacing: Spacing.md) {
-            // Status tints the leading badge so the list is scannable by health down the left edge;
-            // the asset symbol still conveys the device's type.
-            IconBadge(row.assetKind.symbol, tint: row.status.tint)
+            IconBadge(row.status.symbol, tint: row.status.tint)
 
-            VStack(alignment: .leading, spacing: Spacing.xs) {
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
                 // Unhealthy devices read heavier so they stand out; healthy devices recede to regular weight.
-                Text(row.deviceName).font(.body.weight(row.status == .nominal ? .regular : .semibold))
-                Text(verbatim: "\(row.assetName) · \(row.assetKind.localizedName)")
+                Text(row.deviceName)
+                    .font(.body.weight(row.status == .nominal ? .regular : .semibold))
+                Text(row.assetName)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                HStack(spacing: Spacing.lg) {
-                    ConnectivityLabel(row.connectivity)
-                    BatteryLabel(row.battery)
-                    if row.activeAlertCount > 0 {
-                        Label("\(row.activeAlertCount)", systemImage: "bell.badge.fill")
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                            .accessibilityLabel(Text("\(row.activeAlertCount) ") + Text(loc("Alerts")))
-                    }
-                }
+                    .lineLimit(1)
             }
 
             Spacer(minLength: Spacing.sm)
 
-            // Shape-based status cue (distinguishable without color) for the trailing edge.
-            Image(systemName: row.status.symbol)
-                .foregroundStyle(row.status.tint)
-                .accessibilityLabel(row.status.label)
+            if row.activeAlertCount > 0 {
+                Label("\(row.activeAlertCount)", systemImage: "bell.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.red)
+                    .labelStyle(.titleAndIcon)
+                    .accessibilityHidden(true)
+            }
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.tertiary)
@@ -124,7 +148,33 @@ struct FleetRowView: View {
         }
         .padding(.vertical, Spacing.sm)
         .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(row.deviceName), \(row.status.label), \(row.assetName)")
+        .accessibilityValue(row.activeAlertCount > 0 ? loc("\(row.activeAlertCount) active alerts") : "")
+    }
+}
+
+/// Chip styling for the status filter: each status filter carries its `DeviceStatus` glyph + tint so the
+/// chips read by shape and colour; "All" is the neutral accent.
+private extension FleetStatusFilter {
+    var chipSymbol: String? {
+        switch self {
+        case .all: nil
+        case .nominal: DeviceStatus.nominal.symbol
+        case .warning: DeviceStatus.warning.symbol
+        case .critical: DeviceStatus.critical.symbol
+        case .offline: DeviceStatus.offline.symbol
+        }
+    }
+
+    var chipTint: Color {
+        switch self {
+        case .all: .accentColor
+        case .nominal: DeviceStatus.nominal.tint
+        case .warning: DeviceStatus.warning.tint
+        case .critical: DeviceStatus.critical.tint
+        case .offline: DeviceStatus.offline.tint
+        }
     }
 }
 

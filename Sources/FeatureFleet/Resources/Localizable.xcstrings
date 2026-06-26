@@ -17,12 +17,52 @@
         }
       }
     },
+    "%lld active alerts" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld active alert" } },
+              "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld active alerts" } }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld alerta activa" } },
+              "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld alertas activas" } }
+            }
+          }
+        }
+      }
+    },
     "All" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Todos"
+          }
+        }
+      }
+    },
+    "Healthy" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saludables"
+          }
+        }
+      }
+    },
+    "Needs attention" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requiere atención"
           }
         }
       }
