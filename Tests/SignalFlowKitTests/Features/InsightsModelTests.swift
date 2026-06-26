@@ -30,33 +30,31 @@ struct InsightsModelTests {
         )
     }
 
-    @Test("Loads the device picker and selects the first device")
-    func loadsDevices() async throws {
-        let model = try makeModel(temperatures: [])
-        await model.loadDevices()
-        #expect(model.devices.count == 1)
-        #expect(model.selectedDeviceID == model.devices.first?.id)
-    }
-
-    @Test("Generates an insight when there is enough data, surfacing its source")
-    func generatesInsight() async throws {
+    @Test("Builds a feed item per device with enough data, adapting the insight")
+    func buildsFeed() async throws {
         let model = try makeModel(
             temperatures: [2, 4, 6],
             insight: DeviceInsight(summary: "s", anomalyExplanation: "a", recommendation: "r",
                                    severity: .watch, confidence: 0.7, source: .foundationModel)
         )
-        await model.loadDevices()
-        await model.generateInsight()
+        await model.load()
+
         #expect(model.phase == .ready)
-        #expect(model.insight?.source == .foundationModel)
-        #expect(model.insight?.severity == .watch)
+        #expect(model.items.count == 1)
+        let item = try #require(model.items.first)
+        #expect(item.deviceName == "Reefer 12")
+        #expect(item.metric == .temperature)
+        #expect(item.observation == "s")
+        #expect(item.recommendation == "r")
+        #expect(item.severity == .watch)
+        #expect(item.source == .foundationModel)
     }
 
-    @Test("Reports insufficient data when a device hasn't reported enough readings")
-    func insufficientData() async throws {
-        let model = try makeModel(temperatures: [5])
-        await model.loadDevices()
-        await model.generateInsight()
-        #expect(model.phase == .insufficientData)
+    @Test("Empty feed when no device has enough data")
+    func emptyFeed() async throws {
+        let model = try makeModel(temperatures: [5]) // below the minimum for statistics
+        await model.load()
+        #expect(model.phase == .empty)
+        #expect(model.items.isEmpty)
     }
 }

@@ -62,6 +62,26 @@
         }
       }
     },
+    "Insights about your fleet will appear here." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las observaciones sobre tu flota aparecerán aquí."
+          }
+        }
+      }
+    },
+    "No observations yet" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin observaciones por ahora"
+          }
+        }
+      }
+    },
     "Insights" : {
       "localizations" : {
         "es" : {
