@@ -1,12 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%lld" : {
-
-    },
-    "%lld " : {
-
-    },
     "Alerts" : {
       "localizations" : {
         "es" : {
@@ -107,16 +101,6 @@
         }
       }
     },
-    "Filter" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Filtrar"
-          }
-        }
-      }
-    },
     "Devices" : {
       "localizations" : {
         "es" : {
@@ -193,16 +177,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ordenar"
-          }
-        }
-      }
-    },
-    "Sort & filter" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ordenar y filtrar"
           }
         }
       }

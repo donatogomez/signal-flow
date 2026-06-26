@@ -21,47 +21,6 @@
         }
       }
     },
-    "Device" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dispositivo"
-          }
-        }
-      }
-    },
-    "Generated on-device by Apple Intelligence. Telemetry never leaves your device." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generado en el dispositivo por Apple Intelligence. La telemetría nunca sale de tu dispositivo."
-          }
-        }
-      }
-    },
-    "Generating on-device insight…" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generando análisis en el dispositivo…"
-          }
-        }
-      }
-    },
-    "Insight" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Análisis"
-          }
-        }
-      }
-    },
     "Insights about your fleet will appear here." : {
       "localizations" : {
         "es" : {
@@ -92,92 +51,12 @@
         }
       }
     },
-    "Metric" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Métrica"
-          }
-        }
-      }
-    },
-    "No devices to analyze" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No hay dispositivos para analizar"
-          }
-        }
-      }
-    },
-    "Not enough data" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Datos insuficientes"
-          }
-        }
-      }
-    },
-    "On-device AI is unavailable — showing a deterministic insight instead." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La IA en el dispositivo no está disponible — mostrando un análisis determinista."
-          }
-        }
-      }
-    },
-    "Potential anomaly" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Posible anomalía"
-          }
-        }
-      }
-    },
     "Recommendation" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Recomendación"
-          }
-        }
-      }
-    },
-    "Subject" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sujeto"
-          }
-        }
-      }
-    },
-    "Summary" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resumen"
-          }
-        }
-      }
-    },
-    "This device hasn't reported enough %@ readings yet." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Este dispositivo aún no ha reportado suficientes lecturas de %@."
           }
         }
       }

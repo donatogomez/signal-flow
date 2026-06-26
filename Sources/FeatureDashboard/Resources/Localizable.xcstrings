@@ -1,9 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%lld" : {
-
-    },
     "Active alerts" : {
       "localizations" : {
         "es" : {
@@ -74,6 +71,16 @@
         }
       }
     },
+    "Couldn't load the dashboard" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo cargar el panel"
+          }
+        }
+      }
+    },
     "Critical" : {
       "localizations" : {
         "es" : {
@@ -104,12 +111,32 @@
         }
       }
     },
+    "Fleet status" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estado de la flota"
+          }
+        }
+      }
+    },
     "Healthy" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Saludable"
+          }
+        }
+      }
+    },
+    "Loading dashboard" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cargando el panel"
           }
         }
       }
@@ -134,32 +161,22 @@
         }
       }
     },
+    "No events yet" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no hay eventos"
+          }
+        }
+      }
+    },
     "Opens Alerts" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abre Alertas"
-          }
-        }
-      }
-    },
-    "Requires attention" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Requiere atención"
-          }
-        }
-      }
-    },
-    "Couldn't load the dashboard" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se pudo cargar el panel"
           }
         }
       }
@@ -174,72 +191,22 @@
         }
       }
     },
-    "Devices" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dispositivos"
-          }
-        }
-      }
-    },
-    "Fleet status" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Estado de la flota"
-          }
-        }
-      }
-    },
-    "Loading dashboard" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cargando el panel"
-          }
-        }
-      }
-    },
-    "No events yet" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aún no hay eventos"
-          }
-        }
-      }
-    },
-    "Offline" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sin conexión"
-          }
-        }
-      }
-    },
-    "Online" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En línea"
-          }
-        }
-      }
-    },
     "Recent events" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eventos recientes"
+          }
+        }
+      }
+    },
+    "Requires attention" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requiere atención"
           }
         }
       }

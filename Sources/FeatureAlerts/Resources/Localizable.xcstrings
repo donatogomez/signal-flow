@@ -102,16 +102,6 @@
         }
       }
     },
-    "History": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Historial"
-          }
-        }
-      }
-    },
     "Info": {
       "localizations": {
         "es": {
@@ -128,16 +118,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "No hay alertas activas"
-          }
-        }
-      }
-    },
-    "No alert history": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No hay historial de alertas"
           }
         }
       }

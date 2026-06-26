@@ -5,9 +5,6 @@
     "%@ in %lld min" : {
       "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ en %2$lld min" } } }
     },
-    "%@ trend" : {
-      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Tendencia de %@" } } }
-    },
     "Acknowledged" : {
       "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Confirmada" } } }
     },
