@@ -32,6 +32,11 @@ public final class DeviceDetailModel {
     private let fetchHistory: FetchTelemetryHistoryUseCase
     private let eventsRepository: any EventRepository
 
+    // Alerts/events carry simulated-clock timestamps (a first breach can be sim-years old), so "X ago" vs
+    // wall time reads "hace 3 años". Age them instead by when they were first seen this session.
+    private var alertFirstSeen: [AlertID: Date] = [:]
+    private var eventFirstSeen: [EventID: Date] = [:]
+
     public init(
         deviceID: DeviceID,
         devices: any DeviceRepository,
@@ -69,10 +74,25 @@ public final class DeviceDetailModel {
                 DeviceEventRow(id: $0.id, kind: $0.kind, occurredAt: $0.occurredAt)
             }
             trends = try await loadTrends()
+            reconcileFirstSeen()
             phase = .loaded
         } catch {
             phase = .failed(String(describing: error))
         }
+    }
+
+    /// When the alert/event first appeared this session — the anchor for its real-time "hace X" age.
+    public func firstSeen(alert id: AlertID) -> Date { alertFirstSeen[id] ?? Date() }
+    public func firstSeen(event id: EventID) -> Date { eventFirstSeen[id] ?? Date() }
+
+    private func reconcileFirstSeen(now: Date = Date()) {
+        let alertIDs = Set(alerts.map(\.id))
+        alertFirstSeen = alertFirstSeen.filter { alertIDs.contains($0.key) }
+        for id in alertIDs where alertFirstSeen[id] == nil { alertFirstSeen[id] = now }
+
+        let eventIDs = Set(events.map(\.id))
+        eventFirstSeen = eventFirstSeen.filter { eventIDs.contains($0.key) }
+        for id in eventIDs where eventFirstSeen[id] == nil { eventFirstSeen[id] = now }
     }
 
     public func observe(interval: Duration = .seconds(3)) async {

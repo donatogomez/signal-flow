@@ -155,7 +155,7 @@ public struct DeviceDetailScreen: View {
             } else {
                 VStack(spacing: Spacing.md) {
                     ForEach(model.alerts) { alert in
-                        AlertRowView(alert: alert)
+                        AlertRowView(alert: alert, firstSeen: model.firstSeen(alert: alert.id))
                     }
                 }
             }
@@ -169,7 +169,7 @@ public struct DeviceDetailScreen: View {
             } else {
                 VStack(spacing: Spacing.md) {
                     ForEach(model.events.prefix(4)) { event in
-                        EventListRow(kind: event.kind, occurredAt: event.occurredAt)
+                        EventListRow(kind: event.kind, occurredAt: model.firstSeen(event: event.id))
                     }
                 }
             }
@@ -290,13 +290,16 @@ private struct TrendChart: View {
 
 private struct AlertRowView: View {
     let alert: AlertRow
+    /// Real-time age since the alert appeared this session (the domain `raisedAt` is in the simulated
+    /// clock and would read "hace 3 años").
+    let firstSeen: Date
 
     var body: some View {
         HStack(alignment: .top, spacing: Spacing.md) {
             SeverityTag(alert.severity)
             VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text(alert.message).font(.subheadline)
-                Text(alert.raisedAt, format: .relative(presentation: .named))
+                Text(firstSeen, format: .relative(presentation: .named))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

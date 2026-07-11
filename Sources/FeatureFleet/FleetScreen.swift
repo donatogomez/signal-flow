@@ -127,7 +127,9 @@ struct FleetRowView: View {
                 // Unhealthy devices read heavier so they stand out; healthy devices recede to regular weight.
                 Text(row.deviceName)
                     .font(.body.weight(row.status == .nominal ? .regular : .semibold))
-                Text(row.assetName)
+                // The status word (never the asset — which often equals the device name and reads as a
+                // duplicate); the leading glyph carries the colour, this carries the text.
+                Text(row.status.label)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)

@@ -57,7 +57,7 @@ public struct AlertsScreen: View {
                     AlertRowPlaceholder().listRowSeparator(.hidden)
                 }
             }
-            .listStyle(.plain)
+            .signalFlowGroupedList()
         case .failed(let message):
             ContentUnavailableView(loc("Couldn't load alerts"), systemImage: "exclamationmark.triangle", description: Text(message))
         default:
@@ -65,13 +65,17 @@ public struct AlertsScreen: View {
                 emptyState
             } else {
                 List {
+                    // One inset card per alert (each its own section), so the inbox reads as separate
+                    // cards rather than one grouped block.
                     ForEach(model.visibleAlerts) { row in
-                        AlertRowView(row: row, tab: model.tab) {
-                            Task { await model.acknowledge(row.id) }
+                        Section {
+                            AlertRowView(row: row, tab: model.tab, firstSeen: model.firstSeen(row.id)) {
+                                Task { await model.acknowledge(row.id) }
+                            }
                         }
                     }
                 }
-                .listStyle(.plain)
+                .signalFlowGroupedList()
             }
         }
     }
@@ -104,6 +108,9 @@ public struct AlertsScreen: View {
 private struct AlertRowView: View {
     let row: AlertRow
     let tab: AlertTab
+    /// When the alert first appeared this session — gives a trustworthy real-time age (the domain
+    /// `raisedAt` is in the simulated clock and would read "hace 3 años").
+    let firstSeen: Date
     let onAcknowledge: () -> Void
 
     /// Active alerts are the ones needing action; acknowledged and resolved recede.
@@ -133,7 +140,7 @@ private struct AlertRowView: View {
                         Text(verbatim: "\(row.metric.localizedName) · \(row.deviceName)")
                             .lineLimit(1)
                         Spacer(minLength: Spacing.sm)
-                        Text(row.raisedAt, format: .relative(presentation: .named))
+                        Text(firstSeen, format: .relative(presentation: .named))
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)

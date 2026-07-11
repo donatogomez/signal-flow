@@ -159,7 +159,7 @@ public struct DashboardScreen: View {
                 // Compact operational feed — the few most recent changes, not a full log.
                 VStack(spacing: Spacing.md) {
                     ForEach(model.recentEvents.prefix(4)) { event in
-                        EventListRow(kind: event.kind, deviceName: event.deviceName, occurredAt: event.occurredAt)
+                        EventListRow(kind: event.kind, deviceName: event.deviceName, occurredAt: model.firstSeen(event: event.id))
                     }
                 }
             }
