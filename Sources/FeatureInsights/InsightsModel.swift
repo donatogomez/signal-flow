@@ -1,32 +1,58 @@
 import Foundation
 import Observation
 import DomainKit
+import DesignSystemKit
 
 /// Metrics tried per device, in priority order — the first with enough data yields that device's
 /// observation. File-private (not a `@MainActor` static) so the off-actor generation tasks can read it.
 private let insightFeedMetrics: [MetricKind] = [.temperature, .humidity, .batteryLevel]
 
-/// One observation in the Insights feed — a presentation-layer projection of a ``DeviceInsight`` paired
-/// with the device + metric it concerns (the insight carries the words; the subject is known at the call
-/// site). This is the seam that keeps the future IntelligenceKit redesign cheap: only this adapter and the
-/// model touch `DeviceInsight`; swapping the provider behind `InsightsProviding` won't change the UI.
+/// Sparklines show only the most recent readings — readability over full-history precision.
+private let insightSparklineCap = 28
+
+/// One observation in the Insights feed — a presentation projection of a ``DeviceInsight`` (the temporary
+/// backend) enriched with the device's real telemetry trend, so the card can read like Apple's Health
+/// Trends: a short derived headline, a change figure, and a sparkline. Nothing is fabricated — the
+/// headline/change/trend come straight from the readings (the same computation Device Detail does); the
+/// recommendation/confidence/severity come from the provider. This is the seam that keeps the future
+/// IntelligenceKit redesign cheap: swap the provider behind `InsightsProviding` and the UI is unchanged.
 public struct InsightFeedItem: Identifiable, Sendable, Hashable {
     public let id: String
     public let deviceName: String
     public let metric: MetricKind
-    public let observation: String
-    public let anomaly: String
-    public let recommendation: String
+    public let headline: String        // derived, short: "Temperatura en aumento"
+    public let changeText: String?     // derived: "+8%" (nil when flat)
+    public let context: String         // derived: "En 318 lecturas"
+    public let trend: [Double]          // sparkline points
+    public let recommendation: String   // from the provider
     public let severity: InsightSeverity
     public let confidence: Double
     public let source: InsightSource
 
-    init(insight: DeviceInsight, deviceID: DeviceID, deviceName: String, metric: MetricKind) {
+    init(insight: DeviceInsight, deviceID: DeviceID, deviceName: String, metric: MetricKind, history: [TelemetryReading]) {
         self.id = "\(deviceID) \(metric.displayName)"
         self.deviceName = deviceName
         self.metric = metric
-        self.observation = insight.summary
-        self.anomaly = insight.anomalyExplanation
+
+        let values = history.map(\.value.magnitude)
+        self.trend = Array(values.suffix(insightSparklineCap))
+        let first = values.first ?? 0
+        let delta = (values.last ?? 0) - first
+        let flat = abs(delta) < 0.0001
+
+        let direction: String.LocalizationValue = flat ? "stable" : (delta > 0 ? "rising" : "falling")
+        self.headline = "\(metric.localizedName) \(loc(direction))"
+
+        // Absolute change in the metric's own unit ("+1,3 °C", "−8 %") — operator-friendly and locale-aware,
+        // never a relative percentage (which is meaningless for temperature).
+        if !flat, let unit = history.first?.value.unit,
+           let deltaValue = try? MeasuredValue(magnitude: abs(delta), unit: unit) {
+            self.changeText = "\(delta > 0 ? "+" : "−")\(formattedMeasurement(deltaValue))"
+        } else {
+            self.changeText = nil
+        }
+        self.context = loc("Over \(values.count) readings")
+
         self.recommendation = insight.recommendation
         self.severity = insight.severity
         self.confidence = insight.confidence
@@ -36,11 +62,10 @@ public struct InsightFeedItem: Identifiable, Sendable, Hashable {
 
 /// State for the Insights screen: a fleet-wide **feed** of observations.
 ///
-/// The feed is assembled by running the **existing** ``GenerateDeviceInsightUseCase`` (behind the
-/// `InsightsProviding` port) once per device and adapting each `DeviceInsight` into an
-/// ``InsightFeedItem``. This model is pure presentation orchestration — it adds no domain logic and no new
-/// port. A later phase can replace the provider (or give it a fleet-native call) behind the same interface
-/// without touching this screen.
+/// The feed runs the **existing** ``GenerateDeviceInsightUseCase`` (behind the `InsightsProviding` port)
+/// once per device and pairs each `DeviceInsight` with that device's telemetry trend. Pure presentation
+/// orchestration — no domain logic, no new port. A later phase can replace the provider behind the same
+/// interface without touching this screen.
 @MainActor
 @Observable
 public final class InsightsModel {
@@ -54,8 +79,12 @@ public final class InsightsModel {
     public private(set) var phase: Phase = .loading
     public private(set) var items: [InsightFeedItem] = []
 
+    /// The actionable subset, for the "Recommendations" section — items worth a follow-up (not nominal).
+    public var recommendations: [InsightFeedItem] { items.filter { $0.severity != .nominal } }
+
     private let fetchFleet: FetchFleetOverviewUseCase
     private let generate: GenerateDeviceInsightUseCase
+    private let fetchHistory: FetchTelemetryHistoryUseCase
 
     public init(
         assets: any AssetRepository,
@@ -69,10 +98,11 @@ public final class InsightsModel {
         self.generate = GenerateDeviceInsightUseCase(
             devices: devices, assets: assets, telemetry: telemetry, alerts: alerts, events: events, insights: insights
         )
+        self.fetchHistory = FetchTelemetryHistoryUseCase(telemetry: telemetry)
     }
 
     /// Builds the feed: one observation per device that has enough data, sorted attention-first. Devices
-    /// without enough data simply don't contribute an item (no error). Keeps the current feed on refresh.
+    /// without enough data simply don't contribute an item. Keeps the current feed on refresh.
     public func load() async {
         if items.isEmpty { phase = .loading }
         do {
@@ -85,10 +115,14 @@ public final class InsightsModel {
                 end: Date(timeIntervalSince1970: 4_000_000_000)
             )
             let generate = self.generate
+            let fetchHistory = self.fetchHistory
             let collected = await withTaskGroup(of: InsightFeedItem?.self) { group in
                 for subject in subjects {
                     group.addTask {
-                        await Self.firstObservation(generate: generate, deviceID: subject.id, deviceName: subject.name, range: range)
+                        await Self.firstObservation(
+                            generate: generate, fetchHistory: fetchHistory,
+                            deviceID: subject.id, deviceName: subject.name, range: range
+                        )
                     }
                 }
                 var out: [InsightFeedItem] = []
@@ -102,17 +136,20 @@ public final class InsightsModel {
         }
     }
 
-    /// The first metric (in priority order) that has enough data to yield an insight for this device.
-    /// Insufficient-data and any per-device failure are swallowed so one device never breaks the feed.
+    /// The first metric (in priority order) with enough data to yield an insight, paired with that
+    /// metric's recent trend for the sparkline. Per-device failures are swallowed so one device never
+    /// breaks the feed.
     nonisolated private static func firstObservation(
         generate: GenerateDeviceInsightUseCase,
+        fetchHistory: FetchTelemetryHistoryUseCase,
         deviceID: DeviceID,
         deviceName: String,
         range: TimeRange
     ) async -> InsightFeedItem? {
         for metric in insightFeedMetrics {
             if let insight = try? await generate(deviceID: deviceID, metric: metric, range: range) {
-                return InsightFeedItem(insight: insight, deviceID: deviceID, deviceName: deviceName, metric: metric)
+                let history = (try? await fetchHistory(deviceID: deviceID, metric: metric, range: range)) ?? []
+                return InsightFeedItem(insight: insight, deviceID: deviceID, deviceName: deviceName, metric: metric, history: history)
             }
         }
         return nil

@@ -65,22 +65,27 @@ public struct DashboardScreen: View {
         }
     }
 
+    /// Hero metric scale: the count dominates like an Apple Health metric, scaling with Dynamic Type.
+    @ScaledMetric(relativeTo: .largeTitle) private var heroCountSize: CGFloat = 48
+
     private func heroBody(firing: Bool) -> some View {
-        HStack(spacing: Spacing.lg) {
-            IconBadge(firing ? "bell.badge.fill" : "checkmark.seal.fill", tint: firing ? .red : .green, size: 52)
-            VStack(alignment: .leading, spacing: Spacing.xxs) {
+        // Wallet/Home-card proportions: a large icon anchor, the count as the dominant element, generous
+        // padding, and everything optically centred on the card's vertical axis.
+        HStack(alignment: .center, spacing: Spacing.xl) {
+            IconBadge(firing ? "bell.badge.fill" : "checkmark.seal.fill", tint: firing ? .red : .green, size: 64)
+            VStack(alignment: .leading, spacing: Spacing.sm) {
                 if firing {
-                    HStack(alignment: .firstTextBaseline, spacing: Spacing.xs) {
+                    HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
                         Text("\(model.stats.activeAlerts)")
-                            .font(.system(.largeTitle, design: .rounded).weight(.bold))
+                            .font(.system(size: heroCountSize, weight: .bold, design: .rounded))
                             .foregroundStyle(.red)
                             .monospacedDigit()
                             .contentTransition(.numericText())
                         Text(loc("Active alerts"))
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(.primary)
                     }
-                    Text(loc("Requires attention"))
+                    Text(loc("Requires immediate attention"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 } else {
@@ -94,52 +99,54 @@ public struct DashboardScreen: View {
             }
             Spacer(minLength: Spacing.sm)
             if firing {
+                // Standard iOS disclosure weight — visible, never competing with the count.
                 Image(systemName: "chevron.right")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Spacing.cardPadding)
+        .padding(.horizontal, Spacing.xl)
+        .padding(.vertical, Spacing.xl)
         .cardSurface()
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
 
-    /// Fleet health quantified: the gauge ring + its qualitative word. The proportion lives here (in the
-    /// ring), so the status list below is plain counts — no duplicate bar.
+    /// SignalFlow's signature Fleet Health indicator: the branded semicircular gauge carries the verdict
+    /// and the operational count ("5 / 10"); the caption grounds it. No bare percentage — the word is the
+    /// message.
     private var healthCard: some View {
         let band = model.stats.healthBand
-        let percent = model.stats.healthFraction.formatted(.percent.precision(.fractionLength(0)))
+        let detail = loc("\(model.stats.nominal) / \(model.stats.totalDevices) operational")
         return CardSection(loc("Fleet health"), systemImage: "heart.text.square.fill") {
-            HStack(spacing: Spacing.xl) {
-                HealthGauge(fraction: model.stats.healthFraction, tint: band.tint)
-                VStack(alignment: .leading, spacing: Spacing.xxs) {
-                    Text(band.label)
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(band.tint)
-                    Text(loc("Based on \(model.stats.totalDevices) devices"))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer(minLength: 0)
+            VStack(spacing: Spacing.md) {
+                HealthGauge(fraction: model.stats.healthFraction, tint: band.tint, verdict: band.label, detail: detail)
+                    .padding(.horizontal, Spacing.sm)
+                Text(loc("Based on the current state of all devices."))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(band.label)
-            .accessibilityValue(percent)
+            .accessibilityLabel(loc("Fleet health"))
+            .accessibilityValue("\(band.label), \(detail)")
         }
     }
 
-    /// The status mix as plain, scannable rows — a shape-and-colour status glyph (never colour alone),
-    /// the localized status word, and the count.
+    /// The status mix as four compact columns — a shape-and-colour status glyph (never colour alone), the
+    /// count, and the localized word. The gauge already communicates overall health, so no bar here.
     private var statusBreakdown: some View {
         CardSection(loc("Fleet status"), systemImage: "chart.bar.fill") {
-            VStack(spacing: Spacing.md) {
-                StatusBreakdownRow(status: .nominal, count: model.stats.nominal)
-                StatusBreakdownRow(status: .warning, count: model.stats.warning)
-                StatusBreakdownRow(status: .critical, count: model.stats.critical)
-                StatusBreakdownRow(status: .offline, count: model.stats.offline)
+            HStack(spacing: 0) {
+                StatusColumn(status: .nominal, count: model.stats.nominal)
+                Divider().frame(height: 44)
+                StatusColumn(status: .warning, count: model.stats.warning)
+                Divider().frame(height: 44)
+                StatusColumn(status: .critical, count: model.stats.critical)
+                Divider().frame(height: 44)
+                StatusColumn(status: .offline, count: model.stats.offline)
             }
         }
     }
@@ -176,23 +183,28 @@ public struct DashboardScreen: View {
     }
 }
 
-/// One status row: a shape-and-colour status glyph (so it reads without colour), the localized status
-/// word, and the count.
-private struct StatusBreakdownRow: View {
+/// One status column: a shape-and-colour status glyph (so it reads without colour) over the count and the
+/// localized word. Four of these read as a compact, scannable status strip.
+private struct StatusColumn: View {
     let status: DeviceStatus
     let count: Int
 
     var body: some View {
-        HStack(spacing: Spacing.md) {
+        VStack(spacing: Spacing.xs) {
             Image(systemName: status.symbol)
+                .font(.title3)
                 .foregroundStyle(status.tint)
-                .font(.body)
-                .frame(width: 24)
+            Text("\(count)")
+                .font(.title2.weight(.bold))
+                .foregroundStyle(status.tint)
+                .monospacedDigit()
             Text(status.label)
-            Spacer()
-            Text("\(count)").fontWeight(.semibold).monospacedDigit()
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
-        .font(.subheadline)
+        .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(status.label))
         .accessibilityValue(Text("\(count)"))

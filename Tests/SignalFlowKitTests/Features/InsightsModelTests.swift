@@ -44,10 +44,14 @@ struct InsightsModelTests {
         let item = try #require(model.items.first)
         #expect(item.deviceName == "Reefer 12")
         #expect(item.metric == .temperature)
-        #expect(item.observation == "s")
         #expect(item.recommendation == "r")
         #expect(item.severity == .watch)
         #expect(item.source == .foundationModel)
+        // Enriched from the real telemetry trend (rising 2 → 6), not fabricated.
+        #expect(item.trend == [2, 4, 6])
+        #expect(item.changeText != nil)
+        // .watch is actionable, so it surfaces in the recommendations section.
+        #expect(model.recommendations.count == 1)
     }
 
     @Test("Empty feed when no device has enough data")

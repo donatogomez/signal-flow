@@ -2,10 +2,9 @@ import SwiftUI
 import DomainKit
 import DesignSystemKit
 
-/// The Insights screen: a calm, fleet-wide **feed of observations** — what the operator should know,
-/// surfaced from on-device analysis (or its deterministic fallback). Reads like Apple's Health/Fitness
-/// Trends: each card is one observation with its recommendation and a quiet confidence/provenance footer.
-/// Not a chat, not a report, not a dashboard.
+/// The Insights screen: a calm, fleet-wide digest — "Observaciones" (what's trending) and
+/// "Recomendaciones" (what to do). Reads like Apple's Health/Fitness Trends: each observation is a short
+/// derived headline with a change figure and a sparkline, not a wall of AI prose. Not a chat, not a report.
 public struct InsightsScreen: View {
     @State private var model: InsightsModel
 
@@ -30,6 +29,7 @@ public struct InsightsScreen: View {
             .padding(Spacing.lg)
             .animation(.default, value: model.phase)
         }
+        .background(Color.signalFlowGroupedBackground.ignoresSafeArea())
         .navigationTitle(loc("Insights"))
         .task { await model.load() }
     }
@@ -50,19 +50,32 @@ public struct InsightsScreen: View {
             )
             .frame(maxWidth: .infinity, minHeight: 320)
         case .ready:
-            ForEach(model.items) { InsightFeedCard(item: $0) }
+            sectionHeader(loc("Observations"))
+            ForEach(model.items) { ObservationCard(item: $0) }
+
+            if !model.recommendations.isEmpty {
+                sectionHeader(loc("Recommendations"))
+                    .padding(.top, Spacing.sm)
+                ForEach(model.recommendations) { RecommendationCard(item: $0) }
+            }
         }
     }
 
-    /// Neutral grey card silhouettes while the feed is generating — hidden from VoiceOver so it doesn't
-    /// announce placeholders.
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.title3.weight(.bold))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    /// Neutral grey card silhouettes while the feed is generating — hidden from VoiceOver.
     private var feedSkeleton: some View {
         VStack(spacing: Spacing.lg) {
             ForEach(0..<3, id: \.self) { _ in
                 VStack(alignment: .leading, spacing: Spacing.md) {
-                    Capsule().fill(.quaternary).frame(width: 140, height: 10)
-                    Capsule().fill(.quaternary).frame(height: 16).frame(maxWidth: .infinity)
-                    Capsule().fill(.quaternary).frame(width: 220, height: 12)
+                    Capsule().fill(.quaternary).frame(width: 150, height: 10)
+                    Capsule().fill(.quaternary).frame(width: 200, height: 18)
+                    RoundedRectangle(cornerRadius: Radius.icon, style: .continuous).fill(.quaternary).frame(height: 44)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(Spacing.cardPadding)
@@ -74,10 +87,9 @@ public struct InsightsScreen: View {
     }
 }
 
-/// One observation in the feed: compact subject metadata, the observation as the dominant text, an
-/// optional anomaly line, the recommendation under a quiet label, and a subtle confidence/provenance
-/// footer. The whole card is a single VoiceOver element so it reads as one coherent observation.
-private struct InsightFeedCard: View {
+/// One observation: subject metadata, a short derived headline, the change figure, a context line, and a
+/// sparkline — then a quiet provenance/confidence footer. One combined VoiceOver element.
+private struct ObservationCard: View {
     let item: InsightFeedItem
 
     private var confidenceText: String {
@@ -85,8 +97,7 @@ private struct InsightFeedCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            // Subject metadata — quiet, with a shape+colour severity cue.
+        VStack(alignment: .leading, spacing: Spacing.sm) {
             HStack(spacing: Spacing.xs) {
                 Image(systemName: item.severity.symbol)
                     .foregroundStyle(item.severity.tint)
@@ -97,49 +108,63 @@ private struct InsightFeedCard: View {
             .font(.caption.weight(.medium))
             .foregroundStyle(.secondary)
 
-            // The observation — the largest, dominant text.
-            Text(item.observation)
+            Text(item.headline)
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(.primary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            if !item.anomaly.isEmpty {
-                Text(item.anomaly)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            if let changeText = item.changeText {
+                Text(changeText)
+                    .font(.system(.largeTitle, design: .rounded).weight(.bold))
+                    .foregroundStyle(item.severity.tint)
+                    .monospacedDigit()
             }
 
-            if !item.recommendation.isEmpty {
-                VStack(alignment: .leading, spacing: Spacing.xxs) {
-                    Text(loc("Recommendation"))
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .textCase(.uppercase)
-                    Text(item.recommendation)
-                        .font(.subheadline)
-                        .foregroundStyle(.primary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+            Text(item.context)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            if item.trend.count >= 2 {
+                Sparkline(points: item.trend, tint: item.severity.tint)
+                    .padding(.top, Spacing.xs)
             }
 
-            footer
+            HStack(spacing: Spacing.xs) {
+                Image(systemName: item.source.symbol).accessibilityHidden(true)
+                Text(item.source.label)
+                Text(verbatim: "·")
+                Text(confidenceText).monospacedDigit()
+            }
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
+            .padding(.top, Spacing.xxs)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Spacing.cardPadding)
         .cardSurface()
         .accessibilityElement(children: .combine)
     }
+}
 
-    /// Provenance + confidence, the quietest line — fulfils the "where the words came from" requirement.
-    private var footer: some View {
-        HStack(spacing: Spacing.xs) {
-            Image(systemName: item.source.symbol).accessibilityHidden(true)
-            Text(item.source.label)
-            Text(verbatim: "·")
-            Text(confidenceText).monospacedDigit()
+/// One recommendation: a leading check, the action, and its subject. One combined VoiceOver element.
+private struct RecommendationCard: View {
+    let item: InsightFeedItem
+
+    var body: some View {
+        HStack(alignment: .top, spacing: Spacing.md) {
+            IconBadge("checkmark.circle.fill", tint: .green)
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
+                Text(item.recommendation)
+                    .font(.subheadline.weight(.medium))
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(verbatim: "\(item.metric.localizedName) · \(item.deviceName)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
         }
-        .font(.caption2)
-        .foregroundStyle(.tertiary)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Spacing.cardPadding)
+        .cardSurface()
+        .accessibilityElement(children: .combine)
     }
 }

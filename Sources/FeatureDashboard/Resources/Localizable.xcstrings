@@ -1,6 +1,29 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%lld" : {
+
+    },
+    "%lld / %lld operational" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld / %2$lld operativos"
+          }
+        }
+      }
+    },
     "Active alerts" : {
       "localizations" : {
         "es" : {
@@ -32,6 +55,7 @@
       }
     },
     "Based on %lld devices" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -67,6 +91,16 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "Based on the current state of all devices." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Basado en el estado actual de todos los dispositivos."
           }
         }
       }
@@ -202,11 +236,22 @@
       }
     },
     "Requires attention" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Requiere atención"
+          }
+        }
+      }
+    },
+    "Requires immediate attention" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requiere atención inmediata"
           }
         }
       }

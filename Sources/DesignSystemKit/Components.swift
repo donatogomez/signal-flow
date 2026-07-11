@@ -1,5 +1,40 @@
 import SwiftUI
+import Charts
 import DomainKit
+
+// MARK: - Sparkline
+
+/// A tiny, axis-free trend line for digest cards (Health-Trends style): a line over a faint matching-tint
+/// fill, no labels or gridlines, so it reads as a glanceable shape rather than a chart. Decorative — the
+/// caller's surrounding text carries the meaning, so it's hidden from VoiceOver.
+public struct Sparkline: View {
+    private let points: [Double]
+    private let tint: Color
+    private let height: CGFloat
+
+    public init(points: [Double], tint: Color, height: CGFloat = 44) {
+        self.points = points
+        self.tint = tint
+        self.height = height
+    }
+
+    public var body: some View {
+        Chart(Array(points.enumerated()), id: \.offset) { index, value in
+            // Empty axis labels — the chart is decorative with hidden axes, so these must not become
+            // (untranslated) localization catalog keys.
+            AreaMark(x: .value("", index), y: .value("", value))
+                .interpolationMethod(.catmullRom)
+                .foregroundStyle(tint.opacity(0.12))
+            LineMark(x: .value("", index), y: .value("", value))
+                .interpolationMethod(.catmullRom)
+                .foregroundStyle(tint)
+        }
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+        .frame(height: height)
+        .accessibilityHidden(true)
+    }
+}
 
 // MARK: - Status & severity badges
 
@@ -82,7 +117,9 @@ public struct IconBadge: View {
             .font(.system(size: size * 0.46, weight: .semibold))
             .foregroundStyle(tint)
             .frame(width: size, height: size)
-            .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: Radius.icon, style: .continuous))
+            // Radius scales with the badge (≈ Radius.icon at row size) so large hero badges keep the
+            // squircle proportions instead of reading boxy.
+            .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: size * 0.27, style: .continuous))
             .accessibilityHidden(true)
     }
 }
@@ -211,41 +248,78 @@ public struct EventListRow: View {
 
 // MARK: - Health gauge
 
-/// A calm circular health gauge: a faint track with a tinted arc for the fraction and the percentage in
-/// the centre — the Activity-ring idiom, no gradients or glass. Appearance-adaptive (system `.quaternary`
-/// track + the caller's semantic tint). Purely visual: it's accessibility-hidden so the **caller** can
-/// compose one element whose spoken value carries localized context (e.g. "Fleet health, 82%, Excellent").
+/// SignalFlow's signature **Fleet Health** indicator: a large semicircular gauge whose arc is banded by
+/// semantic zones (crítico → riesgo → saludable, red → orange → green — colour *segments*, never a
+/// gradient), a marker at the current health position, and a centred pulse motif over the **verdict** and
+/// **operational count**. The verdict is the message; the count ("5 / 10") is the substance — no bare
+/// percentage. Appearance-adaptive, Reduce-Motion friendly. Decorative internals are hidden; the caller
+/// composes the spoken element (verdict + detail carry meaning).
 public struct HealthGauge: View {
     private let fraction: Double
     private let tint: Color
+    private let verdict: String
+    private let detail: String
     private let lineWidth: CGFloat
-    private let diameter: CGFloat
 
-    public init(fraction: Double, tint: Color, lineWidth: CGFloat = 12, diameter: CGFloat = 128) {
+    public init(fraction: Double, tint: Color, verdict: String, detail: String, lineWidth: CGFloat = 18) {
         self.fraction = fraction
         self.tint = tint
+        self.verdict = verdict
+        self.detail = detail
         self.lineWidth = lineWidth
-        self.diameter = diameter
     }
 
     private var clamped: Double { min(max(fraction, 0), 1) }
 
+    /// Health-range → colour zones, drawn along the top semicircle (`trim` 0.5…1.0 = 9→12→3 o'clock).
+    private static let zones: [(start: Double, end: Double, color: Color)] = [
+        (0.0, 0.4, .red), (0.4, 0.75, .orange), (0.75, 1.0, .green)
+    ]
+
+    private func arcTrim(_ health: Double) -> Double { 0.5 + 0.5 * health }
+
     public var body: some View {
-        ZStack {
-            Circle()
-                .stroke(.quaternary, style: StrokeStyle(lineWidth: lineWidth))
-            Circle()
-                .trim(from: 0, to: clamped)
-                .stroke(tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-                .animation(.snappy, value: clamped)
-            Text(clamped, format: .percent.precision(.fractionLength(0)))
-                .font(.system(.title, design: .rounded).weight(.bold))
-                .monospacedDigit()
-                .contentTransition(.numericText())
-                .foregroundStyle(tint)
+        GeometryReader { geo in
+            let w = geo.size.width
+            ZStack {
+                // Faint full track, then the semantic zones on top of it.
+                Circle()
+                    .trim(from: 0.5, to: 1.0)
+                    .stroke(.quaternary, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                ForEach(Array(Self.zones.enumerated()), id: \.offset) { _, zone in
+                    Circle()
+                        .trim(from: arcTrim(zone.start), to: arcTrim(zone.end))
+                        .stroke(zone.color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt))
+                }
+                // Marker at the current health position — a round cap that reads as a dot, ringed in the
+                // card fill so it lifts off the arc.
+                Circle()
+                    .trim(from: arcTrim(clamped) - 0.0001, to: arcTrim(clamped) + 0.0001)
+                    .stroke(Color.signalFlowCardFill, style: StrokeStyle(lineWidth: lineWidth + 10, lineCap: .round))
+                Circle()
+                    .trim(from: arcTrim(clamped) - 0.0001, to: arcTrim(clamped) + 0.0001)
+                    .stroke(tint, style: StrokeStyle(lineWidth: lineWidth + 2, lineCap: .round))
+                    .animation(.snappy, value: clamped)
+
+                // Centre: pulse motif over the verdict + operational count.
+                VStack(spacing: Spacing.xxs) {
+                    Image(systemName: "waveform.path.ecg")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                    Text(verdict)
+                        .font(.system(.title2, design: .rounded).weight(.bold))
+                        .foregroundStyle(tint)
+                    Text(detail)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+                .offset(y: -w * 0.16)
+            }
+            .frame(width: w, height: w)
+            .position(x: w / 2, y: geo.size.height)
         }
-        .frame(width: diameter, height: diameter)
+        .aspectRatio(1.9, contentMode: .fit)
         .accessibilityHidden(true)
     }
 }
