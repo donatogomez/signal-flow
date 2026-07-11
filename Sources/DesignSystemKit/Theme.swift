@@ -21,15 +21,47 @@ public extension Color {
     }()
 }
 
+public extension Color {
+    /// The page canvas behind grouped cards — light grey in Light, near-black in Dark (the system
+    /// grouped background). Cards sit on this; ``cardSurface()`` raises above it.
+    static let signalFlowGroupedBackground: Color = {
+        #if canImport(UIKit)
+        return Color(uiColor: .systemGroupedBackground)
+        #else
+        return Color(white: 0.95)
+        #endif
+    }()
+
+    /// The card fill — white in Light, an elevated dark grey in Dark — so cards read as raised above the
+    /// grouped background, matching Apple's grouped-list surfaces.
+    static let signalFlowCardFill: Color = {
+        #if canImport(UIKit)
+        return Color(uiColor: .secondarySystemGroupedBackground)
+        #else
+        return Color(white: 1.0)
+        #endif
+    }()
+}
+
 public extension View {
-    /// The premium grouped-card surface used by every SignalFlow card and tile: a subtle fill, a 0.5pt
-    /// hairline for definition on white, and a whisper shadow for gentle elevation. No materials, no
-    /// gradients — just the Apple grouped-card look. Centralized so the whole app stays consistent.
+    /// The premium grouped-card surface used by every SignalFlow card and tile: a raised white (Light) /
+    /// elevated-grey (Dark) fill, a 0.5pt hairline for definition, and a whisper shadow for gentle
+    /// elevation on the grouped background. No materials, no gradients — just the Apple grouped-card look.
     func cardSurface(cornerRadius: CGFloat = Radius.card) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         return self
-            .background(shape.fill(.quaternary))
+            .background(shape.fill(Color.signalFlowCardFill))
             .overlay(shape.strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5))
-            .shadow(color: .black.opacity(0.04), radius: 8, y: 2)
+            .shadow(color: .black.opacity(0.05), radius: 8, y: 2)
+    }
+
+    /// Apple's grouped-list look — inset rounded cards on the grouped background — on iOS; plain on the
+    /// macOS host build (where feature views never render), since `.insetGrouped` is iOS-only.
+    @ViewBuilder func signalFlowGroupedList() -> some View {
+        #if os(iOS)
+        listStyle(.insetGrouped)
+        #else
+        listStyle(.plain)
+        #endif
     }
 }

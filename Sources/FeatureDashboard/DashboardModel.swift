@@ -20,6 +20,11 @@ public final class DashboardModel {
     private let fetchFleetOverview: FetchFleetOverviewUseCase
     private let events: any EventRepository
 
+    /// When each event was first seen this session. `DeviceEvent.occurredAt` is in the simulated 600× clock
+    /// (events can be sim-years old), so wall-time "X ago" reads "hace 3 años"; instead age them by how long
+    /// they've actually been on screen. Pruned as events roll off.
+    private var eventFirstSeen: [EventID: Date] = [:]
+
     public init(
         assets: any AssetRepository,
         devices: any DeviceRepository,
@@ -47,10 +52,20 @@ public final class DashboardModel {
                     occurredAt: event.occurredAt
                 )
             }
+            reconcileEventFirstSeen()
             phase = .loaded
         } catch {
             phase = .failed(String(describing: error))
         }
+    }
+
+    /// When the given event first appeared this session — the anchor for its real-time "hace X" age.
+    public func firstSeen(event id: EventID) -> Date { eventFirstSeen[id] ?? Date() }
+
+    private func reconcileEventFirstSeen(now: Date = Date()) {
+        let ids = Set(recentEvents.map(\.id))
+        eventFirstSeen = eventFirstSeen.filter { ids.contains($0.key) }
+        for id in ids where eventFirstSeen[id] == nil { eventFirstSeen[id] = now }
     }
 
     public func observe(interval: Duration = .seconds(3)) async {

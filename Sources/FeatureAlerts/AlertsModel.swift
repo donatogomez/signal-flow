@@ -30,6 +30,12 @@ public final class AlertsModel {
     private let alertHistory: any AlertHistoryProviding
     private let now: @Sendable () -> Date
 
+    /// When each alert was first seen in this session, keyed by id. `Alert.raisedAt` is in the simulated
+    /// 600× clock (a first breach can be sim-years old), so comparing it to wall time reads "hace 3 años".
+    /// The inbox instead ages each alert by how long it has actually been on screen — a trustworthy
+    /// "hace 2 min". Pruned when an alert clears so a re-raised alert starts fresh.
+    private var firstSeenByID: [AlertID: Date] = [:]
+
     public init(
         assets: any AssetRepository,
         devices: any DeviceRepository,
@@ -44,12 +50,29 @@ public final class AlertsModel {
         self.now = now
     }
 
-    /// The rows the view renders for the current tab + filter.
+    /// The rows the view renders for the current tab + filter. Active and acknowledged are both drawn from
+    /// the still-firing `active` set, split by acknowledgement; resolved is the cleared `history`.
     public var visibleAlerts: [AlertRow] {
-        (tab == .active ? active : history).filter { severityFilter.matches($0.severity) }
+        let base: [AlertRow]
+        switch tab {
+        case .active: base = active.filter { !$0.isAcknowledged }
+        case .acknowledged: base = active.filter { $0.isAcknowledged }
+        case .resolved: base = history
+        }
+        return base.filter { severityFilter.matches($0.severity) }
     }
 
     public var unacknowledgedActiveCount: Int { active.lazy.filter { !$0.isAcknowledged }.count }
+
+    /// When the given alert first appeared this session — the anchor for its real-time "hace X" age.
+    public func firstSeen(_ id: AlertID) -> Date { firstSeenByID[id] ?? now() }
+
+    /// Stamp newly-seen alerts and forget cleared ones, so `firstSeen` tracks the live set.
+    private func reconcileFirstSeen() {
+        let ids = Set(active.map(\.id)).union(history.map(\.id))
+        firstSeenByID = firstSeenByID.filter { ids.contains($0.key) }
+        for id in ids where firstSeenByID[id] == nil { firstSeenByID[id] = now() }
+    }
 
     /// Loads active alerts (fleet-wide, with device/asset context) and the resolved history.
     public func refresh() async {
@@ -70,6 +93,7 @@ public final class AlertsModel {
                 row(from: alert, ctx: context[alert.deviceID] ?? .unknown)
             }.sorted { $0.raisedAt > $1.raisedAt }
 
+            reconcileFirstSeen()
             phase = .loaded
         } catch {
             phase = .failed(String(describing: error))
@@ -104,7 +128,9 @@ public final class AlertsModel {
         AlertRow(
             id: alert.id, deviceID: alert.deviceID,
             deviceName: ctx.deviceName, assetName: ctx.assetName, assetKind: ctx.kind,
-            severity: alert.severity, message: localizedAlertMessage(metric: alert.metric, value: alert.observedValue),
+            severity: alert.severity,
+            metric: alert.metric, valueText: formattedMeasurement(alert.observedValue),
+            message: localizedAlertMessage(metric: alert.metric, value: alert.observedValue),
             raisedAt: alert.raisedAt, acknowledgedAt: alert.acknowledgedAt
         )
     }

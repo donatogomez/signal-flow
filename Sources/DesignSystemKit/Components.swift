@@ -1,5 +1,40 @@
 import SwiftUI
+import Charts
 import DomainKit
+
+// MARK: - Sparkline
+
+/// A tiny, axis-free trend line for digest cards (Health-Trends style): a line over a faint matching-tint
+/// fill, no labels or gridlines, so it reads as a glanceable shape rather than a chart. Decorative — the
+/// caller's surrounding text carries the meaning, so it's hidden from VoiceOver.
+public struct Sparkline: View {
+    private let points: [Double]
+    private let tint: Color
+    private let height: CGFloat
+
+    public init(points: [Double], tint: Color, height: CGFloat = 44) {
+        self.points = points
+        self.tint = tint
+        self.height = height
+    }
+
+    public var body: some View {
+        Chart(Array(points.enumerated()), id: \.offset) { index, value in
+            // Empty axis labels — the chart is decorative with hidden axes, so these must not become
+            // (untranslated) localization catalog keys.
+            AreaMark(x: .value("", index), y: .value("", value))
+                .interpolationMethod(.catmullRom)
+                .foregroundStyle(tint.opacity(0.12))
+            LineMark(x: .value("", index), y: .value("", value))
+                .interpolationMethod(.catmullRom)
+                .foregroundStyle(tint)
+        }
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+        .frame(height: height)
+        .accessibilityHidden(true)
+    }
+}
 
 // MARK: - Status & severity badges
 
@@ -82,7 +117,9 @@ public struct IconBadge: View {
             .font(.system(size: size * 0.46, weight: .semibold))
             .foregroundStyle(tint)
             .frame(width: size, height: size)
-            .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: Radius.icon, style: .continuous))
+            // Radius scales with the badge (≈ Radius.icon at row size) so large hero badges keep the
+            // squircle proportions instead of reading boxy.
+            .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: size * 0.27, style: .continuous))
             .accessibilityHidden(true)
     }
 }
@@ -206,6 +243,197 @@ public struct EventListRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
+}
+
+// MARK: - Health gauge
+
+/// SignalFlow's signature **Fleet Health** indicator: a large semicircular gauge whose arc is banded by
+/// semantic zones (crítico → riesgo → saludable, red → orange → green — colour *segments*, never a
+/// gradient), a marker at the current health position, and a centred pulse motif over the **verdict** and
+/// **operational count**. The verdict is the message; the count ("5 / 10") is the substance — no bare
+/// percentage. Appearance-adaptive, Reduce-Motion friendly. Decorative internals are hidden; the caller
+/// composes the spoken element (verdict + detail carry meaning).
+public struct HealthGauge: View {
+    private let fraction: Double
+    private let tint: Color
+    private let verdict: String
+    private let detail: String
+    private let lineWidth: CGFloat
+
+    public init(fraction: Double, tint: Color, verdict: String, detail: String, lineWidth: CGFloat = 18) {
+        self.fraction = fraction
+        self.tint = tint
+        self.verdict = verdict
+        self.detail = detail
+        self.lineWidth = lineWidth
+    }
+
+    private var clamped: Double { min(max(fraction, 0), 1) }
+
+    /// Health-range → colour zones, drawn along the top semicircle (`trim` 0.5…1.0 = 9→12→3 o'clock).
+    private static let zones: [(start: Double, end: Double, color: Color)] = [
+        (0.0, 0.4, .red), (0.4, 0.75, .orange), (0.75, 1.0, .green)
+    ]
+
+    private func arcTrim(_ health: Double) -> Double { 0.5 + 0.5 * health }
+
+    public var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            ZStack {
+                // Faint full track, then the semantic zones on top of it.
+                Circle()
+                    .trim(from: 0.5, to: 1.0)
+                    .stroke(.quaternary, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                ForEach(Array(Self.zones.enumerated()), id: \.offset) { _, zone in
+                    Circle()
+                        .trim(from: arcTrim(zone.start), to: arcTrim(zone.end))
+                        .stroke(zone.color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt))
+                }
+                // Marker at the current health position — a round cap that reads as a dot, ringed in the
+                // card fill so it lifts off the arc.
+                Circle()
+                    .trim(from: arcTrim(clamped) - 0.0001, to: arcTrim(clamped) + 0.0001)
+                    .stroke(Color.signalFlowCardFill, style: StrokeStyle(lineWidth: lineWidth + 10, lineCap: .round))
+                Circle()
+                    .trim(from: arcTrim(clamped) - 0.0001, to: arcTrim(clamped) + 0.0001)
+                    .stroke(tint, style: StrokeStyle(lineWidth: lineWidth + 2, lineCap: .round))
+                    .animation(.snappy, value: clamped)
+
+                // Centre: pulse motif over the verdict + operational count.
+                VStack(spacing: Spacing.xxs) {
+                    Image(systemName: "waveform.path.ecg")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                    Text(verdict)
+                        .font(.system(.title2, design: .rounded).weight(.bold))
+                        .foregroundStyle(tint)
+                    Text(detail)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+                .offset(y: -w * 0.16)
+            }
+            .frame(width: w, height: w)
+            .position(x: w / 2, y: geo.size.height)
+        }
+        .aspectRatio(1.9, contentMode: .fit)
+        .accessibilityHidden(true)
+    }
+}
+
+// MARK: - Filter chips
+
+/// A horizontal, single-select row of filter chips — the visible, Dynamic-Type-friendly alternative to a
+/// filter buried in a menu. The selected chip fills with its tint and bolds; each chip can carry an SF
+/// Symbol tinted by its semantic colour, so status reads by shape **and** colour, never colour alone.
+/// Chips expose their selected state to VoiceOver.
+public struct FilterChips<Option: Hashable>: View {
+    private let options: [Option]
+    @Binding private var selection: Option
+    private let label: (Option) -> String
+    private let symbol: (Option) -> String?
+    private let tint: (Option) -> Color
+
+    public init(
+        _ options: [Option],
+        selection: Binding<Option>,
+        label: @escaping (Option) -> String,
+        symbol: @escaping (Option) -> String? = { _ in nil },
+        tint: @escaping (Option) -> Color = { _ in .accentColor }
+    ) {
+        self.options = options
+        self._selection = selection
+        self.label = label
+        self.symbol = symbol
+        self.tint = tint
+    }
+
+    public var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Spacing.sm) {
+                ForEach(options, id: \.self) { option in
+                    chip(option, selected: option == selection)
+                }
+            }
+            .padding(.horizontal, Spacing.lg)
+        }
+    }
+
+    private func chip(_ option: Option, selected: Bool) -> some View {
+        let tintColor = tint(option)
+        return Button {
+            selection = option
+        } label: {
+            HStack(spacing: Spacing.xs) {
+                if let symbol = symbol(option) {
+                    Image(systemName: symbol)
+                        .foregroundStyle(tintColor)
+                        .accessibilityHidden(true)
+                }
+                Text(label(option))
+                    .foregroundStyle(selected ? tintColor : Color.primary)
+            }
+            .font(.subheadline.weight(selected ? .semibold : .regular))
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.sm)
+            .background(
+                Capsule().fill(selected ? AnyShapeStyle(tintColor.opacity(0.16)) : AnyShapeStyle(.quaternary))
+            )
+            .overlay(
+                Capsule().strokeBorder(selected ? tintColor.opacity(0.5) : .clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+    }
+}
+
+// MARK: - Metric hero
+
+/// A Stocks/Health-style hero for one metric: the metric name, a large dominant value, and an optional
+/// change caption with a direction glyph. Typographic only — no chrome — so a screen drops it at the top
+/// of a card. The value scales with Dynamic Type (`.largeTitle`). One combined accessibility element.
+public struct MetricHeroValue: View {
+    private let title: String
+    private let value: String
+    private let caption: String?
+    private let captionSymbol: String?
+
+    public init(title: String, value: String, caption: String? = nil, captionSymbol: String? = nil) {
+        self.title = title
+        self.value = value
+        self.caption = caption
+        self.captionSymbol = captionSymbol
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            Text(title)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.system(.largeTitle, design: .rounded).weight(.bold))
+                .monospacedDigit()
+                .contentTransition(.numericText())
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
+            if let caption {
+                if let captionSymbol {
+                    Label(caption, systemImage: captionSymbol)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(caption)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 }
 

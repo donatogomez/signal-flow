@@ -56,4 +56,21 @@ struct DashboardModelTests {
         #expect(model.stats.totalDevices == 10)
         #expect(model.stats.online + model.stats.offline == 10)
     }
+
+    @Test("Health fraction and band derive from the nominal share")
+    func healthScore() {
+        var stats = FleetStats()
+        stats.totalDevices = 10
+        stats.nominal = 8
+        #expect(abs(stats.healthFraction - 0.8) < 0.0001)
+        #expect(stats.healthBand == .excellent)
+
+        stats.nominal = 5 // 50%
+        #expect(stats.healthBand == .attention)
+
+        // Empty fleet: no devices ⇒ no score, no false-green band.
+        let empty = FleetStats()
+        #expect(empty.healthFraction == 0)
+        #expect(empty.healthBand == .unknown)
+    }
 }

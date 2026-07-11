@@ -1,8 +1,28 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
     "%lld" : {
 
+    },
+    "%lld / %lld operational" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld / %2$lld operativos"
+          }
+        }
+      }
     },
     "Active alerts" : {
       "localizations" : {
@@ -24,6 +44,67 @@
         }
       }
     },
+    "At risk" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En riesgo"
+          }
+        }
+      }
+    },
+    "Based on %lld devices" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Based on %lld device"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Based on %lld devices"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Basado en %lld dispositivo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Basado en %lld dispositivos"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Based on the current state of all devices." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Basado en el estado actual de todos los dispositivos."
+          }
+        }
+      }
+    },
     "Couldn't load the dashboard" : {
       "localizations" : {
         "es" : {
@@ -34,22 +115,32 @@
         }
       }
     },
-    "Overview" : {
+    "Critical" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Resumen"
+            "value" : "Crítica"
           }
         }
       }
     },
-    "Devices" : {
+    "Excellent" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dispositivos"
+            "value" : "Excelente"
+          }
+        }
+      }
+    },
+    "Fleet health" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salud de la flota"
           }
         }
       }
@@ -64,12 +155,42 @@
         }
       }
     },
+    "Healthy" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saludable"
+          }
+        }
+      }
+    },
     "Loading dashboard" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cargando el panel"
+          }
+        }
+      }
+    },
+    "No active alerts" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin alertas activas"
+          }
+        }
+      }
+    },
+    "No data" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin datos"
           }
         }
       }
@@ -84,22 +205,22 @@
         }
       }
     },
-    "Offline" : {
+    "Opens Alerts" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin conexión"
+            "value" : "Abre Alertas"
           }
         }
       }
     },
-    "Online" : {
+    "Overview" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "En línea"
+            "value" : "Resumen"
           }
         }
       }
@@ -110,6 +231,27 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eventos recientes"
+          }
+        }
+      }
+    },
+    "Requires attention" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requiere atención"
+          }
+        }
+      }
+    },
+    "Requires immediate attention" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requiere atención inmediata"
           }
         }
       }

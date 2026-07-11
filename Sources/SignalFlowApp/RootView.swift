@@ -48,7 +48,8 @@ public struct RootView: View {
                     assets: container.assets,
                     devices: container.devices,
                     alerts: container.alerts,
-                    events: container.events
+                    events: container.events,
+                    onShowAlerts: { selection = .alerts }
                 )
             }
             .tabItem { Label(loc("Overview"), systemImage: "square.grid.2x2.fill") }
@@ -99,10 +100,9 @@ public struct RootView: View {
             .tag(Tab.insights)
         }
         .tint(.signalFlowAccent)
-        // Dark by default: SignalFlow is an operational monitoring surface (Grafana/Datadog-style), where
-        // a dark canvas keeps status colour the brightest thing on screen. Semantic + accent colours are
-        // appearance-adaptive, so the surfaces remain accessible.
-        .preferredColorScheme(.dark)
+        // Follows the system appearance (Light **and** Dark). Status/severity hues are system semantic
+        // colours, and the accent + card surfaces are appearance-adaptive, so the monitoring surfaces stay
+        // legible and accessible in both modes.
         .task { await container.start() }
         .task { await container.observeCriticalAlertActivity() }
         .task { await container.observeWatchSync() }

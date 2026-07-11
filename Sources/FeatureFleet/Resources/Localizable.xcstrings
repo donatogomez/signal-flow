@@ -1,11 +1,58 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@, %@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@, %3$@"
+          }
+        }
+      }
+    },
     "%lld" : {
 
     },
-    "%lld " : {
-
+    "%lld active alerts" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld active alert"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld active alerts"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld alerta activa"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld alertas activas"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Alerts" : {
       "localizations" : {
@@ -57,26 +104,6 @@
         }
       }
     },
-    "Devices will appear here once they report in." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Los dispositivos aparecerán aquí cuando informen."
-          }
-        }
-      }
-    },
-    "Filter" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Filtrar"
-          }
-        }
-      }
-    },
     "Devices" : {
       "localizations" : {
         "es" : {
@@ -87,12 +114,42 @@
         }
       }
     },
+    "Devices will appear here once they report in." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los dispositivos aparecerán aquí cuando informen."
+          }
+        }
+      }
+    },
+    "Healthy" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saludables"
+          }
+        }
+      }
+    },
     "Name" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nombre"
+          }
+        }
+      }
+    },
+    "Needs attention" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requiere atención"
           }
         }
       }
@@ -153,16 +210,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ordenar"
-          }
-        }
-      }
-    },
-    "Sort & filter" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ordenar y filtrar"
           }
         }
       }

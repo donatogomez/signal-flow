@@ -6,22 +6,19 @@ import DesignSystemKit
 /// Information-dense and calm — modeled on Apple's Weather/Home summary surfaces.
 public struct DashboardScreen: View {
     @State private var model: DashboardModel
+    /// Routes the active-alerts hero to the Alerts tab (wired by the app root to its tab selection).
+    private let onShowAlerts: () -> Void
 
     public init(
         assets: any AssetRepository,
         devices: any DeviceRepository,
         alerts: any AlertRepository,
-        events: any EventRepository
+        events: any EventRepository,
+        onShowAlerts: @escaping () -> Void = {}
     ) {
         _model = State(initialValue: DashboardModel(assets: assets, devices: devices, alerts: alerts, events: events))
+        self.onShowAlerts = onShowAlerts
     }
-
-    /// A stable 2-up grid: four headline tiles read as a balanced 2×2 block rather than reflowing
-    /// between two and three columns at different widths.
-    private let columns = [
-        GridItem(.flexible(), spacing: Spacing.md),
-        GridItem(.flexible(), spacing: Spacing.md)
-    ]
 
     public var body: some View {
         ScrollView {
@@ -41,84 +38,120 @@ public struct DashboardScreen: View {
             .padding(Spacing.lg)
             .animation(.default, value: model.phase)
         }
+        .background(Color.signalFlowGroupedBackground.ignoresSafeArea())
         .navigationTitle(loc("Overview"))
         .task { await model.observe() }
     }
 
     @ViewBuilder
     private func content(placeholder: Bool) -> some View {
-        healthHero
-        statTiles
+        hero
+        healthCard
         statusBreakdown
-        recentEvents(placeholder: placeholder)
+        recentActivity(placeholder: placeholder)
     }
 
-    /// The one-second fleet-health glance: when anything is firing, a loud red banner dominates the top
-    /// of the screen; when the fleet is clear, a calm green "all clear" reassures. This is the primary
-    /// operational signal, so it leads and outweighs the device counts below.
-    private var healthHero: some View {
-        let alerts = model.stats.activeAlerts
-        let firing = alerts > 0
-        return HStack(spacing: Spacing.lg) {
-            IconBadge(firing ? "bell.badge.fill" : "checkmark.seal.fill", tint: firing ? .red : .green, size: 52)
-            VStack(alignment: .leading, spacing: Spacing.xxs) {
+    /// The one-second verdict — "do I need to worry right now?". When alerts are firing it's a loud,
+    /// **tappable** red card that doubles as the entry point to the Alerts tab; when the fleet is clear it's
+    /// a calm green reassurance. Leads the screen and outweighs everything below.
+    @ViewBuilder
+    private var hero: some View {
+        if model.stats.activeAlerts > 0 {
+            Button(action: onShowAlerts) { heroBody(firing: true) }
+                .buttonStyle(.plain)
+                .accessibilityHint(loc("Opens Alerts"))
+        } else {
+            heroBody(firing: false)
+        }
+    }
+
+    /// Hero metric scale: the count dominates like an Apple Health metric, scaling with Dynamic Type.
+    @ScaledMetric(relativeTo: .largeTitle) private var heroCountSize: CGFloat = 48
+
+    private func heroBody(firing: Bool) -> some View {
+        // Wallet/Home-card proportions: a large icon anchor, the count as the dominant element, generous
+        // padding, and everything optically centred on the card's vertical axis.
+        HStack(alignment: .center, spacing: Spacing.xl) {
+            IconBadge(firing ? "bell.badge.fill" : "checkmark.seal.fill", tint: firing ? .red : .green, size: 64)
+            VStack(alignment: .leading, spacing: Spacing.sm) {
                 if firing {
-                    Text("\(alerts)")
-                        .font(.system(.largeTitle, design: .rounded).weight(.bold))
-                        .foregroundStyle(.red)
-                        .monospacedDigit()
-                        .contentTransition(.numericText())
-                    Text(loc("Active alerts"))
-                        .font(.subheadline.weight(.medium))
+                    HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
+                        Text("\(model.stats.activeAlerts)")
+                            .font(.system(size: heroCountSize, weight: .bold, design: .rounded))
+                            .foregroundStyle(.red)
+                            .monospacedDigit()
+                            .contentTransition(.numericText())
+                        Text(loc("Active alerts"))
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(.primary)
+                    }
+                    Text(loc("Requires immediate attention"))
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                 } else {
                     Text(loc("All systems nominal"))
                         .font(.title2.weight(.semibold))
                         .foregroundStyle(.green)
+                    Text(loc("No active alerts"))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
             }
             Spacer(minLength: Spacing.sm)
+            if firing {
+                // Standard iOS disclosure weight — visible, never competing with the count.
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Spacing.cardPadding)
+        .padding(.horizontal, Spacing.xl)
+        .padding(.vertical, Spacing.xl)
         .cardSurface()
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
 
-    private var statTiles: some View {
-        LazyVGrid(columns: columns, spacing: Spacing.md) {
-            StatTile(
-                title: loc("Active alerts"),
-                value: "\(model.stats.activeAlerts)",
-                systemImage: "bell.fill",
-                tint: model.stats.activeAlerts > 0 ? .red : .primary
-            )
-            StatTile(title: loc("Devices"), value: "\(model.stats.totalDevices)", systemImage: "shippingbox.fill")
-            StatTile(title: loc("Online"), value: "\(model.stats.online)", systemImage: "wifi", tint: .green)
-            StatTile(title: loc("Offline"), value: "\(model.stats.offline)", systemImage: "wifi.slash", tint: .secondary)
+    /// SignalFlow's signature Fleet Health indicator: the branded semicircular gauge carries the verdict
+    /// and the operational count ("5 / 10"); the caption grounds it. No bare percentage — the word is the
+    /// message.
+    private var healthCard: some View {
+        let band = model.stats.healthBand
+        let detail = loc("\(model.stats.nominal) / \(model.stats.totalDevices) operational")
+        return CardSection(loc("Fleet health"), systemImage: "heart.text.square.fill") {
+            VStack(spacing: Spacing.md) {
+                HealthGauge(fraction: model.stats.healthFraction, tint: band.tint, verdict: band.label, detail: detail)
+                    .padding(.horizontal, Spacing.sm)
+                Text(loc("Based on the current state of all devices."))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(loc("Fleet health"))
+            .accessibilityValue("\(band.label), \(detail)")
         }
     }
 
+    /// The status mix as four compact columns — a shape-and-colour status glyph (never colour alone), the
+    /// count, and the localized word. The gauge already communicates overall health, so no bar here.
     private var statusBreakdown: some View {
         CardSection(loc("Fleet status"), systemImage: "chart.bar.fill") {
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                FleetProportionBar(segments: [
-                    (model.stats.nominal, DeviceStatus.nominal.tint),
-                    (model.stats.warning, DeviceStatus.warning.tint),
-                    (model.stats.critical, DeviceStatus.critical.tint),
-                    (model.stats.offline, DeviceStatus.offline.tint)
-                ])
-                VStack(spacing: Spacing.sm) {
-                    StatusBreakdownRow(label: DeviceStatus.nominal.label, count: model.stats.nominal, tint: DeviceStatus.nominal.tint)
-                    StatusBreakdownRow(label: DeviceStatus.warning.label, count: model.stats.warning, tint: DeviceStatus.warning.tint)
-                    StatusBreakdownRow(label: DeviceStatus.critical.label, count: model.stats.critical, tint: DeviceStatus.critical.tint)
-                    StatusBreakdownRow(label: DeviceStatus.offline.label, count: model.stats.offline, tint: DeviceStatus.offline.tint)
-                }
+            HStack(spacing: 0) {
+                StatusColumn(status: .nominal, count: model.stats.nominal)
+                Divider().frame(height: 44)
+                StatusColumn(status: .warning, count: model.stats.warning)
+                Divider().frame(height: 44)
+                StatusColumn(status: .critical, count: model.stats.critical)
+                Divider().frame(height: 44)
+                StatusColumn(status: .offline, count: model.stats.offline)
             }
         }
     }
 
-    private func recentEvents(placeholder: Bool) -> some View {
+    private func recentActivity(placeholder: Bool) -> some View {
         CardSection(loc("Recent events"), systemImage: "clock.arrow.circlepath") {
             if placeholder {
                 // Skeleton rows; redaction greys them while the first load is in flight.
@@ -130,9 +163,10 @@ public struct DashboardScreen: View {
             } else if model.recentEvents.isEmpty {
                 EmptyHint(loc("No events yet"), systemImage: "tray")
             } else {
+                // Compact operational feed — the few most recent changes, not a full log.
                 VStack(spacing: Spacing.md) {
-                    ForEach(model.recentEvents) { event in
-                        EventListRow(kind: event.kind, deviceName: event.deviceName, occurredAt: event.occurredAt)
+                    ForEach(model.recentEvents.prefix(4)) { event in
+                        EventListRow(kind: event.kind, deviceName: event.deviceName, occurredAt: model.firstSeen(event: event.id))
                     }
                 }
             }
@@ -149,50 +183,52 @@ public struct DashboardScreen: View {
     }
 }
 
-/// A thin segmented capsule showing the fleet's status mix at a glance — the Fleet-status card's
-/// visual anchor. Purely decorative (the rows below convey the same counts textually), so it's hidden
-/// from VoiceOver.
-private struct FleetProportionBar: View {
-    let segments: [(count: Int, tint: Color)]
-
-    private var total: CGFloat { max(CGFloat(segments.reduce(0) { $0 + $1.count }), 1) }
+/// One status column: a shape-and-colour status glyph (so it reads without colour) over the count and the
+/// localized word. Four of these read as a compact, scannable status strip.
+private struct StatusColumn: View {
+    let status: DeviceStatus
+    let count: Int
 
     var body: some View {
-        Capsule()
-            .fill(.quaternary)
-            .frame(height: 8)
-            .overlay(alignment: .leading) {
-                GeometryReader { proxy in
-                    HStack(spacing: 0) {
-                        ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
-                            if segment.count > 0 {
-                                segment.tint
-                                    .frame(width: proxy.size.width * CGFloat(segment.count) / total)
-                            }
-                        }
-                    }
-                }
-            }
-            .clipShape(Capsule())
-            .accessibilityHidden(true)
+        VStack(spacing: Spacing.xs) {
+            Image(systemName: status.symbol)
+                .font(.title3)
+                .foregroundStyle(status.tint)
+            Text("\(count)")
+                .font(.title2.weight(.bold))
+                .foregroundStyle(status.tint)
+                .monospacedDigit()
+            Text(status.label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(status.label))
+        .accessibilityValue(Text("\(count)"))
     }
 }
 
-private struct StatusBreakdownRow: View {
-    let label: String
-    let count: Int
-    let tint: Color
-
-    var body: some View {
-        HStack(spacing: Spacing.sm) {
-            Circle().fill(tint).frame(width: 10, height: 10)
-            Text(label)
-            Spacer()
-            Text("\(count)").fontWeight(.semibold).monospacedDigit()
+/// Maps the qualitative health band to a semantic colour and a localized word for the gauge.
+private extension HealthBand {
+    var tint: Color {
+        switch self {
+        case .excellent, .good: .green
+        case .attention: .orange
+        case .critical: .red
+        case .unknown: .secondary
         }
-        .font(.subheadline)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text(label))
-        .accessibilityValue(Text("\(count)"))
+    }
+
+    var label: String {
+        switch self {
+        case .excellent: loc("Excellent")
+        case .good: loc("Healthy")
+        case .attention: loc("At risk")
+        case .critical: loc("Critical")
+        case .unknown: loc("No data")
+        }
     }
 }

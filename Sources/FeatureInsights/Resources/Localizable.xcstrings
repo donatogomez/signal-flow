@@ -21,43 +21,12 @@
         }
       }
     },
-    "Device" : {
+    "falling" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dispositivo"
-          }
-        }
-      }
-    },
-    "Generated on-device by Apple Intelligence. Telemetry never leaves your device." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generado en el dispositivo por Apple Intelligence. La telemetría nunca sale de tu dispositivo."
-          }
-        }
-      }
-    },
-    "Generating on-device insight…" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generando análisis en el dispositivo…"
-          }
-        }
-      }
-    },
-    "Insight" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Análisis"
+            "value" : "a la baja"
           }
         }
       }
@@ -72,57 +41,78 @@
         }
       }
     },
-    "Metric" : {
+    "Insights about your fleet will appear here." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Métrica"
+            "value" : "Las observaciones sobre tu flota aparecerán aquí."
           }
         }
       }
     },
-    "No devices to analyze" : {
+    "No observations yet" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No hay dispositivos para analizar"
+            "value" : "Sin observaciones por ahora"
           }
         }
       }
     },
-    "Not enough data" : {
+    "Observations" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Datos insuficientes"
+            "value" : "Observaciones"
           }
         }
       }
     },
-    "On-device AI is unavailable — showing a deterministic insight instead." : {
+    "Over %lld readings" : {
       "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La IA en el dispositivo no está disponible — mostrando un análisis determinista."
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Over %lld reading"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Over %lld readings"
+                }
+              }
+            }
           }
-        }
-      }
-    },
-    "Potential anomaly" : {
-      "localizations" : {
+        },
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Posible anomalía"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "En %lld lectura"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "En %lld lecturas"
+                }
+              }
+            }
           }
         }
       }
     },
     "Recommendation" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -132,32 +122,32 @@
         }
       }
     },
-    "Subject" : {
+    "Recommendations" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sujeto"
+            "value" : "Recomendaciones"
           }
         }
       }
     },
-    "Summary" : {
+    "rising" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Resumen"
+            "value" : "en aumento"
           }
         }
       }
     },
-    "This device hasn't reported enough %@ readings yet." : {
+    "stable" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Este dispositivo aún no ha reportado suficientes lecturas de %@."
+            "value" : "estable"
           }
         }
       }
