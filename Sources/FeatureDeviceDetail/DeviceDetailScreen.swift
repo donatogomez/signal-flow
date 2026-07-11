@@ -44,6 +44,7 @@ public struct DeviceDetailScreen: View {
             .padding(Spacing.lg)
             .animation(.default, value: model.phase)
         }
+        .background(Color.signalFlowGroupedBackground.ignoresSafeArea())
         .navigationTitle(model.deviceName.isEmpty ? loc("Device") : model.deviceName)
         .task { await model.observe() }
     }

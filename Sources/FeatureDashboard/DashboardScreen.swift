@@ -38,6 +38,7 @@ public struct DashboardScreen: View {
             .padding(Spacing.lg)
             .animation(.default, value: model.phase)
         }
+        .background(Color.signalFlowGroupedBackground.ignoresSafeArea())
         .navigationTitle(loc("Overview"))
         .task { await model.observe() }
     }

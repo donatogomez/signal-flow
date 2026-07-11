@@ -35,6 +35,7 @@ public struct FleetScreen: View {
 
             list
         }
+        .background(Color.signalFlowGroupedBackground.ignoresSafeArea())
         .navigationTitle(loc("Devices"))
         .searchable(text: $model.searchText, prompt: Text(loc("Search devices or assets")))
         .toolbar {
@@ -84,7 +85,7 @@ public struct FleetScreen: View {
                 }
             }
         }
-        .listStyle(.plain)
+        .signalFlowGroupedList()
     }
 
     private func deviceRow(_ row: FleetRow) -> some View {

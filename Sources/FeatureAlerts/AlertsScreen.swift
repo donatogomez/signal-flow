@@ -29,6 +29,7 @@ public struct AlertsScreen: View {
 
             list
         }
+        .background(Color.signalFlowGroupedBackground.ignoresSafeArea())
         .navigationTitle(loc("Alerts"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
