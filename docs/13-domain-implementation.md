@@ -1,7 +1,7 @@
 # 13. Domain Implementation (`DomainKit`, as built)
 
 This documents the **implemented** domain layer — the first real production code in SignalFlow — and
-why its choices read as senior-level Swift 6. It supersedes the specifics in
+why its Swift 6 choices were made. It supersedes the specifics in
 [docs/05](05-domain-design.md) where they differ (deltas in
 [§5.7](05-domain-design.md#57-implementation-reconciliation-as-built)).
 
@@ -30,7 +30,7 @@ swift build      # ✅   swift test → 36 tests, 7 suites ✅   ./Scripts/check
 Folder layout mirrors these groups under `Sources/DomainKit/{Identifiers, ValueObjects, Entities,
 Policies, Insights, Errors, Ports, UseCases, Support}`.
 
-## 13.2 The decisions that signal senior Swift
+## 13.2 The key Swift decisions
 
 ### Type-safe identifiers with a phantom type
 `Identifier<Scope>` wraps a `UUID`; `Scope` is a compile-time-only tag. `DeviceID` and `AssetID` are

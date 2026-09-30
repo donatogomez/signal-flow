@@ -31,7 +31,8 @@ this directly addresses their scar tissue. See [Architecture §3.4](03-technical
 ### 2. Swift 6 strict-concurrency isolation model (`★★★★★`)
 **What it shows:** mastery of the single hardest, most current iOS topic. A coherent **isolation map**
 (actors for shared state, `Sendable` value types for data, `@MainActor` for UI, `nonisolated async`
-for orchestration) with **zero `@unchecked Sendable`** is a strong, rare signal. **Why it lands:**
+for orchestration) with `@unchecked Sendable` confined to two documented `WCSessionDelegate` bridges is a strong, rare
+signal. **Why it lands:**
 most candidates can *use* `async/await`; far fewer can *design* isolation boundaries. See
 [Concurrency](07-concurrency.md).
 
@@ -67,9 +68,9 @@ lands:** managers hire for "can this person align a team," and writing is the pr
 
 A compact table a reviewer (or the author, in an interview) can scan:
 
-| Senior competency | Concrete evidence in this repo |
+| Competency | Concrete evidence in this repo |
 | --- | --- |
-| Swift 6 concurrency | Isolation map; actor-owned state; `TaskGroup` fan-out with cancellation; banned `@unchecked Sendable` |
+| Swift 6 concurrency | Isolation map; actor-owned state; `TaskGroup` fan-out with cancellation; `@unchecked Sendable` limited to two audited interop bridges |
 | Architecture | Enforced layer boundaries; Dependency Inversion via ports; composition root DI |
 | Domain modeling | Make-illegal-states-unrepresentable value types; pure `StatusPolicy`; extensible `Metric` enum |
 | Data/persistence | SwiftData `ModelActor` off-main; migration plan from v1; retention/rollups |
@@ -85,8 +86,9 @@ A compact table a reviewer (or the author, in an interview) can scan:
 
 A staff engineer evaluates *self-awareness*. SignalFlow's deliberate limitations:
 
-- **No real backend.** Mitigated by the gateway abstraction — swapping `SimulatedGateway` for
-  `WebSocketGateway` is the production path, and that seam is the point. But it does mean network
+- **No real backend.** Mitigated by the gateway abstraction — a REST gateway already sits behind the
+  seam (not wired by default) and a live broker gateway is the planned production path; that seam is
+  the point. But it does mean network
   hardening (auth, TLS pinning, reconnect storms) is roadmap, not MVP.
 - **Single-user.** Multi-tenant/auth is a real boundary deferred to v2. The architecture reserves a
   place for it (composition root + roadmap) rather than pretending it's free.
@@ -99,7 +101,7 @@ Naming these *before a reviewer does* converts potential criticisms into evidenc
 
 ## 11.5 The one-paragraph elevator pitch (for a cover letter or README top)
 
-> SignalFlow is an iOS 26 IoT monitoring platform built to demonstrate senior iOS engineering:
+> SignalFlow is an iOS 26 IoT monitoring platform built to showcase production-grade iOS engineering:
 > Swift 6 strict concurrency with a deliberate actor/isolation model, Clean Architecture enforced at
 > the Swift-Package boundary so the UI literally cannot reach the data layer, an offline-first
 > SwiftData store with sequence-based sync and an optimistic outbox, on-device Foundation Models for
