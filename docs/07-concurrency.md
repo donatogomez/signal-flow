@@ -153,8 +153,8 @@ discipline that separates a toy async demo from a real app.
 - Domain entities are `struct`s that are `Sendable` **by construction** (all stored properties are
   `Sendable`). No annotation gymnastics.
 - Ports are `protocol …: Sendable` so their actor implementations satisfy crossing requirements.
-- **`@unchecked Sendable` is banned in app/domain code.** The only place it could appear is an
-  audited interop shim, and there are none in the design. CI builds with warnings-as-errors under
+- **`@unchecked Sendable` is banned in app/domain code.** The only exceptions are two audited interop
+  shims for `WCSessionDelegate` in `WatchConnectivityKit`. CI builds with warnings-as-errors under
   complete checking to keep it that way.
 - Closures captured by tasks capture only `Sendable` values; the compiler verifies this.
 

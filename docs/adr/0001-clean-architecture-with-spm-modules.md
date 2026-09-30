@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-06-17
-- **Deciders:** Project author (Principal iOS Architect role)
+- **Deciders:** Project author
 
 ## Context
 

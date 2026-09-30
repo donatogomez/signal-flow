@@ -145,7 +145,7 @@ networking (a live gateway) are separate concerns that each deserve their own fo
 Deferring them keeps this change reviewable and the boundaries honest: each future layer slots into a
 seam that already exists rather than forcing a rewrite.
 
-## 16.7 How this demonstrates senior-level iOS architecture
+## 16.7 Why this matters for iOS architecture
 
 | Decision | Signal |
 | --- | --- |

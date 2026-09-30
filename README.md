@@ -2,7 +2,7 @@
 
 # SignalFlow
 
-### An offline-first IoT telemetry monitoring app for iOS 26 — built to demonstrate senior-level Swift 6, SwiftUI & app architecture.
+### An offline-first IoT telemetry monitoring app for iOS 26 — built to showcase production-grade Swift 6, SwiftUI & app architecture.
 
 [![CI](https://github.com/donatogomez/signal-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/donatogomez/signal-flow/actions/workflows/ci.yml)
 [![Platform](https://img.shields.io/badge/platform-iOS%2026%2B-black)](#)
@@ -37,13 +37,13 @@ same glances to Shortcuts, Siri, and Spotlight, a **Live Activity** surfaces an 
 alert on the Lock Screen and Dynamic Island, and an **Apple Watch** companion shows fleet status and
 alerts at a glance.
 
-The IoT domain was chosen deliberately — it forces every hard problem a senior iOS engineer should be
-able to solve, and the **real product is the engineering**: the architecture, the Swift 6 concurrency
+The IoT domain was chosen deliberately — it forces the hard problems a production iOS app has to
+solve, and the **real product is the engineering**: the architecture, the Swift 6 concurrency
 model, the testing strategy, and the documentation.
 
 | Hard problem the domain forces | What the codebase demonstrates |
 | --- | --- |
-| High-frequency, unbounded event streams | `AsyncSequence`, back-pressure, actor buffering |
+| High-frequency, unbounded event streams | `AsyncSequence` fan-in with `TaskGroup`, actor-owned buffering, batched persistence |
 | Unreliable connectivity in the field | Offline-first store, cancellation-safe ingestion |
 | Many devices, parallel work | Structured concurrency, `TaskGroup`, cancellation |
 | Shared mutable state under load | Actors, isolation boundaries, `Sendable` |
@@ -68,14 +68,14 @@ persisted state and deep-linking back into the app:
 Each capability maps to a concrete place in the codebase — the point of the project is that these are
 *built and tested*, not asserted.
 
-| Senior competency | Where it lives |
+| Competency | Where it lives |
 | --- | --- |
-| **Swift 6 strict concurrency** — a deliberate actor/isolation model, zero `@unchecked Sendable` | [`SimulationKit`](docs/15-simulation-kit.md), [`DataKit`](docs/16-data-kit.md) |
+| **Swift 6 strict concurrency** — a deliberate actor/isolation model; `@unchecked Sendable` only in two documented `WCSessionDelegate` bridges | [`SimulationKit`](docs/15-simulation-kit.md), [`DataKit`](docs/16-data-kit.md) |
 | **Clean Architecture, enforced** — features physically can't import the data layer | [Architecture](docs/03-technical-architecture.md) · [`check-boundaries.sh`](Scripts/check-boundaries.sh) |
 | **Actor-based systems** — device simulators, an in-memory store, an ingestion adapter | [Concurrency](docs/07-concurrency.md) |
 | **SwiftData persistence** — a dedicated `ModelActor` off-main, mapping, retention, offline-first restore | [SwiftData Persistence](docs/21-swiftdata-persistence.md) |
 | **Networking** — `URLSession` + `async/await`, typed endpoints, DTO mapping, structured errors, retry | [NetworkingKit](docs/22-networking-kit.md) |
-| **`AsyncSequence` end-to-end** — cancellation-correct telemetry streams | [`SimulationKit`](docs/15-simulation-kit.md) |
+| **`AsyncSequence` ingestion** — cancellation-correct telemetry streams from simulator to store | [`SimulationKit`](docs/15-simulation-kit.md) |
 | **Deterministic, reproducible simulation** — seeded RNG + virtual clock | [`SimulationKit`](docs/15-simulation-kit.md) |
 | **Domain modeling** — type-safe IDs, validated value objects, pure policies | [`DomainKit`](docs/13-domain-implementation.md) |
 | **Modern SwiftUI** — `@Observable`/`@MainActor`, no Combine, Swift Charts | [Feature Layer](docs/17-feature-dashboard-fleet.md) |
@@ -373,7 +373,7 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 
 ## Portfolio value
 
-> SignalFlow is an iOS 26 IoT monitoring app built to demonstrate senior iOS engineering: Swift 6
+> SignalFlow is an iOS 26 IoT monitoring app built to showcase production-grade iOS engineering: Swift 6
 > strict concurrency with a deliberate actor/isolation model, Clean Architecture enforced at the
 > Swift-Package boundary so the UI literally cannot reach the data layer, an offline-first store with
 > cancellation-safe `AsyncSequence` ingestion, modern SwiftUI (`@Observable` + Swift Charts), and a

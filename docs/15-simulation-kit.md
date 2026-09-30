@@ -154,7 +154,7 @@ Beyond readings, devices emit discrete `DeviceEvent`s on a rising edge: `doorOpe
 Moving assets also emit `location` updates as they drift along a heading. Each event type has a
 focused, deterministic test using a forced-behavior profile (e.g. `openProbability: 1`).
 
-## 15.7 Why this demonstrates senior-level Swift 6
+## 15.7 Why this matters for Swift 6
 
 | Decision | What it signals |
 | --- | --- |

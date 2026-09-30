@@ -19,9 +19,9 @@ Forces:
 
 ## Decision
 
-Define a single `TelemetryGateway` protocol and ship **two production implementations behind it**: a
-real `WebSocketGateway` and a **`SimulatedGateway` treated as a first-class data source** (not a test
-stub). The simulator generates physically plausible telemetry (diurnal curves, battery decay,
+Define a single gateway abstraction and treat the **`SimulatedGateway` as a first-class data source**
+(not a test stub). A REST remote gateway (`SignalFlowRemoteGateway`, NetworkingKit) implements the same
+boundary but is not wired by default; a live broker gateway (WebSocket/MQTT) is on the roadmap. The simulator generates physically plausible telemetry (diurnal curves, battery decay,
 door/connectivity events, injectable anomalies) using an **injected `Clock` and seeded RNG**, so the
 same seed reproduces the same scenario exactly. The active gateway is selectable in Settings (FR-15/
 FR-16) and is **indistinguishable** to the repository, use cases, UI, and AI from a live broker.
@@ -33,7 +33,8 @@ FR-16) and is **indistinguishable** to the repository, use cases, UI, and AI fro
 - The same simulator doubles as a **deterministic integration-test fixture** (seed `42` ⇒ identical
   data), which is what makes concurrency tests reproducible.
 - Demonstrates the value of the gateway abstraction: swapping simulated ↔ live is a one-line DI
-  change; the production path (`WebSocketGateway`) is real, just not wired by default.
+  change; a REST gateway already exists behind the seam (not wired by default) and a live broker
+  gateway (WebSocket/MQTT) is roadmap.
 - Lets us showcase rare states on demand (excursions, dropouts) for screenshots/demos.
 
 ### Negative / costs

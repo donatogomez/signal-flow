@@ -128,7 +128,7 @@ flowchart TD
 - The `InsightsProviding` **port** is the seam: deterministic and AI providers are interchangeable
   behind it, and the composition root chooses.
 
-## 20.7 Why this demonstrates senior-level iOS design
+## 20.7 Why this matters for iOS design
 
 | Decision | Signal |
 | --- | --- |

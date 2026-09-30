@@ -9,7 +9,7 @@ back out — all while the Domain and UI remain blissfully unaware of *how*.
 ```mermaid
 flowchart LR
     subgraph Remote
-        WS["WebSocketGateway\n(live broker)"]
+        WS["WebSocketGateway\n(live broker, roadmap)"]
         SIM["SimulatedGateway\n(deterministic)"]
     end
     GW{{"TelemetryGateway\n(protocol, actor)"}}
@@ -39,7 +39,7 @@ public protocol TelemetryGateway: Sendable {
 
 | Implementation | Transport | Purpose |
 | --- | --- | --- |
-| `WebSocketGateway` | `URLSessionWebSocketTask` + framing | Real broker integration (production path) |
+| `WebSocketGateway` *(roadmap, not implemented)* | `URLSessionWebSocketTask` + framing | Real broker integration (planned production path) |
 | `SimulatedGateway` | injected `Clock` + seeded RNG | **Zero-backend demo & deterministic tests** |
 
 The `SimulatedGateway` is a **first-class data source**, not a stub. It generates physically
