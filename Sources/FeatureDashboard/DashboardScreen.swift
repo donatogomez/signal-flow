@@ -52,27 +52,29 @@ public struct DashboardScreen: View {
     }
 
     /// The one-second verdict — "do I need to worry right now?". When alerts are firing it's a loud,
-    /// **tappable** red card that doubles as the entry point to the Alerts tab; when the fleet is clear it's
-    /// a calm green reassurance. Leads the screen and outweighs everything below.
+    /// **tappable** red card that doubles as the entry point to the Alerts tab; a calm green reassurance
+    /// only when every device has reported nominal (``FleetStats/verdict``) — never for an empty fleet.
+    /// Leads the screen and outweighs everything below.
     @ViewBuilder
     private var hero: some View {
-        if model.stats.activeAlerts > 0 {
-            Button(action: onShowAlerts) { heroBody(firing: true) }
+        if model.stats.verdict == .alerting {
+            Button(action: onShowAlerts) { heroBody(model.stats.verdict) }
                 .buttonStyle(.plain)
                 .accessibilityHint(loc("Opens Alerts"))
         } else {
-            heroBody(firing: false)
+            heroBody(model.stats.verdict)
         }
     }
 
     /// Hero metric scale: the count dominates like an Apple Health metric, scaling with Dynamic Type.
     @ScaledMetric(relativeTo: .largeTitle) private var heroCountSize: CGFloat = 48
 
-    private func heroBody(firing: Bool) -> some View {
+    private func heroBody(_ verdict: FleetVerdict) -> some View {
+        let firing = verdict == .alerting
         // Wallet/Home-card proportions: a large icon anchor, the count as the dominant element, generous
         // padding, and everything optically centred on the card's vertical axis.
-        HStack(alignment: .center, spacing: Spacing.xl) {
-            IconBadge(firing ? "bell.badge.fill" : "checkmark.seal.fill", tint: firing ? .red : .green, size: 64)
+        return HStack(alignment: .center, spacing: Spacing.xl) {
+            IconBadge(verdict.symbol, tint: verdict.tint, size: 64)
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 if firing {
                     HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
@@ -89,10 +91,10 @@ public struct DashboardScreen: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 } else {
-                    Text(loc("All systems nominal"))
+                    Text(verdict.headline)
                         .font(.title2.weight(.semibold))
-                        .foregroundStyle(.green)
-                    Text(loc("No active alerts"))
+                        .foregroundStyle(verdict.tint)
+                    Text(verdict.detail)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -229,6 +231,46 @@ private extension HealthBand {
         case .attention: loc("At risk")
         case .critical: loc("Critical")
         case .unknown: loc("No data")
+        }
+    }
+}
+
+/// Maps the hero verdict to its glyph, colour and copy. (`.alerting` renders the live count instead of
+/// a headline, so its copy here is only a fallback.)
+private extension FleetVerdict {
+    var symbol: String {
+        switch self {
+        case .alerting: "bell.badge.fill"
+        case .allNominal: "checkmark.seal.fill"
+        case .degraded: "wifi.exclamationmark"
+        case .noDevices: "antenna.radiowaves.left.and.right"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .alerting: .red
+        case .allNominal: .green
+        case .degraded: .orange
+        case .noDevices: .secondary
+        }
+    }
+
+    var headline: String {
+        switch self {
+        case .alerting: loc("Active alerts")
+        case .allNominal: loc("All systems nominal")
+        case .degraded: loc("No active alerts")
+        case .noDevices: loc("No devices reporting")
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .alerting: loc("Requires immediate attention")
+        case .allNominal: loc("No active alerts")
+        case .degraded: loc("Some devices are offline or degraded")
+        case .noDevices: loc("Fleet health appears once devices report in")
         }
     }
 }
