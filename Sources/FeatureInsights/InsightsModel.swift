@@ -14,7 +14,7 @@ private let insightSparklineCap = 28
 /// backend) enriched with the device's real telemetry trend, so the card can read like Apple's Health
 /// Trends: a short derived headline, a change figure, and a sparkline. Nothing is fabricated — the
 /// headline/change/trend come straight from the readings (the same computation Device Detail does); the
-/// recommendation/confidence/severity come from the provider. This is the seam that keeps the future
+/// recommendation comes from the provider, and severity/confidence from the grounded facts it was given. This is the seam that keeps the future
 /// IntelligenceKit redesign cheap: swap the provider behind `InsightsProviding` and the UI is unchanged.
 public struct InsightFeedItem: Identifiable, Sendable, Hashable {
     public let id: String

@@ -5,8 +5,8 @@ import DomainKit
 /// An `InsightsProviding` implementation backed by Apple's on-device Foundation Models.
 ///
 /// It receives **grounded facts** (computed in Swift via `InsightStatistics`) and asks the model only
-/// to *phrase* them with guided generation. It never decides alert status or thresholds — those are
-/// deterministic and already reflected in the context's counts.
+/// to *phrase* them with guided generation. It never decides alert status, thresholds or the insight's
+/// severity — those are deterministic (`InsightContext.advisorySeverity`) and handed to it as facts.
 ///
 /// Availability and errors degrade gracefully to an injected deterministic `fallback`, and the
 /// resulting `DeviceInsight.source` tells the UI which path produced it. Availability is injectable so
@@ -43,8 +43,8 @@ public struct FoundationModelsInsightProvider: InsightsProviding {
                 summary: draft.summary,
                 anomalyExplanation: draft.anomalyExplanation,
                 recommendation: draft.recommendation,
-                severity: draft.severity.domain,
-                // Confidence is grounded in how much data we have, not produced by the model.
+                // Severity and confidence are grounded in Swift, not produced by the model.
+                severity: context.advisorySeverity,
                 confidence: min(1.0, Double(context.statistics.sampleCount) / 50.0),
                 source: .foundationModel
             )
@@ -78,8 +78,9 @@ public struct FoundationModelsInsightProvider: InsightsProviding {
         Trend: \(s.trend.label) across \(s.sampleCount) readings
         Active alerts on device: \(context.activeAlertCount)
         Recent events on device: \(context.recentEventCount)
+        Advisory level (already decided, keep your wording consistent with it): \(context.advisorySeverity.rawValue)
 
-        Write a short summary, an anomaly explanation, an operational recommendation, and an advisory severity.
+        Write a short summary, an anomaly explanation, and an operational recommendation.
         """
     }
 

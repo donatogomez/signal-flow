@@ -43,15 +43,11 @@ public struct DeterministicInsightsProvider: InsightsProviding {
             recommendation = String(localized: "No action needed; continue routine monitoring.", bundle: .module)
         }
 
-        let severity: InsightSeverity = context.activeAlertCount > 0
-            ? .concern
-            : (stats.trend == .volatile ? .watch : .nominal)
-
         return DeviceInsight(
             summary: summary,
             anomalyExplanation: anomalyExplanation,
             recommendation: recommendation,
-            severity: severity,
+            severity: context.advisorySeverity,
             confidence: min(1.0, Double(stats.sampleCount) / 50.0),
             source: .deterministic
         )
