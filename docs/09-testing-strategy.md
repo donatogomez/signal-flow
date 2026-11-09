@@ -6,7 +6,7 @@ macOS host with no device, no network, no real model and no flakiness. The suite
 Testing** only.
 
 ```bash
-swift test   # 239 tests, 42 suites, ~0.6 s on an M-series Mac
+swift test   # 240 tests, 42 suites, ~0.6 s on an M-series Mac
 ```
 
 ## 9.1 What is covered
@@ -24,7 +24,7 @@ One test target (`SignalFlowKitTests`), organized by module:
 | PersistenceKit | 13 | Mapping round-trips, idempotent appends, retention pruning, latest-per-series restore, end-to-end restoration through DataKit |
 | Localization | 12 | Every catalog key has a Spanish translation; labels resolve per locale |
 | LiveActivities / Widgets / AppIntents | 25 | Live Activity decision state machine, widget timelines and summaries, intent results |
-| CoreKit, IntelligenceKit, AppShell, smoke | 15 | RNG, Foundation Models fallback path and grounded prompt, composition-root lifecycle (overlapping starts, rapid scene-phase transitions, failed restore) |
+| CoreKit, IntelligenceKit, AppShell, smoke | 16 | RNG, Foundation Models fallback path and grounded prompt, composition-root lifecycle (request ordering with an operation in flight, cancellation, overlapping starts, failed restore) |
 
 ## 9.2 Test doubles — plain types, no framework
 
@@ -50,10 +50,10 @@ Tests assert on outcomes, not on recorded calls.
   with a continuation-based latch, triggers `stop()`, issues `start()` while `stop()` is suspended,
   and only then releases the loop. The interleaving is deterministic, and the test fails against the
   previous implementation.
-- **Driving the real call pattern.** The container test fires a burst of start/stop requests as
-  separate unstructured tasks, exactly as the scene-phase handler does, and asserts that the final
-  state matches the last request and that the catalog was restored once. It fails on every run against
-  the unserialized container.
+- **Ordering without scheduler luck.** The container tests hold the first start open inside its
+  restore, issue the rest of a lifecycle sequence while it is in flight, and only then release it. The
+  final state must match the last request, the catalog is restored once, and cancelling a request's
+  task doesn't withdraw it. None of this depends on the order in which tasks get scheduled.
 - **Real wall-clock time** is used only where pacing itself is under test (the accelerated clock and
   cancelling a slow stream), with generous bounds.
 

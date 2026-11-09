@@ -9,7 +9,7 @@
 [![Swift](https://img.shields.io/badge/Swift-6-orange)](#)
 [![Strict Concurrency](https://img.shields.io/badge/strict%20concurrency-complete-green)](#)
 [![UI](https://img.shields.io/badge/UI-SwiftUI%20only-blue)](#)
-[![Tests](https://img.shields.io/badge/tests-239%20passing-success)](#how-to-run-the-tests)
+[![Tests](https://img.shields.io/badge/tests-240%20passing-success)](#how-to-run-the-tests)
 [![3rd-party deps](https://img.shields.io/badge/3rd--party%20deps-0-lightgrey)](#)
 [![License](https://img.shields.io/badge/license-Source%20Available-blue)](#license)
 
@@ -290,7 +290,7 @@ swift run SignalFlowHost
 
 ```bash
 swift build                    # compiles all 24 build targets (Swift 6, strict concurrency)
-swift test                     # Swift Testing suite — 239 tests, 42 suites
+swift test                     # Swift Testing suite — 240 tests, 42 suites
 ./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
 ```
 
@@ -328,7 +328,7 @@ The same three commands run locally and in CI, so a green local run means a gree
 - ✅ **WatchConnectivity sync** — `WatchConnectivityKit` (the only module that imports WatchConnectivity, CI-enforced) sends a compact `Codable` fleet snapshot (summary · device snapshots · critical alerts · timestamp) from the iPhone to the paired Watch via `WCSession.updateApplicationContext` (latest-wins); the watch persists it locally and renders from it. Explains why App Groups don't cross the device boundary. See [watchOS Companion](docs/27-watchos-companion.md).
 - ✅ **watch complications & Smart Stack** — `WatchWidgetSupportKit` + a `SignalFlowWatchWidgets` WidgetKit extension embedded in the watch app: a glanceable _Fleet Health_ complication across all accessory families (circular · inline · rectangular · corner), reading the **synced** snapshot (never the data engine), with a severity-ranked, stale-damped **Smart Stack relevance** score and an honest stale/fresh treatment. See [watch Complications & Smart Stack](docs/29-watch-complications.md).
 - ✅ **Localization (English + Spanish)** — full localization across every surface via Apple's modern stack only (`String(localized:)`, `LocalizedStringResource`, **String Catalogs**), no `NSLocalizedString`/legacy `.strings`. Domain enums stay language-neutral; localized labels live in `DesignSystemKit` and per-module `.xcstrings`. ~152 keys, each with a complete Spanish translation. See [Localization](docs/28-localization.md).
-- ✅ Architecture boundaries enforced by a CI check; **239 Swift Testing tests** passing.
+- ✅ Architecture boundaries enforced by a CI check; **240 Swift Testing tests** passing.
 
 **Upcoming**
 - ⬜️ Real backend wiring + auth (swap `URLSessionHTTPClient` in at the composition root).
