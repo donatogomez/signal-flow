@@ -19,7 +19,7 @@ import WatchConnectivityKit
 @MainActor
 @Observable
 public final class AppContainer {
-    private let source: SimulatedDataSource
+    let source: SimulatedDataSource // internal only so lifecycle tests can observe ingestion
     private var didBootstrap = false
 
     /// Drives the critical-alert Live Activity. ActivityKit work happens inside the service (guarded for
@@ -68,18 +68,49 @@ public final class AppContainer {
 
     /// Boots the data layer (once) and starts ingestion. Idempotent and safe to call again after
     /// `stop()`.
+    ///
+    /// Lifecycle calls arrive from several places at once (`RootView.task` and the scene-phase handler
+    /// both start the app at launch), so `start()`/`stop()` are **serialized in call order**: each one
+    /// waits for the previous to finish. Without that, two overlapping `start()`s would both see
+    /// `didBootstrap == false` across the `await` and bootstrap twice.
     public func start() async {
-        if !didBootstrap {
-            try? await source.bootstrap()
-            didBootstrap = true
-        }
-        await source.start()
+        await enqueue(.start)
     }
 
     /// Halts ingestion. `stop()` awaits the ingestion loop to completion, so teardown is clean and
-    /// cancellation-safe (see DataKit §16.5).
+    /// cancellation-safe (see DataKit §16.5). Serialized with `start()`.
     public func stop() async {
-        await source.stop()
+        await enqueue(.stop)
+    }
+
+    private enum LifecycleRequest { case start, stop }
+
+    /// The most recently requested lifecycle operation; each new one runs after it.
+    private var lifecycle: Task<Void, Never>?
+
+    /// Appends a lifecycle operation to the chain. The chain is extended synchronously (before any
+    /// suspension), so operations run in exactly the order they were requested.
+    private func enqueue(_ request: LifecycleRequest) async {
+        let previous = lifecycle
+        let next = Task {
+            await previous?.value
+            await perform(request)
+        }
+        lifecycle = next
+        await next.value
+    }
+
+    private func perform(_ request: LifecycleRequest) async {
+        switch request {
+        case .start:
+            if !didBootstrap {
+                try? await source.bootstrap()
+                didBootstrap = true
+            }
+            await source.start()
+        case .stop:
+            await source.stop()
+        }
     }
 
     // MARK: - Live Activities

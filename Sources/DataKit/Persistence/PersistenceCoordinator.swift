@@ -53,9 +53,13 @@ actor PersistenceCoordinator {
         }
     }
 
+    /// Stops the periodic flush, waits for any in-flight periodic flush to finish (so it can't write an
+    /// older device/alert snapshot after the final one), then performs the final flush.
     func stopAndFlush() async {
-        flushTask?.cancel()
+        let periodic = flushTask
         flushTask = nil
+        periodic?.cancel()
+        await periodic?.value
         await flush()
     }
 

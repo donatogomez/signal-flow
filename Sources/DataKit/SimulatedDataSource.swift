@@ -155,4 +155,9 @@ public struct SimulatedDataSource: Sendable {
     public func ingestedReadingCount() async -> Int {
         await store.ingestedReadingCount()
     }
+
+    /// Whether an ingestion session is active, i.e. started and not yet stopped (diagnostics / tests).
+    public func isIngesting() async -> Bool {
+        await adapter.isRunning
+    }
 }

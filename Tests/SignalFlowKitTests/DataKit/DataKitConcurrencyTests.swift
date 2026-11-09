@@ -2,6 +2,7 @@ import Foundation
 import Testing
 import DomainKit
 import DataKit
+import SimulationKit
 
 @Suite("DataKit concurrency, cancellation & boundaries")
 struct DataKitConcurrencyTests {
@@ -59,6 +60,38 @@ struct DataKitConcurrencyTests {
         #expect(later == afterStop)
     }
 
+    @Test("A start() that lands while stop() is draining starts a new session", .timeLimit(.minutes(1)))
+    func startDuringStopIsNotDropped() async throws {
+        // The sink parks the ingestion loop on its first item, so the test controls exactly when the
+        // stopped session finishes — no sleeps, no scheduler races.
+        let parked = Latch()
+        let release = Latch()
+        let store = InMemoryTelemetryStore()
+        let engine = SimulationFleet.standard(seed: 1, clock: AcceleratedSimulationClock(timeScale: 600))
+        let adapter = SimulationTelemetryAdapter(engine: engine, store: store) { _ in
+            await parked.open()
+            await release.wait()
+        }
+
+        await adapter.start()
+        await parked.wait()                       // session 1 is parked inside the sink
+
+        let stopping = Task { await adapter.stop() }
+        while await adapter.isRunning {           // until stop() has detached session 1 and is draining
+            try Task.checkCancellation()
+            await Task.yield()
+        }
+        let starting = Task { await adapter.start() }          // the scene-phase "back to .active" call
+
+        await release.open()                      // let session 1 finish
+        await stopping.value
+        await starting.value
+
+        #expect(await adapter.isRunning)          // the restart was honoured, not silently dropped
+        await adapter.stop()
+        #expect(await adapter.isRunning == false)
+    }
+
     @Test("The data layer is consumable through DomainKit ports alone")
     func consumableThroughDomainPortsOnly() async throws {
         let source = SimulatedDataSource.deterministic(seed: 2, maxTicks: 15)
@@ -86,5 +119,23 @@ struct DataKitConcurrencyTests {
         _ = try await alerts.activeAlerts(forDevice: device.id)
         _ = try await alerts.rules(forDevice: device.id)
         _ = insights // a DomainKit InsightsProviding; consumed by the insight use case elsewhere
+    }
+}
+
+/// A one-shot gate: `wait()` suspends until `open()` has been called (then returns immediately).
+private actor Latch {
+    private var isOpen = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    func open() {
+        guard !isOpen else { return }
+        isOpen = true
+        for waiter in waiters { waiter.resume() }
+        waiters.removeAll()
+    }
+
+    func wait() async {
+        if isOpen { return }
+        await withCheckedContinuation { waiters.append($0) }
     }
 }
