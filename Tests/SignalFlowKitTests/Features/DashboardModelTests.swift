@@ -73,4 +73,42 @@ struct DashboardModelTests {
         #expect(empty.healthFraction == 0)
         #expect(empty.healthBand == .unknown)
     }
+
+    /// Regression: at cold launch the dashboard's first refresh can land before the data source has
+    /// bootstrapped its catalog. That refresh succeeds with zero devices, and the hero used to read
+    /// "All systems nominal" — a verdict on a fleet nobody had evaluated.
+    @Test("Before the catalog loads, the dashboard claims nothing; after, it reports the real fleet")
+    func noVerdictBeforeBootstrap() async throws {
+        let source = SimulatedDataSource.deterministic(seed: 42, maxTicks: 25)
+        let model = DashboardModel(assets: source.assets, devices: source.devices, alerts: source.alerts, events: source.events)
+
+        await model.refresh() // not bootstrapped yet — what the first `.task` tick can see at launch
+        #expect(model.phase == .loaded)
+        #expect(model.stats.totalDevices == 0)
+        #expect(model.stats.verdict == .noDevices)
+
+        try await source.bootstrap()
+        await source.ingestAll()
+        await model.refresh()
+        #expect(model.stats.totalDevices == 10)
+        #expect(model.stats.verdict != .noDevices)
+    }
+
+    @Test("The hero verdict needs evidence: devices present and every one nominal")
+    func verdict() {
+        #expect(FleetStats.empty.verdict == .noDevices)
+
+        var stats = FleetStats()
+        stats.totalDevices = 3
+        stats.nominal = 3
+        #expect(stats.verdict == .allNominal)
+
+        // An offline (or degraded) device with no alert firing is not "all systems nominal".
+        stats.nominal = 2
+        stats.offline = 1
+        #expect(stats.verdict == .degraded)
+
+        stats.activeAlerts = 1
+        #expect(stats.verdict == .alerting)
+    }
 }

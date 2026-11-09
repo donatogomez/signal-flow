@@ -1,5 +1,9 @@
 # 2. Functional Requirements
 
+> **Status note.** This is a pre-implementation design document. It records the original intent
+> and reasoning, but names, modules and some mechanisms changed during implementation. The
+> as-built design is in the [README roadmap](../README.md#roadmap) and [Evidence Map & Known Limitations](11-portfolio-value.md); where they differ, the code and those documents win.
+
 Requirements are expressed as capabilities with a priority. The MVP is the smallest slice that is
 **demonstrably production-shaped** — it must look like something a team could ship and maintain,
 not a toy.

@@ -36,6 +36,27 @@ struct PersistenceStoreTests {
         #expect(snapshot.insights.count == 1)
     }
 
+    @Test("Restore returns exactly the newest reading of every device/metric series")
+    func latestReadingPerSeries() async throws {
+        let store = try makeStore()
+        let devices = [DeviceID(), DeviceID(), DeviceID()]
+        // Out-of-order timestamps, so "newest" can't come from insertion order.
+        let offsets: [TimeInterval] = [40, 10, 90, 20, 70]
+        var readings: [TelemetryReading] = []
+        for (index, device) in devices.enumerated() {
+            for offset in offsets {
+                readings.append(try PX.reading(device: device, .temperature, offset, at: offset + Double(index)))
+                readings.append(try PX.reading(device: device, .humidity, offset, unit: .percent, at: offset + Double(index)))
+            }
+        }
+        try await store.appendReadings(readings)
+
+        let latest = try await store.loadSnapshot().latestReadings
+        #expect(latest.count == devices.count * 2)
+        #expect(Set(latest.map { "\($0.deviceID)|\($0.metric)" }).count == latest.count)
+        #expect(latest.allSatisfy { $0.value.magnitude == 90 })
+    }
+
     @Test("Re-appending the same reading id is idempotent")
     func idempotentAppend() async throws {
         let store = try makeStore()

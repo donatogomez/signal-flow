@@ -59,7 +59,7 @@ This is the central design decision, and it follows from how a widget actually r
   wasteful, and `SimulationKit` would just invent *different* numbers than the app last showed.
 - **The app already commits the truth to disk.** As telemetry flows, the app persists the latest
   per-device state, active alerts, and readings into SwiftData (see
-  [SwiftData Persistence](docs/21-swiftdata-persistence.md)). That persisted snapshot is the
+  [SwiftData Persistence](21-swiftdata-persistence.md)). That persisted snapshot is the
   authoritative, *already-reconciled* view — exactly what a glanceable widget should mirror.
 - **So the widget reads the snapshot, not the engine.** `WidgetSnapshotReader` calls
   `PersistenceStoring.loadSnapshot()` and aggregates the result. The widget shows what the app last

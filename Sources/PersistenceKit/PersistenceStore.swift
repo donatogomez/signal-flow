@@ -21,15 +21,7 @@ public actor PersistenceStore: PersistenceStoring {
         let assetRecords = try modelContext.fetch(FetchDescriptor<AssetRecord>())
         let deviceRecords = try modelContext.fetch(FetchDescriptor<DeviceRecord>())
 
-        // Latest reading per (device, metric): newest first, keep the first seen per series.
-        let readingRecords = try modelContext.fetch(
-            FetchDescriptor<ReadingRecord>(sortBy: [SortDescriptor(\.recordedAt, order: .reverse)])
-        )
-        var latestByKey: [String: ReadingRecord] = [:]
-        for record in readingRecords {
-            let key = "\(record.deviceID)|\(record.metricKey)"
-            if latestByKey[key] == nil { latestByKey[key] = record }
-        }
+        let latestReadings = try latestReadingPerSeries()
 
         let eventRecords = try modelContext.fetch(FetchDescriptor<EventRecord>())
         let alertRecords = try modelContext.fetch(FetchDescriptor<AlertRecord>())
@@ -38,11 +30,44 @@ public actor PersistenceStore: PersistenceStoring {
         return PersistedSnapshot(
             assets: try assetRecords.map(Mapping.asset),
             devices: try deviceRecords.map(Mapping.device),
-            latestReadings: try latestByKey.values.map(Mapping.reading),
+            latestReadings: try latestReadings.map(Mapping.reading),
             events: try eventRecords.map(Mapping.event),
             alerts: try alertRecords.map(Mapping.alert),
             insights: try insightRecords.map(Mapping.insight)
         )
+    }
+
+    /// The newest reading of every (device, metric) series, **without materializing the history**.
+    ///
+    /// The readings table holds up to `maxReadingsPerSeries` rows per series (tens of thousands in
+    /// total), but restore and the glance surfaces only need one row per series — and the widget
+    /// extension runs under a tight memory limit. So this is a skip-scan: each query fetches a single
+    /// row from a device or series not seen yet. Cost is one tiny query per series (plus one per
+    /// device), and only those rows are ever loaded.
+    private func latestReadingPerSeries() throws -> [ReadingRecord] {
+        var latest: [ReadingRecord] = []
+        var seenDevices: [String] = []
+        while let deviceID = try firstReading(where: #Predicate { !seenDevices.contains($0.deviceID) })?.deviceID {
+            seenDevices.append(deviceID)
+            var seenMetrics: [String] = []
+            while let newest = try firstReading(
+                where: #Predicate { $0.deviceID == deviceID && !seenMetrics.contains($0.metricKey) },
+                newestFirst: true
+            ) {
+                latest.append(newest)
+                seenMetrics.append(newest.metricKey)
+            }
+        }
+        return latest
+    }
+
+    private func firstReading(where predicate: Predicate<ReadingRecord>, newestFirst: Bool = false) throws -> ReadingRecord? {
+        var descriptor = FetchDescriptor<ReadingRecord>(
+            predicate: predicate,
+            sortBy: newestFirst ? [SortDescriptor(\.recordedAt, order: .reverse)] : []
+        )
+        descriptor.fetchLimit = 1
+        return try modelContext.fetch(descriptor).first
     }
 
     // MARK: Catalog

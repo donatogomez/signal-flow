@@ -19,7 +19,7 @@ import WatchConnectivityKit
 @MainActor
 @Observable
 public final class AppContainer {
-    private let source: SimulatedDataSource
+    let source: SimulatedDataSource // internal only so lifecycle tests can observe ingestion
     private var didBootstrap = false
 
     /// Drives the critical-alert Live Activity. ActivityKit work happens inside the service (guarded for
@@ -67,19 +67,68 @@ public final class AppContainer {
     }
 
     /// Boots the data layer (once) and starts ingestion. Idempotent and safe to call again after
-    /// `stop()`.
+    /// `stop()`. Ordered with every other lifecycle request; see ``requestStart()``.
     public func start() async {
-        if !didBootstrap {
-            try? await source.bootstrap()
-            didBootstrap = true
-        }
-        await source.start()
+        await requestStart().value
     }
 
     /// Halts ingestion. `stop()` awaits the ingestion loop to completion, so teardown is clean and
-    /// cancellation-safe (see DataKit §16.5).
+    /// cancellation-safe (see DataKit §16.5). Ordered with every other lifecycle request.
     public func stop() async {
-        await source.stop()
+        await requestStop().value
+    }
+
+    /// Records a start request **synchronously** and returns the operation that applies it.
+    ///
+    /// Lifecycle requests arrive from several places (the scene-phase handler, `RootView`). The order
+    /// that matters is the order they were *made*, so a request takes its place in the chain at this
+    /// call, before any suspension. Each operation waits for the previous one to finish, so operations
+    /// apply strictly in request order, whenever their tasks happen to be scheduled. Callers must call
+    /// this directly on the main actor rather than from a `Task {}` they create: a task's body can run
+    /// later than a request made after it, and Swift doesn't promise otherwise.
+    ///
+    /// Awaiting the returned task waits for the transition. Cancelling it doesn't withdraw the request:
+    /// nothing in the transition checks for cancellation, so it still applies in order.
+    @discardableResult
+    public func requestStart() -> Task<Void, Never> {
+        enqueue(.start)
+    }
+
+    /// Records a stop request synchronously; see ``requestStart()``.
+    @discardableResult
+    public func requestStop() -> Task<Void, Never> {
+        enqueue(.stop)
+    }
+
+    private enum LifecycleRequest { case start, stop }
+
+    /// The most recently requested lifecycle operation; the next one runs after it.
+    private var lifecycle: Task<Void, Never>?
+
+    /// Appends an operation to the chain. Runs synchronously on the main actor, so the chain order is
+    /// the order of the calls. Because overlapping operations can't exist, `didBootstrap` is never read
+    /// by two starts at once and bootstrap runs exactly once.
+    private func enqueue(_ request: LifecycleRequest) -> Task<Void, Never> {
+        let previous = lifecycle
+        let next = Task {
+            await previous?.value
+            await perform(request)
+        }
+        lifecycle = next
+        return next
+    }
+
+    private func perform(_ request: LifecycleRequest) async {
+        switch request {
+        case .start:
+            if !didBootstrap {
+                try? await source.bootstrap()
+                didBootstrap = true
+            }
+            await source.start()
+        case .stop:
+            await source.stop()
+        }
     }
 
     // MARK: - Live Activities

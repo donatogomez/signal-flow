@@ -1,5 +1,9 @@
 # 4. Repository Structure
 
+> **Status note.** This is a pre-implementation design document. It records the original intent
+> and reasoning, but names, modules and some mechanisms changed during implementation. The
+> as-built design is in [Scaffolding](12-scaffolding.md) and [`Package.swift`](../Package.swift); where they differ, the code and those documents win.
+
 ## 4.1 Strategy: one app target, one local Swift Package, many targets
 
 SignalFlow uses a **single Xcode project** with a thin app target plus a **local Swift Package**

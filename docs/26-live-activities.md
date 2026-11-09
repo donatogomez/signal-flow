@@ -93,7 +93,7 @@ the most recent active unacknowledged critical alert.
 ## 26.5 Why alerts stay deterministic — and AI is not involved
 
 Whether an alert exists, and whether it's *critical*, is decided entirely by `AlertRule.evaluate`
-against numeric thresholds in the data layer (see [FeatureAlerts](docs/23-feature-alerts.md)). The Live
+against numeric thresholds in the data layer (see [FeatureAlerts](23-feature-alerts.md)). The Live
 Activity layer only **reads** that state:
 
 - `CriticalAlertSelector` filters by `severity == .critical` and raise time — pure functions of domain

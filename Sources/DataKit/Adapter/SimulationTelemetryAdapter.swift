@@ -40,12 +40,18 @@ actor IngestionReadiness {
 ///   need that guarantee deterministically.
 /// - **`stop()` awaits the loop's completion** after cancelling, so once it returns the cancelled
 ///   session is provably finished and can no longer mutate the store. `deinit` cancels as a backstop.
+/// - **Reentrancy-safe lifecycle.** `stop()` detaches the running loop *before* it suspends, and
+///   `start()` first waits for any loop still draining. So a `start()` that lands while a `stop()` is
+///   suspended starts a fresh session (instead of being dropped), and two loops never drive the shared
+///   device actors at the same time.
 public actor SimulationTelemetryAdapter {
     private let engine: SimulationEngineActor
     private let store: InMemoryTelemetryStore
     private let sink: (@Sendable (DeviceTelemetry) async -> Void)?
     private let readiness = IngestionReadiness()
     private var task: Task<Void, Never>?
+    /// The most recently stopped loop, kept until it has fully finished.
+    private var draining: Task<Void, Never>?
 
     public init(
         engine: SimulationEngineActor,
@@ -63,9 +69,11 @@ public actor SimulationTelemetryAdapter {
         await ingestLoop(engine: engine, store: store, sink: sink, readiness: readiness)
     }
 
-    /// Starts background ingestion. Idempotent — a second call while running is a no-op. Returns as
-    /// soon as the loop is *scheduled*; it does not wait for the first item.
-    public func start() {
+    /// Starts background ingestion. Idempotent — a second call while running is a no-op. If a previous
+    /// session is still shutting down, waits for it to finish first. Returns as soon as the new loop is
+    /// *scheduled*; it does not wait for the first item.
+    public func start() async {
+        await drain()
         guard task == nil else { return }
         let engine = self.engine
         let store = self.store
@@ -77,7 +85,7 @@ public actor SimulationTelemetryAdapter {
     /// Starts background ingestion and returns only once the loop has ingested its **first reading**.
     /// Deterministic — no polling, no sleeps — so callers can prove ingestion is live before acting.
     public func startAndWaitUntilFirstIngestion() async {
-        start()
+        await start()
         await readiness.wait()
     }
 
@@ -87,14 +95,28 @@ public actor SimulationTelemetryAdapter {
     /// the underlying fleet stream via `onTermination`. Awaiting `task.value` then guarantees that no
     /// further telemetry from this session can be written once `stop()` returns — the property the
     /// CI-stable cancellation test relies on. Concurrent/duplicate calls are safe and idempotent.
+    ///
+    /// The running task is detached *synchronously*, before the first suspension point, so a `start()`
+    /// interleaved during the wait sees no running session and starts a new one.
     public func stop() async {
-        guard let task else { return }
-        task.cancel()
-        await task.value
-        self.task = nil
+        if let task {
+            self.task = nil
+            task.cancel()
+            draining = task
+        }
+        await drain()
     }
 
     public var isRunning: Bool { task != nil }
+
+    /// Waits until every stopped loop has fully finished. Loops because a reentrant `stop()` may
+    /// replace `draining` while this call is suspended.
+    private func drain() async {
+        while let pending = draining {
+            await pending.value
+            if draining == pending { draining = nil }
+        }
+    }
 
     deinit { task?.cancel() }
 }

@@ -1,5 +1,9 @@
 # 10. Documentation Strategy
 
+> **Status note.** This is a pre-implementation design document. It records the original intent
+> and reasoning, but names, modules and some mechanisms changed during implementation. The
+> as-built design is in the [`docs/`](.) index in the [README](../README.md#documentation); where they differ, the code and those documents win.
+
 For a portfolio whose *product is the engineering*, documentation is not overhead — it's the primary
 interface to the reviewer. The strategy has three audiences and a layer for each.
 

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import DomainKit
 import DataKit
-import IntelligenceKit
+@testable import IntelligenceKit
 
 /// These tests never invoke the on-device model — they force the unavailable path so they're
 /// deterministic and pass on CI machines without Apple Intelligence.
@@ -42,5 +42,12 @@ struct FoundationModelsInsightProviderTests {
         ).insight(for: ctx)
         let direct = try await DeterministicInsightsProvider().insight(for: ctx)
         #expect(viaFoundationModels == direct)
+    }
+
+    @Test("The prompt hands the model the grounded advisory level instead of asking it to classify")
+    func promptCarriesGroundedSeverity() throws {
+        let prompt = FoundationModelsInsightProvider.prompt(for: try context())
+        #expect(prompt.contains("Advisory level (already decided, keep your wording consistent with it): nominal"))
+        #expect(!prompt.localizedCaseInsensitiveContains("advisory severity"))
     }
 }

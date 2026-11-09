@@ -70,7 +70,7 @@ concrete paired destination builds cleanly. The watch app still also builds on i
 - **So the watch only reads.** `PersistedWatchSnapshotProvider` loads the persisted snapshot through
   `SnapshotKit.WidgetSnapshotReader` (PersistenceKit → SwiftData) and never starts ingestion. This keeps
   the watch cheap, deterministic, and consistent with the phone — the same rationale as the widgets and
-  App Intents (see [WidgetKit](docs/24-widgetkit.md), [App Intents](docs/25-app-intents.md)).
+  App Intents (see [WidgetKit](24-widgetkit.md), [App Intents](25-app-intents.md)).
 
 ## 27.3 UI decisions for watchOS
 

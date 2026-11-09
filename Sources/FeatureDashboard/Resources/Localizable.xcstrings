@@ -145,6 +145,16 @@
         }
       }
     },
+    "Fleet health appears once devices report in" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El estado de la flota aparecerá cuando los dispositivos reporten"
+          }
+        }
+      }
+    },
     "Fleet status" : {
       "localizations" : {
         "es" : {
@@ -191,6 +201,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sin datos"
+          }
+        }
+      }
+    },
+    "No devices reporting" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ningún dispositivo reportando"
           }
         }
       }
@@ -252,6 +272,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Requiere atención inmediata"
+          }
+        }
+      }
+    },
+    "Some devices are offline or degraded" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Algunos dispositivos están sin conexión o degradados"
           }
         }
       }

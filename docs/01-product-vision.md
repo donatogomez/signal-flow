@@ -1,5 +1,9 @@
 # 1. Product Vision
 
+> **Status note.** This is a pre-implementation design document. It records the original intent
+> and reasoning, but names, modules and some mechanisms changed during implementation. The
+> as-built design is in the [README](../README.md) and [Evidence Map & Known Limitations](11-portfolio-value.md); where they differ, the code and those documents win.
+
 ## 1.1 What SignalFlow is
 
 SignalFlow is an **iOS-native operations console for distributed physical assets**. It connects to

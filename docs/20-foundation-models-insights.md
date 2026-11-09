@@ -32,7 +32,7 @@ AI **enhances** the insight system; it never touches safety logic. The hard line
 | Trend direction, min/max/avg | `DomainKit.InsightStatistics` (pure Swift) | **none** |
 | Active-alert / event **counts** | data layer (already evaluated) | **none** — passed in as facts |
 | Wording of summary / anomaly / recommendation | Foundation model | phrasing only |
-| Advisory insight "severity" (nominal/watch/concern) | model classification | **advisory only**, not safety |
+| Advisory insight "severity" (nominal/watch/concern) | `InsightContext.advisorySeverity` (alerts ⇒ concern, volatile ⇒ watch) | **none** — the model is told the level, it doesn't pick it |
 
 The model is never asked "is this device in breach?" — thresholds are evaluated deterministically and
 the model only ever sees the *resulting count*. `InsightSeverity` is deliberately a separate type from
@@ -64,7 +64,11 @@ flowchart LR
    `JSONSerialization`, no string parsing.
 3. The instructions are explicit: *use only the provided facts, never invent numbers, frame anomalies
    as hypotheses, do not give safety verdicts.*
-4. `confidence` is derived from sample count in Swift — not asked of the model.
+4. `severity` and `confidence` are computed in Swift — not asked of the model. Severity comes from
+   `InsightContext.advisorySeverity`, the same rule the deterministic provider uses: the model never
+   sees thresholds, so a severity it chose would be ungrounded (it once rendered an alert-free reefer
+   cooling down as a red "concern"). `confidence` only measures data sufficiency (sample count / 50),
+   so the Insights screen shows the reading count rather than a "confidence" percentage.
 
 ## 20.4 Availability & fallback strategy
 

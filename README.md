@@ -9,17 +9,17 @@
 [![Swift](https://img.shields.io/badge/Swift-6-orange)](#)
 [![Strict Concurrency](https://img.shields.io/badge/strict%20concurrency-complete-green)](#)
 [![UI](https://img.shields.io/badge/UI-SwiftUI%20only-blue)](#)
-[![Tests](https://img.shields.io/badge/tests-222%20passing-success)](#how-to-run-the-tests)
+[![Tests](https://img.shields.io/badge/tests-240%20passing-success)](#how-to-run-the-tests)
 [![3rd-party deps](https://img.shields.io/badge/3rd--party%20deps-0-lightgrey)](#)
 [![License](https://img.shields.io/badge/license-Source%20Available-blue)](#license)
 
 SignalFlow monitors a fleet of remote IoT devices — greenhouses, refrigerated trucks, warehouses,
 environmental stations — turning a firehose of sensor telemetry into **real-time situational
-awareness**, **offline-resilient history**, and **on-device insight**.
+awareness**, **offline-first persistence**, and **on-device insight**.
 
 <br/>
 
-<img src="Assets/README/signalflow-demo.gif" alt="SignalFlow demo — Dashboard, Fleet and Device Detail" width="320" />
+<img src="Assets/README/signalflow-demo.gif" alt="SignalFlow demo — Overview, Device Detail and Insights" width="320" />
 
 </div>
 
@@ -52,16 +52,9 @@ model, the testing strategy, and the documentation.
 
 ## Screenshots
 
-| Dashboard | Fleet | Device Detail |
-| :---: | :---: | :---: |
-| <img src="Assets/README/dashboard.png" alt="Dashboard" width="250" /> | <img src="Assets/README/fleet.png" alt="Fleet" width="250" /> | <img src="Assets/README/device-detail.png" alt="Device Detail" width="250" /> |
-
-**Home Screen widgets** — _Fleet Status_ and _Critical Alerts_ (small + medium), rendered from
-persisted state and deep-linking back into the app:
-
-| Fleet Status | Critical Alerts |
-| :---: | :---: |
-| _screenshot coming soon_ | _screenshot coming soon_ |
+| Overview | Devices | Device Detail | Insights |
+| :---: | :---: | :---: | :---: |
+| <img src="Assets/README/dashboard.png" alt="Overview: fleet health gauge and status counts" width="200" /> | <img src="Assets/README/fleet.png" alt="Devices: searchable, filterable fleet list" width="200" /> | <img src="Assets/README/device-detail.png" alt="Device Detail: live temperature chart and current telemetry" width="200" /> | <img src="Assets/README/insights.png" alt="Insights: on-device AI observations with trend sparklines" width="200" /> |
 
 ## What this project demonstrates
 
@@ -297,7 +290,7 @@ swift run SignalFlowHost
 
 ```bash
 swift build                    # compiles all 24 build targets (Swift 6, strict concurrency)
-swift test                     # Swift Testing suite — 222 tests, 41 suites
+swift test                     # Swift Testing suite — 240 tests, 42 suites
 ./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
 ```
 
@@ -335,7 +328,7 @@ The same three commands run locally and in CI, so a green local run means a gree
 - ✅ **WatchConnectivity sync** — `WatchConnectivityKit` (the only module that imports WatchConnectivity, CI-enforced) sends a compact `Codable` fleet snapshot (summary · device snapshots · critical alerts · timestamp) from the iPhone to the paired Watch via `WCSession.updateApplicationContext` (latest-wins); the watch persists it locally and renders from it. Explains why App Groups don't cross the device boundary. See [watchOS Companion](docs/27-watchos-companion.md).
 - ✅ **watch complications & Smart Stack** — `WatchWidgetSupportKit` + a `SignalFlowWatchWidgets` WidgetKit extension embedded in the watch app: a glanceable _Fleet Health_ complication across all accessory families (circular · inline · rectangular · corner), reading the **synced** snapshot (never the data engine), with a severity-ranked, stale-damped **Smart Stack relevance** score and an honest stale/fresh treatment. See [watch Complications & Smart Stack](docs/29-watch-complications.md).
 - ✅ **Localization (English + Spanish)** — full localization across every surface via Apple's modern stack only (`String(localized:)`, `LocalizedStringResource`, **String Catalogs**), no `NSLocalizedString`/legacy `.strings`. Domain enums stay language-neutral; localized labels live in `DesignSystemKit` and per-module `.xcstrings`. ~152 keys, each with a complete Spanish translation. See [Localization](docs/28-localization.md).
-- ✅ Architecture boundaries enforced by a CI check; **222 Swift Testing tests** passing.
+- ✅ Architecture boundaries enforced by a CI check; **240 Swift Testing tests** passing.
 
 **Upcoming**
 - ⬜️ Real backend wiring + auth (swap `URLSessionHTTPClient` in at the composition root).
@@ -350,7 +343,7 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 
 | # | Document | # | Document |
 | --- | --- | --- | --- |
-| 01 | [Product Vision](docs/01-product-vision.md) | 11 | [Portfolio Value Analysis](docs/11-portfolio-value.md) |
+| 01 | [Product Vision](docs/01-product-vision.md) | 11 | [Evidence Map & Known Limitations](docs/11-portfolio-value.md) |
 | 02 | [Functional Requirements](docs/02-functional-requirements.md) | 12 | [Scaffolding](docs/12-scaffolding.md) |
 | 03 | [Technical Architecture](docs/03-technical-architecture.md) | 13 | [Domain Implementation](docs/13-domain-implementation.md) |
 | 04 | [Repository Structure](docs/04-repository-structure.md) | 14 | [Git Workflow & CI](docs/14-git-workflow-and-ci.md) |
@@ -371,18 +364,20 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
 | | | 29 | [watch Complications & Smart Stack](docs/29-watch-complications.md) |
 | | | | [Architecture Decision Records](docs/adr) |
 
-## Portfolio value
+## Known limitations
 
-> SignalFlow is an iOS 26 IoT monitoring app built to showcase production-grade iOS engineering: Swift 6
-> strict concurrency with a deliberate actor/isolation model, Clean Architecture enforced at the
-> Swift-Package boundary so the UI literally cannot reach the data layer, an offline-first store with
-> cancellation-safe `AsyncSequence` ingestion, modern SwiftUI (`@Observable` + Swift Charts), and a
-> Swift Testing suite that tests concurrent code deterministically with injected clocks and seeds. It
-> runs end-to-end on a fresh checkout via a built-in telemetry simulator — no backend, no keys — and
-> every significant decision is recorded as an ADR with the alternatives I rejected and why.
+- **Simulated data only.** No backend, auth or live broker; a REST gateway exists behind the seam but
+  isn't wired.
+- **Screens poll** the store every few seconds rather than observing a change stream, and telemetry
+  streams are unbounded (fine for a clock-paced simulator, not for a real source).
+- **Relaunch restores a snapshot** (latest values, alerts, events), not chart history.
+- **Insight severity is rule-based** (active alerts ⇒ concern, volatile trend ⇒ watch), computed in
+  Swift; the model only words it. It is regenerated when the Insights tab appears, not continuously.
+- **Tests run on the macOS host.** iOS/watchOS-only code is compiled in CI but not exercised by tests;
+  there are no UI or snapshot tests.
 
-A full breakdown of what each part signals to reviewers — and the project's honestly-named
-limitations — is in [Portfolio Value Analysis](docs/11-portfolio-value.md).
+Each limitation and the reasoning behind it, plus a map from every claim above to the code that backs
+it, is in [Evidence Map & Known Limitations](docs/11-portfolio-value.md).
 
 ## Project workflow
 

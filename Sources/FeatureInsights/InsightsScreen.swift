@@ -88,13 +88,13 @@ public struct InsightsScreen: View {
 }
 
 /// One observation: subject metadata, a short derived headline, the change figure, a context line, and a
-/// sparkline — then a quiet provenance/confidence footer. One combined VoiceOver element.
+/// sparkline — then a quiet provenance footer. One combined VoiceOver element.
+///
+/// The insight's `confidence` is deliberately not shown: it only measures how much data the insight was
+/// built from (already stated in the context line), so a percentage next to the severity would read as
+/// certainty in the classification.
 private struct ObservationCard: View {
     let item: InsightFeedItem
-
-    private var confidenceText: String {
-        loc("Confidence \(item.confidence.formatted(.percent.precision(.fractionLength(0))))")
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
@@ -131,8 +131,6 @@ private struct ObservationCard: View {
             HStack(spacing: Spacing.xs) {
                 Image(systemName: item.source.symbol).accessibilityHidden(true)
                 Text(item.source.label)
-                Text(verbatim: "·")
-                Text(confidenceText).monospacedDigit()
             }
             .font(.caption2)
             .foregroundStyle(.tertiary)

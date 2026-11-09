@@ -1,16 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Confidence %@" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Confianza %@"
-          }
-        }
-      }
-    },
     "Couldn't generate an insight" : {
       "localizations" : {
         "es" : {

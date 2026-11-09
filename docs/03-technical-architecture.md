@@ -1,5 +1,9 @@
 # 3. Technical Architecture
 
+> **Status note.** This is a pre-implementation design document. It records the original intent
+> and reasoning, but names, modules and some mechanisms changed during implementation. The
+> as-built design is in [Scaffolding](12-scaffolding.md), [DataKit](16-data-kit.md), [App Shell](18-app-shell.md) and [Concurrency](07-concurrency.md); where they differ, the code and those documents win.
+
 ## 3.1 Guiding principles
 
 1. **The Dependency Rule is absolute.** Source-code dependencies point only *inward*, toward the
@@ -98,7 +102,7 @@ Key properties:
 - Persistence happens off the main actor on a `ModelActor`; the UI never blocks on disk.
 - The UI observes **domain `DeviceSnapshot` entities**, not SwiftData models — the dependency rule
   holds even on the hot path.
-- Back-pressure and coalescing live in the repository actor, so a noisy device can't flood the UI.
+- *(As built: there is no back-pressure or coalescing; screens poll the store on a fixed cadence. See [Concurrency §7.2–7.4](07-concurrency.md).)*
 
 ### Write path (user action → device + persistence)
 
@@ -121,7 +125,8 @@ sequenceDiagram
 ```
 
 User-authored changes are **local-first and optimistic**: they persist immediately and reconcile
-later through the outbox (see [Data Layer](06-data-layer.md#offline--outbox)).
+later through the outbox (see [Data Layer](06-data-layer.md#offline--outbox-write-path)). *(As built: there is no
+backend and no outbox; acknowledgement is applied to the local store only.)*
 
 ## 3.4 Dependency rules (enforced, not aspirational)
 
@@ -160,7 +165,7 @@ decision in the project and is recorded in
 
 - **Dependency Injection:** a lightweight, compile-time-checked container assembled in the App
   target. No reflection, no third-party DI framework. Protocols + initializer injection; the
-  container exists only at the composition root. (See [Repository Structure](04-repository-structure.md#dependency-injection).)
+  container exists only at the composition root. (See [Repository Structure](04-repository-structure.md#45-dependency-injection).)
 - **Navigation:** value-based `NavigationStack` + a typed `Route` enum per feature, coordinated by a
   `@MainActor` router. Deep links and state restoration become data transformations on `Route`s.
 - **Error handling:** typed domain errors (`enum DomainError`) at the Domain boundary; the

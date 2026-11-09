@@ -26,6 +26,9 @@ door/connectivity events, injectable anomalies) using an **injected `Clock` and 
 same seed reproduces the same scenario exactly. The active gateway is selectable in Settings (FR-15/
 FR-16) and is **indistinguishable** to the repository, use cases, UI, and AI from a live broker.
 
+> **Implementation note.** As built, the simulator is `SimulationKit` (device actors + `SimulationClock`),
+> exposed to the app through DataKit's `SimulatedDataSource`; there is no Settings switch between sources.
+
 ## Consequences
 
 ### Positive
@@ -42,7 +45,7 @@ FR-16) and is **indistinguishable** to the repository, use cases, UI, and AI fro
 - Risk of the simulator and the live gateway drifting in behavior; mitigated by both conforming to
   the same protocol and a shared conformance test suite.
 - A naive reviewer might mistake "simulated" for "fake/incomplete" — addressed explicitly in the
-  README and [Portfolio Value §11.4](../11-portfolio-value.md#114-honest-weaknesses-and-why-naming-them-is-itself-a-signal).
+  README and [Known Limitations §11.2](../11-portfolio-value.md#112-known-limitations).
 
 ### Neutral
 - Requires `Clock`/RNG injection throughout the telemetry path (also wanted for testing anyway).

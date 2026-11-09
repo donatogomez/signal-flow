@@ -31,6 +31,28 @@ public struct FleetStats: Sendable, Equatable {
         default: return .critical
         }
     }
+
+    /// What the dashboard hero is allowed to claim. "All systems nominal" needs evidence: at least one
+    /// device, every one of them nominal. An empty fleet — e.g. before the catalog has loaded at launch —
+    /// claims nothing, and a fleet with offline or degraded devices isn't "nominal" just because no alert
+    /// is firing.
+    public var verdict: FleetVerdict {
+        if activeAlerts > 0 { return .alerting }
+        if totalDevices == 0 { return .noDevices }
+        return nominal == totalDevices ? .allNominal : .degraded
+    }
+}
+
+/// The dashboard hero's verdict, derived from ``FleetStats/verdict``.
+public enum FleetVerdict: Sendable, Equatable {
+    /// At least one alert is active.
+    case alerting
+    /// Devices reported, and every one is nominal.
+    case allNominal
+    /// No alert is active, but some devices are offline or have degraded connectivity.
+    case degraded
+    /// No device has been loaded, so there is nothing to vouch for.
+    case noDevices
 }
 
 /// The qualitative health word shown beside the gauge. Pure presentation; the view maps it to a semantic

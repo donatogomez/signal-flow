@@ -33,4 +33,14 @@ public struct InsightContext: Sendable, Hashable {
     }
 
     public var metric: MetricKind { statistics.metric }
+
+    /// The insight's advisory severity, decided **from these facts in Swift** — never by a model.
+    ///
+    /// Active alerts make it a concern; a volatile trend makes it a watch; otherwise it is nominal.
+    /// Every provider uses this rule, so a model can phrase an insight but can't escalate one: it is
+    /// never told the thresholds, so any severity it picked would have no grounding.
+    public var advisorySeverity: InsightSeverity {
+        if activeAlertCount > 0 { return .concern }
+        return statistics.trend == .volatile ? .watch : .nominal
+    }
 }

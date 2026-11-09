@@ -2,6 +2,7 @@ import Foundation
 import Testing
 import DomainKit
 import DataKit
+import SimulationKit
 
 @Suite("DataKit concurrency, cancellation & boundaries")
 struct DataKitConcurrencyTests {
@@ -57,6 +58,38 @@ struct DataKitConcurrencyTests {
         let later = await source.ingestedReadingCount()
         #expect(afterStop >= afterStart)
         #expect(later == afterStop)
+    }
+
+    @Test("A start() that lands while stop() is draining starts a new session", .timeLimit(.minutes(1)))
+    func startDuringStopIsNotDropped() async throws {
+        // The sink parks the ingestion loop on its first item, so the test controls exactly when the
+        // stopped session finishes — no sleeps, no scheduler races.
+        let parked = Latch()
+        let release = Latch()
+        let store = InMemoryTelemetryStore()
+        let engine = SimulationFleet.standard(seed: 1, clock: AcceleratedSimulationClock(timeScale: 600))
+        let adapter = SimulationTelemetryAdapter(engine: engine, store: store) { _ in
+            await parked.open()
+            await release.wait()
+        }
+
+        await adapter.start()
+        await parked.wait()                       // session 1 is parked inside the sink
+
+        let stopping = Task { await adapter.stop() }
+        while await adapter.isRunning {           // until stop() has detached session 1 and is draining
+            try Task.checkCancellation()
+            await Task.yield()
+        }
+        let starting = Task { await adapter.start() }          // the scene-phase "back to .active" call
+
+        await release.open()                      // let session 1 finish
+        await stopping.value
+        await starting.value
+
+        #expect(await adapter.isRunning)          // the restart was honoured, not silently dropped
+        await adapter.stop()
+        #expect(await adapter.isRunning == false)
     }
 
     @Test("The data layer is consumable through DomainKit ports alone")
