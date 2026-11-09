@@ -45,27 +45,57 @@ struct AppContainerTests {
         await container.stop()
     }
 
-    /// The scene-phase handler issues every transition as its own unstructured `Task`, so this drives the
-    /// container exactly that way: a burst of back-to-back requests that overlap each other's bootstrap,
-    /// start and stop. Whatever the interleaving, the requests must apply in the order they were made.
-    @Test("Rapid scene-phase transitions apply in request order and settle on the last one",
-          arguments: [true, false])
-    func rapidTransitionsSettleOnLastRequest(endActive: Bool) async throws {
-        let persistence = CountingPersistence()
+    /// The bootstrap of the first start is held open, so every later request is made while an older
+    /// one is still in flight. Order is fixed when each request is made, not when a task gets to run,
+    /// so the outcome must match the last request: no scheduler luck involved.
+    @Test("Requests apply in the order they were made, even while an older one is delayed",
+          arguments: [
+              [true, false, true],                 // active → background → active
+              [false, true, false],                // background → active → background
+              [true, true, false, true, false],    // duplicate start, stop during start, repeat
+          ])
+    func requestsApplyInRequestOrder(sequence: [Bool]) async throws {
+        let gate = Latch()
+        let persistence = CountingPersistence(holdRestoreUntil: gate)
         let container = AppContainer(source: .persisted(seed: 42, maxTicks: 5, persistence: persistence))
 
-        var requests: [Task<Void, Never>] = []
-        for _ in 0..<25 {
-            requests.append(Task { await container.start() })   // .active
-            requests.append(Task { await container.stop() })    // .background
+        var last: Task<Void, Never>?
+        for wantsActive in sequence {
+            last = wantsActive ? container.requestStart() : container.requestStop()
         }
-        if endActive { requests.append(Task { await container.start() }) }
-        for request in requests { await request.value }
+        await gate.open()                       // let the oldest request finish only now
+        await last?.value
 
-        #expect(await container.source.isIngesting() == endActive)
+        #expect(await container.source.isIngesting() == sequence.last)
         #expect(await persistence.loadCount == 1)
         await container.stop()
         #expect(await container.source.isIngesting() == false)
+    }
+
+    @Test("Cancelling a request's task doesn't withdraw or reorder the transition")
+    func cancellationDoesNotWithdrawRequests() async throws {
+        let gate = Latch()
+        let persistence = CountingPersistence(holdRestoreUntil: gate)
+        let container = AppContainer(source: .persisted(seed: 42, maxTicks: 5, persistence: persistence))
+
+        let starting = container.requestStart()
+        starting.cancel()                       // cancelled mid-bootstrap
+        await gate.open()
+        await starting.value
+        #expect(await container.source.isIngesting())
+
+        let stopping = container.requestStop()
+        stopping.cancel()                       // cancelled during shutdown
+        await stopping.value
+        #expect(await container.source.isIngesting() == false)
+
+        // A caller awaiting start() (like a view's `.task`) that gets cancelled doesn't abandon it.
+        let caller = Task { await container.start() }
+        caller.cancel()
+        await caller.value
+        await container.requestStop().value
+        #expect(await container.source.isIngesting() == false)
+        #expect(await persistence.loadCount == 1)
     }
 
     @Test("A failed restore doesn't block launch; the app runs on fresh telemetry")
@@ -98,14 +128,21 @@ struct AppContainerTests {
 }
 
 /// A `PersistenceStoring` that persists nothing and counts restores, to observe bootstrap behaviour.
+/// It can hold the restore open to keep a start operation in flight.
 private actor CountingPersistence: PersistenceStoring {
     private(set) var loadCount = 0
     private let failRestore: Bool
+    private let gate: Latch?
 
-    init(failRestore: Bool = false) { self.failRestore = failRestore }
+    /// `holdRestoreUntil` keeps the restore (and so the first start) suspended until the gate opens.
+    init(failRestore: Bool = false, holdRestoreUntil gate: Latch? = nil) {
+        self.failRestore = failRestore
+        self.gate = gate
+    }
 
     func loadSnapshot() async throws -> PersistedSnapshot {
         loadCount += 1
+        await gate?.wait()
         if failRestore { throw CocoaError(.fileReadCorruptFile) }
         return PersistedSnapshot(assets: [], devices: [], latestReadings: [], events: [], alerts: [], insights: [])
     }

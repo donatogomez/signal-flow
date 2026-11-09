@@ -40,15 +40,15 @@ sequenceDiagram
     OS->>App: launch
     App->>C: AppContainer.live()   (assemble the source + ports)
     App->>Root: WindowGroup { RootView(container:) }
-    Root->>C: .task { await start() }
+    Root->>C: onAppear → requestStart()
     C->>DS: bootstrap()  (register catalog — fleet queryable at once)
     C->>DS: start()      (begin background ingestion)
-    Note over App,C: scenePhase .background → stop(); .active → start()
+    Note over App,C: scenePhase .background → requestStop(); .active → requestStart()
 ```
 
 1. `@main struct SignalFlowApp: App` creates the composition root once: `AppContainer.live()`.
 2. The `WindowGroup` hosts `RootView`, injected with the container.
-3. `RootView.task` calls `container.start()`, which **bootstraps** the data layer (registering the
+3. `RootView` calls `container.requestStart()` on appear, which **bootstraps** the data layer (registering the
    fleet catalog so the UI has data immediately, even before telemetry) and **starts ingestion**.
 4. Scene-phase changes drive start/stop (below).
 
@@ -95,7 +95,9 @@ means:
 Lifecycle is explicit and cancellation-safe:
 
 - **Start** is idempotent: `start()` bootstraps once (`didBootstrap` guard) and (re)starts ingestion.
-  It's called from both `RootView.task` and on scene `.active`, so repeated calls are no-ops.
+  It's requested from both `RootView` (on appear) and on scene `.active`, so repeated requests are
+  no-ops. Requests are recorded synchronously and applied one at a time in request order (see
+  [Concurrency §7.3](07-concurrency.md#73-lifecycle-and-actor-reentrancy)).
 - **Stop** halts ingestion on scene `.background`. Crucially, `AppContainer.stop()` → `source.stop()`
   **awaits the ingestion loop to completion** before returning (the CI race fixed in
   [DataKit §16.5](16-data-kit.md#165-startup--cancellation-strategy)). So teardown is clean: once `stop()`
@@ -112,8 +114,8 @@ Lifecycle is explicit and cancellation-safe:
         WindowGroup { RootView(container: container) }
             .onChange(of: scenePhase) { _, phase in
                 switch phase {
-                case .active:     Task { await container.start() }
-                case .background: Task { await container.stop() }
+                case .active:     container.requestStart()   // synchronous: ordered at the call
+                case .background: container.requestStop()
                 default:          break
                 }
             }

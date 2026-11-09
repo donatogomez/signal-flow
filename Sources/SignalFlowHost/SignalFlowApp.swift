@@ -25,10 +25,12 @@ struct SignalFlowApp: App {
         }
         .onChange(of: scenePhase) { _, phase in
             switch phase {
+            // Recorded synchronously, in the order the phases change. Wrapping these calls in a
+            // `Task {}` would make the order depend on when each task runs.
             case .active:
-                Task { await container.start() }
+                container.requestStart()
             case .background:
-                Task { await container.stop() }
+                container.requestStop()
             default:
                 break
             }

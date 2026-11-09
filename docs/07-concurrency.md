@@ -89,25 +89,41 @@ where another call can interleave. Two lifecycle paths are written specifically 
   session that is still draining. So a `start()` that lands while a `stop()` is suspended starts a new
   session instead of being dropped, and two ingestion loops never drive the shared device actors at
   the same time.
-- **`AppContainer.start()` / `stop()`** are called from several places at once (`RootView.task` and
-  the scene-phase handler both start the app at launch). They are appended to a chain of tasks
-  synchronously, so they run strictly in call order; overlapping `start()`s can't both observe
-  `didBootstrap == false` across the bootstrap `await`.
+- **`AppContainer` lifecycle requests** come from the scene-phase handler and from `RootView` on
+  appear. See "Lifecycle ordering" below.
 - **`PersistenceCoordinator.stopAndFlush()`** waits for an in-flight periodic flush before the final
   one, so an older snapshot can't be written after the newer one.
 
-Each of these has a regression test (`DataKitConcurrencyTests`, `AppContainerTests`) that
-reproduces the interleaving deterministically, with continuations or real call patterns rather than
-sleeps.
+Each of these has a regression test (`DataKitConcurrencyTests`, `AppContainerTests`) that holds an
+operation open with a continuation-based latch, so the interleaving is forced rather than left to the
+scheduler, and no test sleeps to create it.
 
-**What the ordering relies on.** The chain fixes the order at the moment `start()`/`stop()` is
-entered. The scene-phase handler wraps each call in its own `Task {}`. Those tasks inherit the main
-actor and are created from it in sequence at the same priority, so they enter the container in creation
-order. That is the one runtime assumption left; the rapid-transition test exercises it with that exact
-call pattern. Lifecycle work runs in unstructured tasks on purpose: cancelling the view `.task` that
-asked for a `start()` doesn't abandon a half-finished bootstrap. A restore that fails at bootstrap is
-not retried. The catalog is already registered, so the app runs on fresh telemetry, and by the next
-foreground the live state is newer than the snapshot.
+### Lifecycle ordering
+
+Swift doesn't promise that independently created unstructured tasks start in creation order, and an
+actor only guarantees that its isolated code doesn't run concurrently, not that suspended calls resume
+first-in, first-out. So the lifecycle doesn't depend on either:
+
+- **Intent is recorded synchronously.** `requestStart()` / `requestStop()` are non-`async` main-actor
+  methods. The scene-phase handler calls them directly as the phase changes, and `RootView` calls
+  `requestStart()` in `onAppear`, so neither wraps the call in a `Task {}`. The call is the
+  linearization point: a request's position is fixed before anything can suspend. (`start()` /
+  `stop()` are the `async` forms for callers that want to wait for the transition.)
+- **Transitions run one at a time, in request order.** Each request appends a task that first awaits
+  the previous one, then runs the transition. When the tasks get scheduled doesn't matter, because
+  the chain, not the scheduler, decides the order. Transitions never overlap, so `didBootstrap` is
+  never read by two starts at once and bootstrap runs once.
+- **Stale requests can't win.** Requests aren't coalesced or skipped: every one applies, in order. So
+  the state after the last transition is always the last request's. A delayed older start, such as
+  one stuck in bootstrap, completes before a newer stop runs, never after it.
+- **Cancellation doesn't break the chain.** Transitions run in unstructured tasks and don't check for
+  cancellation. Cancelling the task a request returns, or a caller awaiting `start()`, doesn't
+  withdraw or reorder the request, so a cancelled view doesn't abandon a half-finished bootstrap.
+- **Reentrancy below the container** is handled where the state lives: the adapter detaches its loop
+  before suspending, and the coordinator awaits its in-flight flush (above).
+
+A restore that fails at bootstrap is not retried. The catalog is already registered, so the app runs
+on fresh telemetry, and by the next foreground the live state is newer than the snapshot.
 
 ## 7.4 Presentation: polling, not stream observation
 

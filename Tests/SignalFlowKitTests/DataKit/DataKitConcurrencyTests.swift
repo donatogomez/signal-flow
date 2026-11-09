@@ -121,21 +121,3 @@ struct DataKitConcurrencyTests {
         _ = insights // a DomainKit InsightsProviding; consumed by the insight use case elsewhere
     }
 }
-
-/// A one-shot gate: `wait()` suspends until `open()` has been called (then returns immediately).
-private actor Latch {
-    private var isOpen = false
-    private var waiters: [CheckedContinuation<Void, Never>] = []
-
-    func open() {
-        guard !isOpen else { return }
-        isOpen = true
-        for waiter in waiters { waiter.resume() }
-        waiters.removeAll()
-    }
-
-    func wait() async {
-        if isOpen { return }
-        await withCheckedContinuation { waiters.append($0) }
-    }
-}

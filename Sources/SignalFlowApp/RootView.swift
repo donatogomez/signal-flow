@@ -103,7 +103,8 @@ public struct RootView: View {
         // Follows the system appearance (Light **and** Dark). Status/severity hues are system semantic
         // colours, and the accent + card surfaces are appearance-adaptive, so the monitoring surfaces stay
         // legible and accessible in both modes.
-        .task { await container.start() }
+        // Synchronous request on appear (also starts previews, which have no scene-phase handler).
+        .onAppear { container.requestStart() }
         .task { await container.observeCriticalAlertActivity() }
         .task { await container.observeWatchSync() }
         .task {
