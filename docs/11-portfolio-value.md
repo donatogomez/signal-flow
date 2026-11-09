@@ -1,114 +1,46 @@
-# 11. Portfolio Value Analysis
+# 11. Evidence Map & Known Limitations
 
-This document is explicit about the meta-goal: **what each part of SignalFlow signals to a reviewer,
-and why a recruiter, engineering manager, or tech lead would find it compelling.** It's also a
-self-audit — if a component doesn't earn its place by demonstrating a real skill, it's scope creep.
+SignalFlow exists to show how I build iOS software, so this document does two things: it maps each
+engineering claim to the code that backs it, and it lists what the project deliberately does **not**
+do. If a claim here can't be traced to a file, it shouldn't be here.
 
-## 11.1 What reviewers actually evaluate
+## 11.1 Evidence map
 
-Different reviewers read for different things. SignalFlow is designed to give each one a fast,
-strong signal:
-
-| Reviewer | Reads for | Where SignalFlow answers it |
+| Area | What is implemented | Where to look |
 | --- | --- | --- |
-| **Recruiter / screener** | "Is this modern and serious?" | README badges (Swift 6, strict concurrency, 0 deps), clean repo, real docs |
-| **Hiring manager** | "Can they own something end-to-end?" | Product vision → requirements → architecture → tests → docs, all coherent |
-| **Tech lead / staff eng** | "Are the *decisions* sound?" | ADRs with rejected alternatives; enforced boundaries; honest trade-offs |
-| **iOS specialist on the panel** | "Do they actually know Swift 6?" | Isolation map, actor design, `Sendable` discipline, no `@unchecked` |
+| Module boundaries | 24 SwiftPM targets; features can't import the data layer because they don't declare it, plus a CI script that rejects forbidden imports | [`Package.swift`](../Package.swift), [`check-boundaries.sh`](../Scripts/check-boundaries.sh), [ADR-0001](adr/0001-clean-architecture-with-spm-modules.md) |
+| Concurrency model | One owner per piece of mutable state (device actors, store actor, `@ModelActor`); `TaskGroup` fan-out; cancellation via `onTermination` and `.task`; reentrancy-safe lifecycle | [Concurrency](07-concurrency.md), `SimulationKit/Actors`, `DataKit/Adapter`, `SignalFlowApp/AppContainer.swift` |
+| Domain modeling | Phantom-typed ids, validating value objects, forward-only alert acknowledgement, pure rules and health policy | `DomainKit/Identifiers`, `DomainKit/ValueObjects`, `DomainKit/Entities`, `DomainKit/Policies` |
+| Deterministic simulation | Seeded RNG, simulated clock separating instants from pacing, stable seeded identities | `CoreKit`, `SimulationKit/Clock`, [SimulationKit](15-simulation-kit.md) |
+| Persistence | SwiftData behind a `@ModelActor`, domain-only API, batched writes, per-series retention, restore-on-launch, App Group store shared with widgets | `PersistenceKit`, `DataKit/Persistence`, [SwiftData Persistence](21-swiftdata-persistence.md) |
+| On-device AI | Foundation Models guided generation over facts computed in Swift; severity and confidence computed in Swift too; deterministic fallback; alerting never depends on the model | `IntelligenceKit`, `DomainKit/Insights`, [ADR-0004](adr/0004-foundation-models-on-device.md) |
+| Networking | `URLSession` client with typed endpoints, DTO mapping, error mapping and retry; behind a gateway, not wired by default | `NetworkingKit`, [NetworkingKit](22-networking-kit.md) |
+| Platform surfaces | Widgets, App Intents, Live Activity, watchOS app + complications — all read persisted or synced state only | `WidgetSupportKit`, `AppIntentsKit`, `LiveActivityKit`, `Watch*Kit` |
+| Testing | 239 Swift Testing tests; stub ports; in-memory SwiftData; deterministic concurrency tests | [Testing Strategy](09-testing-strategy.md), `Tests/` |
+| Decisions | ADRs with rejected alternatives and consequences | [`docs/adr`](adr) |
 
-## 11.2 The high-signal components (ranked)
+## 11.2 Known limitations
 
-### 1. Compiler-enforced Clean Architecture (`★★★★★`)
-**What it shows:** the author understands that architecture is only real if it's *enforced* — and is
-honest about *how*. Feature targets don't declare the data layer as a dependency (so the import fails
-to build), and a CI boundary check closes SwiftPM's full-build shared-module gap. Knowing that sharp
-edge and engineering around it is a level above both "I put things in folders" and "the compiler
-magically prevents it." **Why it lands:** tech leads have all seen MVVM rot into massive view models;
-this directly addresses their scar tissue. See [Architecture §3.4](03-technical-architecture.md#34-dependency-rules-enforced-not-aspirational),
-[Scaffolding §12.3](12-scaffolding.md#123-how-the-boundaries-are-actually-enforced) and
-[ADR-0001](adr/0001-clean-architecture-with-spm-modules.md).
+These are deliberate scope decisions, not oversights:
 
-### 2. Swift 6 strict-concurrency isolation model (`★★★★★`)
-**What it shows:** mastery of the single hardest, most current iOS topic. A coherent **isolation map**
-(actors for shared state, `Sendable` value types for data, `@MainActor` for UI, `nonisolated async`
-for orchestration) with `@unchecked Sendable` confined to two documented `WCSessionDelegate` bridges is a strong, rare
-signal. **Why it lands:**
-most candidates can *use* `async/await`; far fewer can *design* isolation boundaries. See
-[Concurrency](07-concurrency.md).
-
-### 3. Offline-first data architecture with outbox + reconciliation (`★★★★★`)
-**What it shows:** real distributed-systems thinking on a client — append-only telemetry, sequence-based
-dedup/backfill, optimistic writes via a durable outbox. **Why it lands:** this is the stuff that
-separates "built a CRUD app" from "built a *resilient* app." See
-[Data Layer](06-data-layer.md#63-offline-strategy-local-first-store-as-source-of-truth).
-
-### 4. On-device Foundation Models behind a Domain port (`★★★★☆`)
-**What it shows:** current AI literacy *plus* the maturity to contain it — guided generation for safe
-structured output, grounding to prevent hallucinated numbers, graceful template fallback, and
-knowing **where not to use AI** (deterministic safety logic). **Why it lands:** it's topical without
-being a gimmick; the restraint is itself a signal. See [Foundation Models](08-foundation-models.md).
-
-### 5. Deterministic testing of concurrent code (`★★★★☆`)
-**What it shows:** injected `Clock` + seeded RNG + `confirmation` = concurrency tests with no
-`sleep` and no flake. **Why it lands:** flaky async tests are a universal pain; demonstrating
-deterministic ones signals genuine rigor. See [Testing §9.5](09-testing-strategy.md#95-concurrency--integration-testing-the-hard-part-made-deterministic).
-
-### 6. Zero-setup first-run experience (`★★★★☆`)
-**What it shows:** product empathy and engineering taste. The simulated gateway means *clone → Run →
-live AI-annotated fleet*, no backend or keys. **Why it lands:** a reviewer who can actually *run* it
-in 60 seconds forms a far better impression than one staring at a README. See
-[ADR-0003](adr/0003-simulated-gateway-first-class-datasource.md).
-
-### 7. Documentation & decision records (`★★★★☆`)
-**What it shows:** communication — the skill that gates promotion to senior/staff. ADRs that name
-rejected alternatives and honest downsides demonstrate judgment, not just knowledge. **Why it
-lands:** managers hire for "can this person align a team," and writing is the proxy.
-
-## 11.3 The skill-to-evidence map
-
-A compact table a reviewer (or the author, in an interview) can scan:
-
-| Competency | Concrete evidence in this repo |
-| --- | --- |
-| Swift 6 concurrency | Isolation map; actor-owned state; `TaskGroup` fan-out with cancellation; `@unchecked Sendable` limited to two audited interop bridges |
-| Architecture | Enforced layer boundaries; Dependency Inversion via ports; composition root DI |
-| Domain modeling | Make-illegal-states-unrepresentable value types; pure `StatusPolicy`; extensible `Metric` enum |
-| Data/persistence | SwiftData `ModelActor` off-main; migration plan from v1; retention/rollups |
-| Distributed-systems instinct | Append-only events; sequence dedup/backfill; optimistic outbox |
-| Modern SwiftUI | `@Observable` Observation; `.task` lifecycle; value-based navigation |
-| AI integration | Foundation Models guided generation; grounding; fallback; tool calling (roadmap) |
-| Testing | Swift Testing parameterized + `confirmation`; protocol fakes; deterministic clocks |
-| Product thinking | Personas → use cases → FRs → roadmap; explicit non-goals; zero-setup demo |
-| Communication | README hook; numbered docs; ADRs with trade-offs; DocC |
-| Long-term thinking | "Evolve for years" roadmap absorbed without rewrites; schema/versioning from day one |
-
-## 11.4 Honest weaknesses (and why naming them is itself a signal)
-
-A staff engineer evaluates *self-awareness*. SignalFlow's deliberate limitations:
-
-- **No real backend.** Mitigated by the gateway abstraction — a REST gateway already sits behind the
-  seam (not wired by default) and a live broker gateway is the planned production path; that seam is
-  the point. But it does mean network
-  hardening (auth, TLS pinning, reconnect storms) is roadmap, not MVP.
-- **Single-user.** Multi-tenant/auth is a real boundary deferred to v2. The architecture reserves a
-  place for it (composition root + roadmap) rather than pretending it's free.
-- **AI quality is device-dependent.** On-device models are smaller than frontier cloud models; the
-  template fallback and "facts-in-Swift, words-in-model" grounding keep it honest about that.
-- **Solo-project modularization.** A single multi-target package, not many packages — the right call
-  for one maintainer, with a documented path to split later.
-
-Naming these *before a reviewer does* converts potential criticisms into evidence of judgment.
-
-## 11.5 The one-paragraph elevator pitch (for a cover letter or README top)
-
-> SignalFlow is an iOS 26 IoT monitoring platform built to showcase production-grade iOS engineering:
-> Swift 6 strict concurrency with a deliberate actor/isolation model, Clean Architecture enforced at
-> the Swift-Package boundary so the UI literally cannot reach the data layer, an offline-first
-> SwiftData store with sequence-based sync and an optimistic outbox, on-device Foundation Models for
-> grounded trend summaries and anomaly explanations, and a Swift Testing suite that tests concurrent
-> code deterministically with injected clocks. It runs end-to-end on a fresh checkout via a built-in
-> telemetry simulator — no backend, no keys — and every significant decision is recorded as an ADR
-> with the alternatives I rejected and why.
-
-That paragraph is the whole portfolio compressed: **modern stack, hard problems, sound decisions,
-and the judgment to know the trade-offs.**
+- **Simulated data only.** The app runs on a built-in simulator. A REST gateway exists behind the same
+  seam but is not wired, and there is no auth, live broker (WebSocket/MQTT) or sync protocol.
+- **Polling, not observation.** Screens re-read the ports every 3 s instead of observing a change
+  stream from the store (see [Concurrency §7.4](07-concurrency.md#74-presentation-polling-not-stream-observation)).
+- **No back-pressure.** Telemetry streams use unbounded buffers, which is safe for a clock-paced
+  simulator and would need a bounded policy for a real source
+  ([§7.2](07-concurrency.md#72-the-telemetry-pipeline)).
+- **Restore is a snapshot, not a history.** Relaunch restores the latest value per metric, active
+  alerts, events and insights. Charts start filling again from new telemetry.
+- **Host-only test execution.** Tests run on macOS. iOS/watchOS-only code (ActivityKit,
+  WatchConnectivity delegates, watch WidgetKit views) is compiled in CI but not exercised by tests.
+- **No UI or snapshot tests**, and no measured performance baselines on device.
+- **Insight severity is rule-based, not predictive.** An insight is a *concern* when the device has
+  active alerts and a *watch* when its trend is volatile; it doesn't forecast a threshold crossing.
+  The model only phrases the insight and never picks its severity. Insights are also generated when
+  the Insights tab appears, not every 3 s like device status, so a reefer whose alert has just cleared
+  can still show a *concern* from a few seconds earlier until the feed regenerates.
+- **Foundation Models output is device-dependent**, and unavailable on devices without Apple
+  Intelligence, where the deterministic provider is used.
+- **Single package, solo maintainer.** One multi-target package rather than several, the simplest
+  setup that still enforces boundaries.

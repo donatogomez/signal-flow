@@ -72,7 +72,7 @@ and adding a destination is a one-line change that every surface picks up.
 
 The "Show Fleet Summary" intent answers **without opening the app**, which means it can run in a
 short-lived background launch with a tiny resource budget. The same reasoning as the widgets applies
-(see [WidgetKit](docs/24-widgetkit.md)):
+(see [WidgetKit](24-widgetkit.md)):
 
 - **The live data engine belongs to the foreground app.** `DataKit`'s actor-based `SimulatedDataSource`
   (and, later, a `NetworkingKit` backend) is a long-lived ingestion stack. Spinning it up to answer a

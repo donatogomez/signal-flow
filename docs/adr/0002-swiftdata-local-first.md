@@ -29,6 +29,10 @@ leave the data layer.
 User-authored changes are optimistic and durable via an **outbox**; telemetry is append-only with
 sequence-based ordering/dedup (see [Data Layer](../06-data-layer.md)).
 
+> **Implementation note.** The outbox and sequence-based dedup were not built: there is no backend
+> to reconcile with, readings are deduplicated by id, and acknowledgement is local only. The rest of
+> the decision stands as written. See [SwiftData Persistence](../21-swiftdata-persistence.md).
+
 ## Consequences
 
 ### Positive

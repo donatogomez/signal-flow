@@ -103,7 +103,7 @@ intact. This end-to-end behavior is covered by `acknowledgeClearsDeviceHealth` i
 
 ## 23.4 Why alerts stay deterministic (not AI-driven)
 
-SignalFlow has an on-device AI feature ([Insights](docs/20-foundation-models-insights.md)), but
+SignalFlow has an on-device AI feature ([Insights](20-foundation-models-insights.md)), but
 alerts are deliberately **outside** the AI boundary. Whether an alert is raised or cleared is decided
 solely by `AlertRule.evaluate` against numeric thresholds in the data layer; FeatureAlerts only
 *reads* that state, joins context, and acknowledges. No model is asked "is this a problem?" — that

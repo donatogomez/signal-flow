@@ -99,8 +99,8 @@ when more than the domain layer needs them.
 ## 13.4 Deliberate deferrals
 
 Recorded so they read as scope discipline, not gaps:
-- **`AsyncStream` live ports** — introduced with `DataKit`/`CoreTelemetry`, where a real producer and
-  back-pressure exist to model.
+- **`AsyncStream` live ports** — still deferred. `DataKit` consumes the simulator's streams internally,
+  but the ports stay request/response and screens poll ([Concurrency §7.4](07-concurrency.md#74-presentation-polling-not-stream-observation)).
 - **Staleness-based offline detection** (injected-`Clock` status policy) — lands when live time flows
   through the system; today status derives from explicit `ConnectivityStatus`.
 - **Persistence/serialization shapes** — `@Model` types and DTOs live in the data layer; the Domain's

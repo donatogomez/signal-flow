@@ -101,7 +101,7 @@ flowchart TD
 | `NetworkingKit` | `CoreKit` | Live transport; uses shared utilities, produces raw transport DTOs (no domain concepts). |
 | `PersistenceKit` | `CoreKit` | Local SwiftData store; uses shared utilities. Records stay internal. |
 | `SimulationKit` | `CoreKit` | Deterministic telemetry generator; uses the shared injectable clock. |
-| `DataKit` | `DomainKit`, `PersistenceKit`, `NetworkingKit`, `SimulationKit` | The aggregator that **implements DomainKit's ports** on top of the three data sources and owns mapping/sync/outbox. |
+| `DataKit` | `DomainKit`, `PersistenceKit`, `NetworkingKit`, `SimulationKit` | The aggregator that **implements DomainKit's ports** on top of the three data sources and owns the store, ingestion and persistence orchestration. |
 | `Feature*` (×6) | `DomainKit`, `DesignSystemKit` | Vertical UI slices. They consume domain entities/ports and design components only. **They deliberately cannot name a data module** — repositories arrive via injected protocols. |
 | `SignalFlowApp` | everything above | The composition root: the *only* target that knows concrete types, binds data implementations to domain ports, and assembles features. |
 | `TestingSupportKit` | `DomainKit` | Shared test doubles/fixtures (empty for now); typed against domain ports. |

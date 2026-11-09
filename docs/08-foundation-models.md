@@ -1,5 +1,9 @@
 # 8. Foundation Models Integration
 
+> **Status note.** This is a pre-implementation design document. It records the original intent
+> and reasoning, but names, modules and some mechanisms changed during implementation. The
+> as-built design is in [Foundation Models Insights](20-foundation-models-insights.md); where they differ, the code and those documents win.
+
 SignalFlow uses Apple's **on-device Foundation Models** framework to turn numbers into language: trend
 summaries, anomaly explanations, and a fleet digest. The integration is designed to be **useful,
 safe, testable, and architecturally contained** — the rest of the app depends on a Domain port
@@ -52,7 +56,7 @@ produces a plain-language *candidate* explanation, explicitly framed as a hypoth
 
 ### c) Fleet digest (FR-14)
 The `GenerateFleetDigest` use case fans out per-device trends with a `TaskGroup`
-([Concurrency §7.3](07-concurrency.md#73-structured-concurrency--task-groups)), then makes **one**
+([Concurrency §7.5](07-concurrency.md#75-structured-concurrency)), then makes **one**
 model call to produce a prioritized morning briefing for Persona A.
 
 ### d) Conversational query (roadmap v1.2) — tool calling
@@ -106,7 +110,7 @@ LLMs invent numbers; telemetry must not be invented. The mitigations are archite
   `DomainError.insightUnavailable(reason:)` for honest UI states.
 - **Session reuse behind an actor.** A `LanguageModelSession` is stateful; `OnDeviceInsightService`
   is an actor that owns one session and serializes access, preventing concurrent-use corruption
-  ([Concurrency §7.2](07-concurrency.md#72-actors)).
+  ([Concurrency §7.1](07-concurrency.md#71-the-isolation-map)).
 - **Cancellation.** Inference is cancellable; leaving the Insights screen aborts the request via the
   structured `.task` scope, saving battery.
 - **Streaming UX (optional).** Where supported, partial generation can stream into the UI so a summary

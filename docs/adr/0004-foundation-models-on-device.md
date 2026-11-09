@@ -28,6 +28,11 @@ for typed, validated structures. **All statistics are computed in pure Swift and
 model only phrases them ("facts in Swift, words in the model"). If the model is unavailable, the
 service returns a **deterministic template-based summary** built from the same statistics.
 
+> **Implementation note.** As built, the port is `InsightsProviding` and the implementation is
+> `FoundationModelsInsightProvider`, a `Sendable` struct that opens a fresh `LanguageModelSession` per
+> request (no shared session, so no actor is needed). The deterministic fallback is
+> `DeterministicInsightsProvider` in DataKit. See [Foundation Models Insights](../20-foundation-models-insights.md).
+
 ## Consequences
 
 ### Positive

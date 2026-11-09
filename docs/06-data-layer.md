@@ -1,5 +1,9 @@
 # 6. Data Layer Design
 
+> **Status note.** This is a pre-implementation design document. It records the original intent
+> and reasoning, but names, modules and some mechanisms changed during implementation. The
+> as-built design is in [DataKit](16-data-kit.md), [SwiftData Persistence](21-swiftdata-persistence.md) and [NetworkingKit](22-networking-kit.md); where they differ, the code and those documents win.
+
 The Data layer (`DataKit` + `CoreTelemetry` + `CorePersistence`) implements the Domain ports. Its
 job: get telemetry in, persist it, reduce it to domain entities, and reconcile user-authored changes
 back out — all while the Domain and UI remain blissfully unaware of *how*.

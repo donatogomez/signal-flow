@@ -98,7 +98,7 @@ Lifecycle is explicit and cancellation-safe:
   It's called from both `RootView.task` and on scene `.active`, so repeated calls are no-ops.
 - **Stop** halts ingestion on scene `.background`. Crucially, `AppContainer.stop()` → `source.stop()`
   **awaits the ingestion loop to completion** before returning (the CI race fixed in
-  [DataKit §16.5](16-data-kit.md#165-cancellation-strategy)). So teardown is clean: once `stop()`
+  [DataKit §16.5](16-data-kit.md#165-startup--cancellation-strategy)). So teardown is clean: once `stop()`
   returns, no telemetry from the cancelled session can still mutate the store.
 - **Restart** works because `stop()` clears the ingestion task and `start()` relaunches it without
   re-bootstrapping.
