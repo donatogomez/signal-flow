@@ -47,9 +47,14 @@ public protocol PersistenceStoring: Sendable {
     func replaceActiveAlerts(_ alerts: [Alert], forDevice deviceID: DeviceID) async throws
     /// Appends a generated insight and enforces retention.
     func appendInsight(_ insight: InsightRecord) async throws
+    /// Deletes a bounded step of the store's persistent history older than the last cutoff, and
+    /// returns `true` while more of it remains (docs/21 §21.9). Never deletes records.
+    @discardableResult
+    func trimHistory() async throws -> Bool
 }
 
-/// Retention caps that bound the database regardless of how long the app runs.
+/// Retention caps that bound the row counts regardless of how long the app runs. The file also needs
+/// persistent history trimmed (``PersistenceStoring/trimHistory()``, docs/21 §21.9).
 ///
 /// Decisions (documented in docs/21):
 /// - **Telemetry** is the high-volume table, so we keep the most recent `maxReadingsPerSeries`

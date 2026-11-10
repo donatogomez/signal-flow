@@ -16,6 +16,10 @@ import PersistenceKit
 /// per kind (the newest items win) and lives only in memory, so a write failure that outlasts the
 /// process still loses data. Device/alert snapshot writes aren't kept: every flush rewrites them.
 /// Failures are logged once when they start and once when writes recover, not once per flush.
+///
+/// **Persistent history** (docs/21 §21.9). SwiftData records every save in its persistent history and
+/// never deletes it, so a flush also trims it, at most once per `historyTrimInterval`, or on every flush
+/// while a backlog from before trimming existed is deleted in bounded steps.
 actor PersistenceCoordinator {
     private let persistence: any PersistenceStoring
     private let store: InMemoryTelemetryStore
@@ -29,12 +33,20 @@ actor PersistenceCoordinator {
     private var isFailing = false
     private var droppedWhileFailing = 0
     private var flushTask: Task<Void, Never>?
+    private let historyTrimInterval: Duration
+    private var lastHistoryTrim: ContinuousClock.Instant?
+    /// The last trim left older history to delete, so the next flush trims again without waiting.
+    private var historyBacklog = false
 
-    init(persistence: any PersistenceStoring, store: InMemoryTelemetryStore, batchSize: Int = 256, retryLimit: Int = 16_384) {
+    init(
+        persistence: any PersistenceStoring, store: InMemoryTelemetryStore, batchSize: Int = 256,
+        retryLimit: Int = 16_384, historyTrimInterval: Duration = .seconds(60)
+    ) {
         self.persistence = persistence
         self.store = store
         self.batchSize = batchSize
         self.retryLimit = retryLimit
+        self.historyTrimInterval = historyTrimInterval
     }
 
     /// Readings and events waiting to be written again after a failure (diagnostics / tests).
@@ -79,6 +91,23 @@ actor PersistenceCoordinator {
         }
         if let error = await snapshotDevicesAndAlerts() { failure = failure ?? error }
         report(failure)
+        await trimHistoryIfDue()
+    }
+
+    /// Trims persistent history on the first flush and then at most once per `historyTrimInterval`,
+    /// except while a backlog remains: then every flush deletes one more bounded step. The time is taken
+    /// before the call, so overlapping flushes don't trim twice. A failed trim doesn't affect writes;
+    /// the next interval tries again.
+    private func trimHistoryIfDue() async {
+        let now = ContinuousClock.now
+        if !historyBacklog, let lastHistoryTrim, now - lastHistoryTrim < historyTrimInterval { return }
+        lastHistoryTrim = now
+        do {
+            historyBacklog = try await persistence.trimHistory()
+        } catch {
+            historyBacklog = false
+            Log.persistence.error("Trimming persistent history failed; trying again later: \(String(describing: error), privacy: .private)")
+        }
     }
 
     func startPeriodicFlush(interval: Duration = .seconds(5)) {

@@ -266,6 +266,7 @@ private actor CountingPersistence: PersistenceStoring {
     func appendEvents(_ events: [DeviceEvent]) async throws {}
     func replaceActiveAlerts(_ alerts: [Alert], forDevice deviceID: DeviceID) async throws {}
     func appendInsight(_ insight: InsightRecord) async throws {}
+    func trimHistory() async throws -> Bool { false }
 }
 
 /// Alert rules that fail on demand — the only way to make the catalog, and so the bootstrap, fail.

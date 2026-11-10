@@ -82,7 +82,9 @@ runs, nothing is read from the stream and items queue up. Measured on an M1 Pro
 ([SwiftData Persistence §21.9](21-swiftdata-persistence.md#219-write-path-cost-and-store-growth)), a
 flush takes ~320 ms, and 256 readings take ~850 ms to arrive. So ~100 items queue during each flush,
 and the queue drains before the next one. The buffer is bounded in practice by that ~2.6× headroom,
-not by construction.
+not by construction. A flush that trims persistent history takes longer: by a median of ~40 ms once
+a minute, and by up to ~0.3 s per flush while a store from before trimming loses its backlog. That
+still fits inside the 850 ms.
 
 **Status: accepted risk.** Nothing enforces the bound, and nothing measures the queue. It would grow
 without limit if a flush took longer than ~850 ms: on a device much slower than the one measured, or

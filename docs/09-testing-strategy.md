@@ -6,7 +6,7 @@ macOS host with no device, no network, no real model and no sleeps. The suite us
 Testing** only.
 
 ```bash
-swift test   # 272 tests, 43 suites, ~0.7 s on an M-series Mac
+swift test   # 284 tests, 44 suites, ~0.7 s on an M-series Mac
 ```
 
 ## 9.1 What is covered
@@ -34,7 +34,8 @@ There is no mocking library. Because every collaborator is a domain port, double
 - `Stubs.swift` (DomainKit tests) and `FeatureTestSupport.swift` (feature tests) hold stub
   repositories and insight providers.
 - `StubHTTPClient` (in NetworkingKit) is an `actor` that replays a scripted sequence of responses.
-- Persistence tests use a real `PersistenceStore` over an **in-memory** SwiftData container.
+- Persistence tests use a real `PersistenceStore` over an **in-memory** SwiftData container, except
+  the history-trimming tests, which use an on-disk store in a temporary directory.
 - The Foundation Models provider takes its availability check as an injected closure, so the
   fallback path is tested on machines without Apple Intelligence.
 
