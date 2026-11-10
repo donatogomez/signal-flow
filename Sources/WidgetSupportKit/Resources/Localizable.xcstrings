@@ -124,6 +124,16 @@
         }
       }
     },
+    "Not updated recently — open SignalFlow" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin actualizar — abre SignalFlow"
+          }
+        }
+      }
+    },
     "online" : {
       "localizations" : {
         "es" : {

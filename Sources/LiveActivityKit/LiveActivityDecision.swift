@@ -60,3 +60,33 @@ public enum LiveActivityDecision {
         )
     }
 }
+
+// MARK: - Freshness and relaunch
+
+extension LiveActivityDecision {
+    /// How long pushed content counts as current. If the app stops reconciling (suspended or killed),
+    /// the system marks the activity stale after this, and the card says so instead of presenting a
+    /// frozen alert as live.
+    public static let staleAfter: TimeInterval = 60
+
+    /// While the app runs, unchanged content is pushed again this often, so it never goes stale.
+    public static let refreshAfter: TimeInterval = 30
+
+    /// Whether unchanged content last pushed at `pushedAt` (`nil`: never, as for an adopted activity)
+    /// should be pushed again at `now` to stay fresh.
+    public static func needsRefresh(pushedAt: Date?, now: Date) -> Bool {
+        guard let pushedAt else { return true }
+        return now.timeIntervalSince(pushedAt) >= refreshAfter
+    }
+
+    /// The running activity to take over after a relaunch, as an index into `runningAlertIDs`.
+    ///
+    /// ActivityKit keeps an activity running after the app ends, but the service starts with no memory
+    /// of it and would otherwise start a duplicate. It takes over the activity for an alert that is
+    /// still an active, unacknowledged critical, else the first one, which the next decision then ends
+    /// with a final frame. Every other running activity is a duplicate to end. `nil` when none run.
+    public static func adoptable(runningAlertIDs: [String], criticalContexts: [AlertContext]) -> Int? {
+        let live = Set(criticalContexts.filter { !$0.alert.isAcknowledged }.map { $0.alert.id.rawValue.uuidString })
+        return runningAlertIDs.firstIndex(where: live.contains) ?? runningAlertIDs.indices.first
+    }
+}

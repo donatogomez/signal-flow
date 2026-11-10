@@ -90,6 +90,22 @@ acknowledged alerts toward device health, so an acknowledged critical alert is n
 crisis that warrants a persistent, attention-grabbing Live Activity. Only one activity runs at a time —
 the most recent active unacknowledged critical alert.
 
+### Freshness and relaunch
+
+Reconciliation only runs while the app does. Two rules keep the activity honest when it stops:
+
+- **Stale after 60 s.** Every push sets `staleDate` to 60 s ahead (`LiveActivityDecision.staleAfter`),
+  and unchanged content is pushed again every 30 s while the app runs (`refreshAfter`). If the app is
+  suspended or killed, the system marks the activity stale a minute later, and the Lock Screen and
+  expanded Dynamic Island add *"Not updated recently — open SignalFlow"*. A frozen alert is therefore
+  never presented as current.
+- **Taken over after a relaunch.** ActivityKit keeps an activity running after the app ends, but the
+  service starts with no memory of it. On its first reconcile it takes over the activity for an alert
+  that is still active and unacknowledged, else the first one running, and ends any others
+  immediately. The normal rules then apply: the adopted activity is refreshed, or ended with an
+  "Acknowledged" or "Resolved" frame. Without this, a relaunch during an alert started a second
+  activity and left the first one frozen.
+
 ## 26.5 Why alerts stay deterministic — and AI is not involved
 
 Whether an alert exists, and whether it's *critical*, is decided entirely by `AlertRule.evaluate`
@@ -140,6 +156,8 @@ contract shared with widgets and App Intents) and adds `case device(DeviceID)` �
 | `lifecycleStart` / `lifecycleNoStartWhenAcknowledged` | lifecycle: start only for unacknowledged criticals |
 | `lifecycleUpdate` / `lifecycleNoChange` | lifecycle: update on change, idempotent otherwise |
 | `lifecycleEndOnAcknowledge` / `lifecycleEndOnResolve` | lifecycle: end-on-ack vs end-on-resolve, with final status |
+| `refreshesBeforeStale` | unchanged content is pushed again before it goes stale |
+| `adoptsAfterRelaunch` | after a relaunch: which running activity is taken over, which are duplicates |
 | `deepLinkGeneration` | deep-link route generation (tabs + device, round-trip) |
 
 All run on the macOS host — no device, no ActivityKit — satisfying the CI constraint.

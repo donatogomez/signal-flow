@@ -147,6 +147,37 @@ struct LiveActivityTests {
         #expect(state.status == .resolved)
     }
 
+    // MARK: - Freshness and relaunch
+
+    @Test("Unchanged content is pushed again before the system marks it stale")
+    func refreshesBeforeStale() {
+        let pushed = Date(timeIntervalSince1970: 1_000)
+        #expect(LiveActivityDecision.refreshAfter < LiveActivityDecision.staleAfter)
+        #expect(LiveActivityDecision.needsRefresh(pushedAt: nil, now: pushed))
+        #expect(!LiveActivityDecision.needsRefresh(pushedAt: pushed, now: pushed.addingTimeInterval(LiveActivityDecision.refreshAfter - 1)))
+        #expect(LiveActivityDecision.needsRefresh(pushedAt: pushed, now: pushed.addingTimeInterval(LiveActivityDecision.refreshAfter)))
+    }
+
+    @Test("After a relaunch, the activity for a live alert is taken over and the rest are duplicates")
+    func adoptsAfterRelaunch() throws {
+        let live = try alert(.critical, raisedAt: 10)
+        let acknowledged = try alert(.critical, raisedAt: 20, acknowledged: true)
+        let contexts = [ctx(acknowledged), ctx(live)]
+        let ids = { (alerts: [Alert]) in alerts.map { $0.id.rawValue.uuidString } }
+
+        #expect(LiveActivityDecision.adoptable(runningAlertIDs: [], criticalContexts: contexts) == nil)
+        // The live alert's activity wins wherever it is in the list.
+        #expect(LiveActivityDecision.adoptable(runningAlertIDs: ids([acknowledged, live]), criticalContexts: contexts) == 1)
+        // No running activity matches a live alert: the first is kept so the next decision can end it
+        // with a final frame ("Acknowledged" here, "Resolved" for an unknown alert).
+        #expect(LiveActivityDecision.adoptable(runningAlertIDs: ids([acknowledged]), criticalContexts: contexts) == 0)
+        #expect(LiveActivityDecision.adoptable(runningAlertIDs: ["gone", "also-gone"], criticalContexts: contexts) == 0)
+
+        // The adopted activity then follows the normal lifecycle.
+        #expect(LiveActivityDecision.decide(tracked: tracked(for: acknowledged), criticalContexts: contexts)
+                == .end(CriticalAlertState.make(ctx(acknowledged), status: .acknowledged)))
+    }
+
     // MARK: - Deep-link route generation
 
     @Test("Deep links generate and round-trip for tabs and devices")
