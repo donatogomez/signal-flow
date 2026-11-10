@@ -17,6 +17,10 @@ public actor CriticalAlertActivityService {
     /// region isolation ("sending actor-isolated state"). Instead we look the activity up locally from
     /// `Activity.activities` (a disconnected region) when we need to update or end it.
     private var activityID: String?
+    /// When content was last pushed to the tracked activity; `nil` for one adopted after a relaunch.
+    private var pushedAt: Date?
+    /// Whether activities left running by a previous launch have been taken over or ended.
+    private var hasAdopted = false
 
     public init() {}
 
@@ -24,9 +28,16 @@ public actor CriticalAlertActivityService {
     /// domain ports). Starts, updates, or ends the activity as the lifecycle rules dictate.
     public func reconcile(_ contexts: [AlertContext]) async {
         let criticals = CriticalAlertSelector.critical(in: contexts)
+        if !hasAdopted {
+            hasAdopted = true
+            await adoptRunning(criticals)
+        }
         switch LiveActivityDecision.decide(tracked: tracked, criticalContexts: criticals) {
         case .none:
-            break
+            // Unchanged content is pushed again before it goes stale (see `staleAfter`).
+            if let current = tracked, LiveActivityDecision.needsRefresh(pushedAt: pushedAt, now: .now) {
+                await update(current.state)
+            }
         case .start(let next):
             await start(next)
         case .update(let state):
@@ -43,17 +54,40 @@ public actor CriticalAlertActivityService {
         }
         activityID = nil
         tracked = nil
+        pushedAt = nil
     }
 
     // MARK: - ActivityKit operations
+
+    /// Takes over the activity a previous launch left running and ends any duplicates, so a relaunch
+    /// neither starts a second activity nor leaves the old one frozen.
+    private func adoptRunning(_ criticals: [AlertContext]) async {
+        let running = Activity<CriticalAlertActivityAttributes>.activities
+        let keep = LiveActivityDecision.adoptable(runningAlertIDs: running.map(\.attributes.alertID), criticalContexts: criticals)
+        for (index, activity) in running.enumerated() {
+            if index == keep, let uuid = UUID(uuidString: activity.attributes.deviceID) {
+                activityID = activity.id
+                tracked = TrackedActivity(alertID: activity.attributes.alertID, deviceID: DeviceID(uuid), state: activity.content.state)
+                pushedAt = nil
+            } else {
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
+        }
+    }
+
+    /// Content that the system marks stale if the app hasn't pushed again by then.
+    private func content(_ state: CriticalAlertState) -> ActivityContent<CriticalAlertState> {
+        ActivityContent(state: state, staleDate: Date.now.addingTimeInterval(LiveActivityDecision.staleAfter))
+    }
 
     private func start(_ next: TrackedActivity) async {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
         let attributes = CriticalAlertActivityAttributes(alertID: next.alertID, deviceID: next.deviceID.rawValue.uuidString)
         do {
-            let activity = try Activity.request(attributes: attributes, content: ActivityContent(state: next.state, staleDate: nil))
+            let activity = try Activity.request(attributes: attributes, content: content(next.state))
             activityID = activity.id
             tracked = next
+            pushedAt = .now
         } catch {
             // Authorization revoked or system limit reached — nothing to surface to the user.
             activityID = nil
@@ -66,12 +100,13 @@ public actor CriticalAlertActivityService {
         // region and can be sent into the `await` without tripping region isolation.
         guard let current = tracked, let id = activityID,
               let activity = Activity<CriticalAlertActivityAttributes>.activities.first(where: { $0.id == id }) else { return }
-        await activity.update(ActivityContent(state: state, staleDate: nil))
+        await activity.update(content(state))
         tracked = TrackedActivity(alertID: current.alertID, deviceID: current.deviceID, state: state)
+        pushedAt = .now
     }
 
     private func end(_ finalState: CriticalAlertState) async {
-        defer { activityID = nil; tracked = nil }
+        defer { activityID = nil; tracked = nil; pushedAt = nil }
         guard let id = activityID,
               let activity = Activity<CriticalAlertActivityAttributes>.activities.first(where: { $0.id == id }) else { return }
         // Show the final "Acknowledged"/"Resolved" frame briefly, then let the system dismiss it.

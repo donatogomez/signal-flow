@@ -18,7 +18,7 @@ public struct CriticalAlertLiveActivity: Widget {
 
     public var body: some WidgetConfiguration {
         ActivityConfiguration(for: CriticalAlertActivityAttributes.self) { context in
-            LockScreenView(state: context.state)
+            LockScreenView(state: context.state, isStale: context.isStale)
                 .activityBackgroundTint(Color.red.opacity(0.12))
                 .activitySystemActionForegroundColor(.primary)
                 .widgetURL(context.attributes.deepLink.url)
@@ -42,6 +42,7 @@ public struct CriticalAlertLiveActivity: Widget {
                         Text(context.state.reason)
                             .font(.subheadline)
                             .lineLimit(2)
+                        if context.isStale { StaleNotice() }
                         if let asset = context.state.assetName {
                             (Text(verbatim: "\(asset) · ") + Text(context.state.startedAt, style: .relative))
                                 .font(.caption2)
@@ -76,6 +77,7 @@ public struct CriticalAlertLiveActivity: Widget {
 
 private struct LockScreenView: View {
     let state: CriticalAlertState
+    let isStale: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
@@ -107,8 +109,20 @@ private struct LockScreenView: View {
             (Text(verbatim: loc("Since") + " ") + Text(state.startedAt, style: .relative))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
+
+            if isStale { StaleNotice() }
         }
         .padding(Spacing.md)
+    }
+}
+
+/// Shown once the app has stopped updating the activity (see `LiveActivityDecision.staleAfter`), so a
+/// frozen alert isn't read as current.
+private struct StaleNotice: View {
+    var body: some View {
+        Label(loc("Not updated recently — open SignalFlow"), systemImage: "clock.badge.exclamationmark")
+            .font(.caption2)
+            .foregroundStyle(.secondary)
     }
 }
 
