@@ -93,8 +93,7 @@ stubs and needs no network, database, or model.
 - **Concurrency safety** — domain values across an `actor` and a `TaskGroup`.
 
 Mocking uses **plain stub structs** (in the test target) rather than a framework — the ports are
-small enough that this is simpler and less brittle. Reusable fakes will graduate to `TestingSupportKit`
-when more than the domain layer needs them.
+small enough that this is simpler and less brittle.
 
 ## 13.4 Deliberate deferrals
 

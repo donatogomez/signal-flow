@@ -5,6 +5,9 @@ Swift Package, its targets, and exactly why each dependency edge exists. There i
 yet — every target ships a single placeholder namespace so the graph builds and the architecture is
 established before any feature is written.
 
+> **Later change.** `FeatureSettings` and `TestingSupportKit` stayed empty placeholders and were
+> removed; `Package.swift` is the current module graph.
+
 - **Tools:** `swift-tools-version: 6.2`, Swift 6 language mode on every target (complete strict
   concurrency is the default in that mode).
 - **Platforms:** iOS 26 (product target) + macOS 26 (so `swift build` / `swift test` run from the CLI

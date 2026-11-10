@@ -295,6 +295,16 @@
           }
         }
       }
+    },
+    "Unknown device" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dispositivo desconocido"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
