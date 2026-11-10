@@ -130,8 +130,8 @@ Details: [Technical Architecture](docs/03-technical-architecture.md) · [Concurr
 
 ## Module graph
 
-A single local Swift Package (`SignalFlowKit`) with **24 module targets, a benchmark executable and a test
-target**. Boundaries are enforced by the build graph *and* a CI check — a feature target cannot even name
+A single local Swift Package (`SignalFlowKit`) with **21 library targets, the `SignalFlowHost` executable,
+four benchmark and probe executables under `Benchmarks/`, and one test target**. Boundaries are enforced by the build graph *and* a CI check — a feature target cannot even name
 the data layer.
 
 ```mermaid
