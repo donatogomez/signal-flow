@@ -87,6 +87,18 @@ struct UseCaseTests {
         #expect(history.map(\.value.magnitude) == [1, 2, 3])
     }
 
+    @Test("The port's default recent read keeps the newest readings, oldest-first", arguments: [0, 2, 5])
+    func defaultRecentReadings(limit: Int) async throws {
+        let deviceID = DeviceID()
+        let unordered = try [300, 100, 500, 200, 400].map {
+            try Fixtures.temperatureReading(Double($0), deviceID: deviceID, at: TimeInterval($0))
+        }
+        let telemetry = StubTelemetryRepository(stubHistory: unordered)
+
+        let recent = try await telemetry.recentReadings(forDevice: deviceID, metric: .temperature, limit: limit)
+        #expect(recent.map(\.value.magnitude) == Array([100.0, 200, 300, 400, 500].suffix(limit)))
+    }
+
     private func insightUseCase(
         deviceID: DeviceID,
         history: [TelemetryReading],
