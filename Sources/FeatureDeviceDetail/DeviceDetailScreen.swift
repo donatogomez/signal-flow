@@ -24,8 +24,8 @@ public struct DeviceDetailScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.xl) {
                 switch model.phase {
-                case .failed(let message):
-                    ContentUnavailableView(loc("Couldn't load the device"), systemImage: "exclamationmark.triangle", description: Text(message))
+                case .failed:
+                    ContentUnavailableView(loc("Couldn't load the device"), systemImage: "exclamationmark.triangle", description: Text(loc("SignalFlow will try again automatically.")))
                         .frame(maxWidth: .infinity, minHeight: 320)
                 case .loading:
                     loadingSkeleton

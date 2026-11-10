@@ -2,6 +2,17 @@ import DomainKit
 import SimulationKit
 import PersistenceKit
 
+/// What ``SimulatedDataSource/bootstrap()`` restored from persistence.
+public enum RestoreOutcome: Sendable, Equatable {
+    /// No persistence is configured, so the session starts from the catalog by design.
+    case notConfigured
+    /// The last persisted snapshot was loaded into the store.
+    case restored
+    /// Loading the snapshot failed. The catalog is registered and the session continues on fresh
+    /// telemetry, without the previously saved state (degraded, not fatal).
+    case failed
+}
+
 /// The DataKit composition root for a simulation-backed data layer.
 ///
 /// It assembles the store, the simulated fleet, the ingestion adapter, the `DomainKit`-typed
@@ -28,19 +39,24 @@ public struct SimulatedDataSource: Sendable {
     private let adapter: SimulationTelemetryAdapter
     private let persistence: (any PersistenceStoring)?
     private let coordinator: PersistenceCoordinator?
+    private let alertRules: @Sendable (AssetKind) throws -> [AlertRule]
 
+    /// `alertRules` is a test seam: the default rules are built from constant thresholds, so a
+    /// catalog failure can only be injected.
     init(
         seed: UInt64,
         clock: any SimulationClock,
         maxTicks: Int?,
         insights: any InsightsProviding,
-        persistence: (any PersistenceStoring)? = nil
+        persistence: (any PersistenceStoring)? = nil,
+        alertRules: @escaping @Sendable (AssetKind) throws -> [AlertRule] = DefaultAlertRules.rules(for:)
     ) {
         let store = InMemoryTelemetryStore()
         let engine = SimulationFleet.standard(seed: seed, clock: clock, maxTicks: maxTicks)
         self.store = store
         self.engine = engine
         self.persistence = persistence
+        self.alertRules = alertRules
 
         if let persistence {
             let coordinator = PersistenceCoordinator(persistence: persistence, store: store)
@@ -104,20 +120,35 @@ public struct SimulatedDataSource: Sendable {
     /// Registers the fleet catalog and its default alert rules, then — if persistence is present —
     /// restores the last persisted snapshot on top, so the fleet is queryable with real data the
     /// instant the app opens.
-    public func bootstrap() async throws {
+    ///
+    /// Failures are split by what the session can still do:
+    /// - Building the catalog fails → **throws**. Nothing is registered, so the call can be repeated.
+    /// - The restore fails → logged and reported as ``RestoreOutcome/failed``; the catalog stays
+    ///   registered and the session can run on fresh telemetry.
+    /// - Cancellation is rethrown, never reported as a failed restore.
+    @discardableResult
+    public func bootstrap() async throws -> RestoreOutcome {
         let entries = try await engine.descriptors().map { descriptor in
-            DeviceCatalogEntry(descriptor: descriptor, rules: try DefaultAlertRules.rules(for: descriptor.assetKind))
+            DeviceCatalogEntry(descriptor: descriptor, rules: try alertRules(descriptor.assetKind))
         }
         await store.register(entries)
 
-        if let persistence {
-            let snapshot = try await persistence.loadSnapshot()
-            await store.loadRestoredState(
-                assets: snapshot.assets, devices: snapshot.devices,
-                latestReadings: snapshot.latestReadings, events: snapshot.events,
-                alerts: snapshot.alerts, insights: snapshot.insights
-            )
+        guard let persistence else { return .notConfigured }
+        let snapshot: PersistedSnapshot
+        do {
+            snapshot = try await persistence.loadSnapshot()
+        } catch let cancellation as CancellationError {
+            throw cancellation
+        } catch {
+            Log.persistence.error("Restore failed; continuing without saved state: \(String(describing: error), privacy: .private)")
+            return .failed
         }
+        await store.loadRestoredState(
+            assets: snapshot.assets, devices: snapshot.devices,
+            latestReadings: snapshot.latestReadings, events: snapshot.events,
+            alerts: snapshot.alerts, insights: snapshot.insights
+        )
+        return .restored
     }
 
     /// Drains the (bounded) telemetry stream into the store and returns when complete, then flushes

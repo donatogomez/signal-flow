@@ -29,6 +29,9 @@ public final class WatchSnapshotReceiver: NSObject, WCSessionDelegate, @unchecke
     // MARK: WCSessionDelegate
 
     public func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+        if let error {
+            Log.watchSync.error("WatchConnectivity activation failed: \(String(describing: error), privacy: .private)")
+        }
         // The OS retains the latest application context across launches — ingest whatever's already there.
         ingest(session.receivedApplicationContext)
     }
@@ -44,9 +47,16 @@ public final class WatchSnapshotReceiver: NSObject, WCSessionDelegate, @unchecke
     #endif
 
     private func ingest(_ context: [String: Any]) {
-        guard let data = context[WatchSnapshotCodec.applicationContextKey] as? Data,
-              let snapshot = try? WatchSnapshotCodec.decode(data) else { return }
-        guard store.ingest(snapshot) else { return }   // ignore stale snapshots
+        guard let data = context[WatchSnapshotCodec.applicationContextKey] as? Data else { return } // nothing synced yet
+        let snapshot: WatchSyncSnapshot
+        do {
+            snapshot = try WatchSnapshotCodec.decode(data)
+        } catch {
+            // Typically a phone/watch version mismatch; the last stored snapshot stays on screen.
+            Log.watchSync.error("Received watch snapshot couldn't be decoded: \(String(describing: error), privacy: .private)")
+            return
+        }
+        guard store.ingest(snapshot) else { return }   // stale, or couldn't be saved (logged by the store)
         onUpdate()
     }
 }

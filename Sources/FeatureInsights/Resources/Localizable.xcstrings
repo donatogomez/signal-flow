@@ -141,6 +141,26 @@
           }
         }
       }
+    },
+    "Something went wrong while preparing your insights." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ha habido un problema al preparar tus insights."
+          }
+        }
+      }
+    },
+    "Try Again" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reintentar"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

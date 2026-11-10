@@ -93,6 +93,9 @@ where another call can interleave. Two lifecycle paths are written specifically 
   appear. See "Lifecycle ordering" below.
 - **`PersistenceCoordinator.stopAndFlush()`** waits for an in-flight periodic flush before the final
   one, so an older snapshot can't be written after the newer one.
+- **`PersistenceCoordinator.flush()`** takes its batch before its first suspension, so overlapping
+  flushes each own distinct items; a failed batch is put back for the next flush (see
+  [Persistence §21.4](21-swiftdata-persistence.md#214-offline-first-strategy)).
 
 Each of these has a regression test (`DataKitConcurrencyTests`, `AppContainerTests`) that holds an
 operation open with a continuation-based latch, so the interleaving is forced rather than left to the
@@ -112,18 +115,35 @@ first-in, first-out. So the lifecycle doesn't depend on either:
 - **Transitions run one at a time, in request order.** Each request appends a task that first awaits
   the previous one, then runs the transition. When the tasks get scheduled doesn't matter, because
   the chain, not the scheduler, decides the order. Transitions never overlap, so `didBootstrap` is
-  never read by two starts at once and bootstrap runs once.
+  never read by two starts at once and a successful bootstrap runs once.
 - **Stale requests can't win.** Requests aren't coalesced or skipped: every one applies, in order. So
   the state after the last transition is always the last request's. A delayed older start, such as
   one stuck in bootstrap, completes before a newer stop runs, never after it.
 - **Cancellation doesn't break the chain.** Transitions run in unstructured tasks and don't check for
   cancellation. Cancelling the task a request returns, or a caller awaiting `start()`, doesn't
-  withdraw or reorder the request, so a cancelled view doesn't abandon a half-finished bootstrap.
+  withdraw or reorder the request, so a cancelled view doesn't abandon a half-finished bootstrap. If a
+  dependency nonetheless throws `CancellationError` during bootstrap, that start is abandoned without
+  being recorded as done or failed, and the next start bootstraps again.
 - **Reentrancy below the container** is handled where the state lives: the adapter detaches its loop
   before suspending, and the coordinator awaits its in-flight flush (above).
 
-A restore that fails at bootstrap is not retried. The catalog is already registered, so the app runs
-on fresh telemetry, and by the next foreground the live state is newer than the snapshot.
+### Startup failures and retry
+
+Retry is not a second mechanism: it is an ordinary start request in the same chain.
+
+- **A failed bootstrap is not a start.** If the catalog can't be built, `bootstrap()` throws before
+  registering anything. The container records `startupState = .failed`, leaves `didBootstrap` unset
+  and doesn't begin ingestion, and the stop requests behind it still apply normally.
+- **Only a request made after the failure retries.** Each request knows its position in the chain,
+  and the container notes the position reached when the failure was recorded. Starts queued before
+  that (such as the scene phase's `.active` at launch, next to `onAppear`) don't repeat the attempt,
+  so a failure never turns into back-to-back automatic attempts. A later request does: the "Try
+  Again" button, or the next foreground, each one attempt in its place in the chain. A stop requested
+  after a retry still runs after it, so a background transition during a retry leaves ingestion
+  stopped.
+- **A failed restore is degraded, not failed.** The catalog is already registered, so the app runs on
+  fresh telemetry and reports `.degraded(.restoreFailed)`. The restore is not retried: by the next
+  foreground the live state is newer than the snapshot.
 
 ## 7.4 Presentation: polling, not stream observation
 

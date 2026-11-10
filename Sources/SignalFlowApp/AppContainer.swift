@@ -22,6 +22,12 @@ public final class AppContainer {
     let source: SimulatedDataSource // internal only so lifecycle tests can observe ingestion
     private var didBootstrap = false
 
+    /// The outcome of the data layer's startup, for the root view (see ``StartupState``).
+    public private(set) var startupState: StartupState = .notStarted
+
+    /// Whether the composition root had to run without the on-disk store.
+    private let persistenceUnavailable: Bool
+
     /// Drives the critical-alert Live Activity. ActivityKit work happens inside the service (guarded for
     /// iOS); on other platforms it's a no-op, so the composition root calls it unconditionally.
     private let liveActivities = CriticalAlertActivityService()
@@ -39,8 +45,13 @@ public final class AppContainer {
     public var events: any EventRepository { source.events }
     public var insights: any InsightsProviding { source.insights }
 
-    public init(source: SimulatedDataSource) {
+    public convenience init(source: SimulatedDataSource) {
+        self.init(source: source, persistenceUnavailable: false)
+    }
+
+    init(source: SimulatedDataSource, persistenceUnavailable: Bool) {
         self.source = source
+        self.persistenceUnavailable = persistenceUnavailable
     }
 
     /// The real app configuration: a real-time simulated source playing telemetry at 600× wall speed.
@@ -55,10 +66,19 @@ public final class AppContainer {
             ? FoundationModelsInsightProvider(fallback: deterministic)
             : deterministic
         // On-disk SwiftData persistence in the shared App Group container, so the SignalFlowWidgets
-        // extension reads the exact same store. If the container can't be created, the app degrades to
-        // in-memory only rather than failing to launch.
-        let persistence = (try? PersistenceController.makeSharedContainer()).map(PersistenceStore.init(modelContainer:))
-        return AppContainer(source: .live(seed: 42, timeScale: 600, insights: insights, persistence: persistence))
+        // extension reads the exact same store. If the container can't be created, the app runs in
+        // memory only rather than failing to launch, and reports that as a degraded startup.
+        let persistence: PersistenceStore?
+        do {
+            persistence = PersistenceStore(modelContainer: try PersistenceController.makeSharedContainer())
+        } catch {
+            Log.persistence.error("Persistent store unavailable; running in memory only: \(String(describing: error), privacy: .private)")
+            persistence = nil
+        }
+        return AppContainer(
+            source: .live(seed: 42, timeScale: 600, insights: insights, persistence: persistence),
+            persistenceUnavailable: persistence == nil
+        )
     }
 
     /// A deterministic configuration for previews and tests.
@@ -88,7 +108,14 @@ public final class AppContainer {
     /// later than a request made after it, and Swift doesn't promise otherwise.
     ///
     /// Awaiting the returned task waits for the transition. Cancelling it doesn't withdraw the request:
-    /// nothing in the transition checks for cancellation, so it still applies in order.
+    /// nothing in the transition checks for cancellation, so it still applies in order. (If the
+    /// bootstrap itself reports cancellation, the start is abandoned without being recorded as done or
+    /// failed, and the next start bootstraps again.)
+    ///
+    /// If the bootstrap fails, the start doesn't begin ingestion and ``startupState`` becomes
+    /// ``StartupState/failed``. A start request made *after* that tries again, in its place in the
+    /// chain; requests that were already queued when it failed don't, so a failure never turns into
+    /// back-to-back automatic attempts.
     @discardableResult
     public func requestStart() -> Task<Void, Never> {
         enqueue(.start)
@@ -105,29 +132,68 @@ public final class AppContainer {
     /// The most recently requested lifecycle operation; the next one runs after it.
     private var lifecycle: Task<Void, Never>?
 
+    /// Lifecycle requests made so far. Each operation knows its position, i.e. which requests came
+    /// before it.
+    private var requestCount = 0
+
+    /// `requestCount` when the last bootstrap failure was recorded. Start requests up to that position
+    /// were made before the failure was known, so they don't repeat the attempt.
+    private var failureRecordedAt: Int?
+
     /// Appends an operation to the chain. Runs synchronously on the main actor, so the chain order is
     /// the order of the calls. Because overlapping operations can't exist, `didBootstrap` is never read
-    /// by two starts at once and bootstrap runs exactly once.
+    /// by two starts at once and a successful bootstrap runs exactly once.
     private func enqueue(_ request: LifecycleRequest) -> Task<Void, Never> {
+        requestCount += 1
+        let position = requestCount
         let previous = lifecycle
         let next = Task {
             await previous?.value
-            await perform(request)
+            await perform(request, position: position)
         }
         lifecycle = next
         return next
     }
 
-    private func perform(_ request: LifecycleRequest) async {
+    private func perform(_ request: LifecycleRequest, position: Int) async {
         switch request {
         case .start:
             if !didBootstrap {
-                try? await source.bootstrap()
-                didBootstrap = true
+                if let failureRecordedAt, position <= failureRecordedAt { return }
+                guard await bootstrap() else { return }
             }
             await source.start()
         case .stop:
             await source.stop()
+        }
+    }
+
+    /// Bootstraps the data layer and records the outcome. Returns whether ingestion may start.
+    private func bootstrap() async -> Bool {
+        let previous = startupState
+        startupState = .starting
+        do {
+            let restore = try await source.bootstrap()
+            didBootstrap = true
+            let degradation: StartupState.Degradation? = persistenceUnavailable ? .persistenceUnavailable
+                : restore == .failed ? .restoreFailed : nil
+            if let degradation {
+                startupState = .degraded(degradation)
+                Log.lifecycle.notice("Startup finished degraded: \(String(describing: degradation), privacy: .public)")
+            } else {
+                startupState = .ready
+                Log.lifecycle.info("Startup finished")
+            }
+            return true
+        } catch is CancellationError {
+            startupState = previous
+            Log.lifecycle.debug("Bootstrap cancelled; not recorded as done or failed")
+            return false
+        } catch {
+            failureRecordedAt = requestCount
+            startupState = .failed
+            Log.lifecycle.fault("Bootstrap failed; ingestion not started: \(String(describing: error), privacy: .private)")
+            return false
         }
     }
 

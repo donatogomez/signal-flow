@@ -24,8 +24,8 @@ public struct DashboardScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.xl) {
                 switch model.phase {
-                case .failed(let message):
-                    errorState(message)
+                case .failed:
+                    errorState
                 case .loading:
                     content(placeholder: true)
                         .redacted(reason: .placeholder)
@@ -175,11 +175,11 @@ public struct DashboardScreen: View {
         }
     }
 
-    private func errorState(_ message: String) -> some View {
+    private var errorState: some View {
         ContentUnavailableView(
             loc("Couldn't load the dashboard"),
             systemImage: "exclamationmark.triangle",
-            description: Text(message)
+            description: Text(loc("SignalFlow will try again automatically."))
         )
         .frame(maxWidth: .infinity, minHeight: 320)
     }

@@ -13,6 +13,24 @@
     },
     "Insights" : {
       "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Insights" } } }
+    },
+    "SignalFlow couldn't start" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "SignalFlow no ha podido iniciarse" } } }
+    },
+    "Something went wrong while preparing your fleet." : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Ha habido un problema al preparar tu flota." } } }
+    },
+    "Try Again" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Reintentar" } } }
+    },
+    "Dismiss" : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Cerrar" } } }
+    },
+    "Data isn't being saved on this device." : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "Los datos no se están guardando en este dispositivo." } } }
+    },
+    "Saved data couldn't be restored. Showing live data only." : {
+      "localizations" : { "es" : { "stringUnit" : { "state" : "translated", "value" : "No se han podido recuperar los datos guardados. Solo se muestran datos en directo." } } }
     }
   }
 }

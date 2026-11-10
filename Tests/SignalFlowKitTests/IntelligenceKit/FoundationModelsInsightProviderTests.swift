@@ -44,10 +44,53 @@ struct FoundationModelsInsightProviderTests {
         #expect(viaFoundationModels == direct)
     }
 
+    @Test("A cancelled request throws instead of falling back, even with the model available")
+    func cancellationDoesNotFallBack() async throws {
+        let fallback = CountingFallback()
+        let provider = FoundationModelsInsightProvider(fallback: fallback, isModelAvailable: { true })
+        let ctx = try context()
+
+        // The request starts only after it has been cancelled, so it never reaches the model.
+        let gate = Latch()
+        let request = Task {
+            await gate.wait()
+            return try await provider.insight(for: ctx)
+        }
+        request.cancel()
+        await gate.open()
+        await #expect(throws: CancellationError.self) { try await request.value }
+        #expect(await fallback.calls == 0)
+    }
+
+    @Test("Generation errors fall back; cancellation, in either form, doesn't")
+    func fallbackDecision() async {
+        #expect(FoundationModelsInsightProvider.shouldFallBack(after: CocoaError(.featureUnsupported)))
+        #expect(!FoundationModelsInsightProvider.shouldFallBack(after: CancellationError()))
+
+        // A framework error thrown because the task was cancelled is still cancellation.
+        let gate = Latch()
+        let cancelled = Task {
+            await gate.wait()
+            return FoundationModelsInsightProvider.shouldFallBack(after: CocoaError(.featureUnsupported))
+        }
+        cancelled.cancel()
+        await gate.open()
+        #expect(await cancelled.value == false)
+    }
+
     @Test("The prompt hands the model the grounded advisory level instead of asking it to classify")
     func promptCarriesGroundedSeverity() throws {
         let prompt = FoundationModelsInsightProvider.prompt(for: try context())
         #expect(prompt.contains("Advisory level (already decided, keep your wording consistent with it): nominal"))
         #expect(!prompt.localizedCaseInsensitiveContains("advisory severity"))
+    }
+}
+
+/// A fallback that counts how often it's asked.
+private actor CountingFallback: InsightsProviding {
+    private(set) var calls = 0
+    func insight(for context: InsightContext) async throws -> DeviceInsight {
+        calls += 1
+        return try await DeterministicInsightsProvider().insight(for: context)
     }
 }

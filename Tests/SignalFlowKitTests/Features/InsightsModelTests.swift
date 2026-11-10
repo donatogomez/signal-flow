@@ -10,7 +10,8 @@ struct InsightsModelTests {
     /// Builds a model over a single device whose temperature history is `temperatures`.
     private func makeModel(
         temperatures values: [Double],
-        insight: DeviceInsight = .sample
+        insight: DeviceInsight = .sample,
+        insights: (any InsightsProviding)? = nil
     ) throws -> InsightsModel {
         let assetID = AssetID()
         let device = try FX.device("Reefer 12", asset: assetID, connectivity: .online)
@@ -26,7 +27,7 @@ struct InsightsModelTests {
         return InsightsModel(
             assets: assets, devices: devices, telemetry: telemetry,
             alerts: FakeAlertRepository(), events: FakeEventRepository(),
-            insights: FakeInsightsProvider(stub: insight)
+            insights: insights ?? FakeInsightsProvider(stub: insight)
         )
     }
 
@@ -54,11 +55,37 @@ struct InsightsModelTests {
         #expect(model.recommendations.count == 1)
     }
 
+    @Test("A cancelled load isn't presented as an empty feed")
+    func cancelledLoadIsNotEmpty() async throws {
+        let gate = Latch()
+        let model = try makeModel(temperatures: [2, 4, 6], insights: CancellableInsightsProvider(gate: gate))
+        let loading = Task { await model.load() }
+        loading.cancel()                            // the screen went away mid-load
+        await gate.open()
+        await loading.value
+        #expect(model.phase == .loading)
+        #expect(model.items.isEmpty)
+
+        await model.load()                          // the next appearance loads normally
+        #expect(model.phase == .ready)
+    }
+
     @Test("Empty feed when no device has enough data")
     func emptyFeed() async throws {
         let model = try makeModel(temperatures: [5]) // below the minimum for statistics
         await model.load()
         #expect(model.phase == .empty)
         #expect(model.items.isEmpty)
+    }
+}
+
+/// Behaves like the on-device provider under cancellation: it waits for `gate`, then throws
+/// `CancellationError` if the request was cancelled meanwhile.
+private struct CancellableInsightsProvider: InsightsProviding {
+    let gate: Latch
+    func insight(for context: InsightContext) async throws -> DeviceInsight {
+        await gate.wait()
+        try Task.checkCancellation()
+        return .sample
     }
 }

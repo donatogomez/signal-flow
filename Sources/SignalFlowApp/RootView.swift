@@ -24,6 +24,7 @@ public struct RootView: View {
     @State private var fleetPath: [DeviceID] = []
     @State private var selection: Tab = .dashboard
     @State private var navigation = AppNavigationModel.shared
+    @State private var dismissedDegradation: StartupState.Degradation?
 
     /// Tabs, with stable tags so routes can select one.
     private enum Tab: Hashable { case dashboard, fleet, alerts, insights }
@@ -42,6 +43,63 @@ public struct RootView: View {
     }
 
     public var body: some View {
+        // The stack gives the content one stable identity, so switching between the failure screen and
+        // the tabs doesn't re-run `onAppear` (which would be an automatic start request) or the tasks.
+        ZStack { content }
+            .tint(.signalFlowAccent)
+            // Follows the system appearance (Light **and** Dark). Status/severity hues are system semantic
+            // colours, and the accent + card surfaces are appearance-adaptive, so the monitoring surfaces stay
+            // legible and accessible in both modes.
+            // Synchronous request on appear (also starts previews, which have no scene-phase handler).
+            .onAppear { container.requestStart() }
+            .task { await container.observeCriticalAlertActivity() }
+            .task { await container.observeWatchSync() }
+            .task {
+                // A route an intent requested before this view appeared (e.g. cold launch from Shortcuts).
+                if let route = navigation.pendingRoute {
+                    selection = tab(for: route)
+                    navigation.pendingRoute = nil
+                }
+            }
+            .onChange(of: navigation.pendingRoute) { _, route in
+                // App Intents (Open Dashboard / Fleet Status / Critical Alerts) drive navigation here.
+                if let route {
+                    selection = tab(for: route)
+                    navigation.pendingRoute = nil
+                }
+            }
+            .onOpenURL { url in
+                // Widgets, Spotlight, App Intents, and Live Activities arrive as signalflow:// URLs.
+                switch DeepLink(url: url) {
+                case .route(let route):
+                    selection = tab(for: route)
+                case .device(let deviceID):
+                    // A Live Activity tap deep-links to its device's detail screen.
+                    selection = .fleet
+                    fleetPath = [deviceID]
+                case nil:
+                    break
+                }
+            }
+    }
+
+    /// A failed startup replaces the tabs: with no catalog there is nothing they could show.
+    @ViewBuilder private var content: some View {
+        if container.startupState == .failed {
+            ContentUnavailableView {
+                Label(loc("SignalFlow couldn't start"), systemImage: "exclamationmark.triangle")
+            } description: {
+                Text(loc("Something went wrong while preparing your fleet."))
+            } actions: {
+                Button(loc("Try Again")) { container.requestStart() }
+                    .buttonStyle(.borderedProminent)
+            }
+        } else {
+            tabs
+        }
+    }
+
+    private var tabs: some View {
         TabView(selection: $selection) {
             NavigationStack {
                 DashboardScreen(
@@ -52,6 +110,7 @@ public struct RootView: View {
                     onShowAlerts: { selection = .alerts }
                 )
             }
+            .safeAreaInset(edge: .bottom) { degradedNotice }
             .tabItem { Label(loc("Overview"), systemImage: "square.grid.2x2.fill") }
             .tag(Tab.dashboard)
 
@@ -99,40 +158,36 @@ public struct RootView: View {
             .tabItem { Label(loc("Insights"), systemImage: "sparkles") }
             .tag(Tab.insights)
         }
-        .tint(.signalFlowAccent)
-        // Follows the system appearance (Light **and** Dark). Status/severity hues are system semantic
-        // colours, and the accent + card surfaces are appearance-adaptive, so the monitoring surfaces stay
-        // legible and accessible in both modes.
-        // Synchronous request on appear (also starts previews, which have no scene-phase handler).
-        .onAppear { container.requestStart() }
-        .task { await container.observeCriticalAlertActivity() }
-        .task { await container.observeWatchSync() }
-        .task {
-            // A route an intent requested before this view appeared (e.g. cold launch from Shortcuts).
-            if let route = navigation.pendingRoute {
-                selection = tab(for: route)
-                navigation.pendingRoute = nil
+    }
+
+    /// A discreet, dismissible note on the Overview tab while the app runs degraded.
+    @ViewBuilder private var degradedNotice: some View {
+        if case .degraded(let reason) = container.startupState, dismissedDegradation != reason {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: "externaldrive.badge.exclamationmark")
+                    .foregroundStyle(.orange)
+                    .accessibilityHidden(true)
+                Text(reason.message)
+                    .font(.footnote)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Button(loc("Dismiss"), systemImage: "xmark") { dismissedDegradation = reason }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
             }
+            .padding(12)
+            .background(.regularMaterial, in: .rect(cornerRadius: 12))
+            .padding(.horizontal)
+            .padding(.bottom, 8)
         }
-        .onChange(of: navigation.pendingRoute) { _, route in
-            // App Intents (Open Dashboard / Fleet Status / Critical Alerts) drive navigation here.
-            if let route {
-                selection = tab(for: route)
-                navigation.pendingRoute = nil
-            }
-        }
-        .onOpenURL { url in
-            // Widgets, Spotlight, App Intents, and Live Activities arrive as signalflow:// URLs.
-            switch DeepLink(url: url) {
-            case .route(let route):
-                selection = tab(for: route)
-            case .device(let deviceID):
-                // A Live Activity tap deep-links to its device's detail screen.
-                selection = .fleet
-                fleetPath = [deviceID]
-            case nil:
-                break
-            }
+    }
+}
+
+private extension StartupState.Degradation {
+    var message: String {
+        switch self {
+        case .persistenceUnavailable: loc("Data isn't being saved on this device.")
+        case .restoreFailed: loc("Saved data couldn't be restored. Showing live data only.")
         }
     }
 }

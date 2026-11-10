@@ -285,6 +285,16 @@
           }
         }
       }
+    },
+    "SignalFlow will try again automatically." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SignalFlow volverá a intentarlo automáticamente."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

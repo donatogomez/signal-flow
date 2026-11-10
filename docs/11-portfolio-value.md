@@ -16,7 +16,7 @@ do. If a claim here can't be traced to a file, it shouldn't be here.
 | On-device AI | Foundation Models guided generation over facts computed in Swift; severity and confidence computed in Swift too; deterministic fallback; alerting never depends on the model | `IntelligenceKit`, `DomainKit/Insights`, [ADR-0004](adr/0004-foundation-models-on-device.md) |
 | Networking | `URLSession` client with typed endpoints, DTO mapping, error mapping and retry; behind a gateway, not wired by default | `NetworkingKit`, [NetworkingKit](22-networking-kit.md) |
 | Platform surfaces | Widgets, App Intents, Live Activity, watchOS app + complications — all read persisted or synced state only | `WidgetSupportKit`, `AppIntentsKit`, `LiveActivityKit`, `Watch*Kit` |
-| Testing | 243 Swift Testing tests; stub ports; in-memory SwiftData; deterministic concurrency tests | [Testing Strategy](09-testing-strategy.md), `Tests/` |
+| Testing | 263 Swift Testing tests; stub ports; in-memory SwiftData; deterministic concurrency tests | [Testing Strategy](09-testing-strategy.md), `Tests/` |
 | Decisions | ADRs with rejected alternatives and consequences | [`docs/adr`](adr) |
 
 ## 11.2 Known limitations
@@ -32,6 +32,11 @@ These are deliberate scope decisions, not oversights:
   ([§7.2](07-concurrency.md#72-the-telemetry-pipeline)).
 - **Restore is a snapshot, not a history.** Relaunch restores the latest value per metric, active
   alerts, events and insights. Charts start filling again from new telemetry.
+- **Persistence is best-effort, not durable delivery.** A failed write is retried from memory, within
+  a bound, until it succeeds; if the app ends first, those items are lost. Write failures are logged,
+  not shown in the UI ([§21.4](21-swiftdata-persistence.md#when-a-write-fails)).
+- **Glance surfaces can't tell "no data" from "unreadable".** Widgets and App Intents fall back to an
+  empty payload when the shared store can't be read; the failure is only logged.
 - **Host-only test execution.** Tests run on macOS. iOS/watchOS-only code (ActivityKit,
   WatchConnectivity delegates, watch WidgetKit views) is compiled in CI but not exercised by tests.
 - **No UI or snapshot tests**, and no measured performance baselines on device.

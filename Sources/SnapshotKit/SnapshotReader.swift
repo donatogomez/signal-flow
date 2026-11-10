@@ -1,6 +1,7 @@
 import Foundation
 import DomainKit
 import PersistenceKit
+import os
 
 /// Reads glance-surface data from **persisted state only**.
 ///
@@ -41,7 +42,13 @@ public struct WidgetSnapshotReader: Sendable {
 /// something.
 public enum WidgetDataLoader {
     public static func load(now: Date) async -> WidgetData {
-        guard let reader = try? WidgetSnapshotReader.shared() else { return .empty(now: now) }
-        return (try? await reader.read(now: now)) ?? .empty(now: now)
+        do {
+            return try await WidgetSnapshotReader.shared().read(now: now)
+        } catch {
+            log.error("Reading persisted state for a glance surface failed; showing empty data: \(String(describing: error), privacy: .private)")
+            return .empty(now: now)
+        }
     }
+
+    private static let log = Logger(subsystem: "com.signalflow.SignalFlow", category: "persistence")
 }

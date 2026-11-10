@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 import DomainKit
-import PersistenceKit
+@testable import PersistenceKit
 
 @Suite("Persistence store (ModelActor)")
 struct PersistenceStoreTests {
@@ -67,6 +67,50 @@ struct PersistenceStoreTests {
         try await store.appendReadings([reading])
         try await store.appendReadings([reading]) // same id — upsert, not a duplicate
         #expect(try await store.readingCount() == 1)
+    }
+
+    /// The coordinator re-sends a whole batch after a failed append (docs/21 §21.4). If part of it was
+    /// already committed, the retry must not duplicate those rows: `id` is `@Attribute(.unique)` and
+    /// each append checks for the id first.
+    @Test("Re-sending a batch after part of it was committed stores each item once")
+    func retryAfterPartialCommit() async throws {
+        let store = try makeStore()
+        let deviceID = DeviceID()
+        let readings = try (0..<10).map { try PX.reading(device: deviceID, .temperature, Double($0), at: TimeInterval($0)) }
+        let events = (0..<4).map { PX.event(device: deviceID, at: TimeInterval($0)) }
+
+        try await store.appendReadings(Array(readings.prefix(4)))   // the part that made it
+        try await store.appendEvents(Array(events.prefix(1)))
+        try await store.appendReadings(readings)                    // the retry
+        try await store.appendEvents(events)
+        try await store.appendReadings(readings)                    // and a second one
+
+        #expect(try await store.readingCount() == readings.count)
+        let snapshot = try await store.loadSnapshot()
+        #expect(snapshot.events.count == events.count)
+        #expect(Set(snapshot.events.map(\.id)) == Set(events.map(\.id)))
+    }
+
+    /// A failed save must not leave its changes pending: they would grow with every failing flush and
+    /// be committed by the next successful save, even ones the coordinator had already dropped.
+    @Test("A failed save leaves nothing pending in the context")
+    func failedSaveIsDiscarded() async throws {
+        let store = try makeStore()
+        let deviceID = DeviceID()
+        let failed = try (0..<10).map { try PX.reading(device: deviceID, .temperature, Double($0), at: TimeInterval($0)) }
+        let later = try (10..<13).map { try PX.reading(device: deviceID, .temperature, Double($0), at: TimeInterval($0)) }
+
+        await store.failSaves(with: CocoaError(.fileWriteOutOfSpace))
+        await #expect(throws: CocoaError.self) { try await store.appendReadings(failed) }
+        await #expect(throws: CocoaError.self) { try await store.appendEvents([PX.event(device: deviceID, at: 0)]) }
+        await store.failSaves(with: nil)
+
+        try await store.appendReadings(later)
+        #expect(try await store.readingCount() == later.count)     // the failed batch wasn't committed with it
+        #expect(try await store.loadSnapshot().events.isEmpty)
+
+        try await store.appendReadings(failed)                     // the caller's retry still stores it
+        #expect(try await store.readingCount() == failed.count + later.count)
     }
 
     @Test("Concurrent appends are serialized by the actor with no loss")
