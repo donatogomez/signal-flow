@@ -131,7 +131,7 @@ Details: [Technical Architecture](docs/03-technical-architecture.md) · [Concurr
 ## Module graph
 
 A single local Swift Package (`SignalFlowKit`) with **21 library targets, the `SignalFlowHost` executable,
-four benchmark and probe executables under `Benchmarks/`, and one test target**. Boundaries are enforced by the build graph *and* a CI check — a feature target cannot even name
+five benchmark and probe executables under `Benchmarks/`, and one test target**. Boundaries are enforced by the build graph *and* a CI check — a feature target cannot even name
 the data layer.
 
 ```mermaid
@@ -291,7 +291,7 @@ swift run SignalFlowHost
 ## How to run the tests
 
 ```bash
-swift build                    # compiles all 25 build targets (Swift 6, strict concurrency)
+swift build                    # compiles all 27 build targets (Swift 6, strict concurrency)
 swift test                     # Swift Testing suite — 268 tests, 43 suites
 ./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
 ```

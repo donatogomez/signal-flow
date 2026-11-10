@@ -27,9 +27,14 @@ These are deliberate scope decisions, not oversights:
   seam but is not wired, and there is no auth, live broker (WebSocket/MQTT) or sync protocol.
 - **Polling, not observation.** Screens re-read the ports every 3 s instead of observing a change
   stream from the store (see [Concurrency §7.4](07-concurrency.md#74-presentation-polling-not-stream-observation)).
-- **No back-pressure.** Telemetry streams use unbounded buffers, which is safe for a clock-paced
-  simulator and would need a bounded policy for a real source
+- **No back-pressure.** Telemetry streams use unbounded buffers. With the clock-paced simulator, the
+  buffer stays bounded because a SwiftData flush takes ~320 ms of the ~850 ms budget (measured on an
+  M1 Pro), not because anything enforces it. A real source would need a bounded policy
   ([§7.2](07-concurrency.md#72-the-telemetry-pipeline)).
+- **The store file grows while the app runs.** Row counts are capped, but SwiftData's persistent
+  history records every insert and prune and is never deleted. That is ~70 bytes per reading, roughly
+  75 MB per hour of foreground use at the live rate. A fix is proposed but not applied
+  ([§21.9](21-swiftdata-persistence.md#persistent-history-grows-without-bound)).
 - **Restore is a snapshot, not a history.** Relaunch restores the latest value per metric, active
   alerts, events and insights. Charts start filling again from new telemetry.
 - **Persistence is best-effort, not durable delivery.** A failed write is retried from memory, within

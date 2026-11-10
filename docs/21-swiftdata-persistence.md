@@ -126,7 +126,8 @@ them. Failures are logged, not shown in the UI. Durable delivery would need an o
 
 ## 21.5 Retention strategy
 
-Storage is bounded regardless of how long the app runs. Caps (in `RetentionPolicy`, enforced on flush):
+Row counts are bounded regardless of how long the app runs. Caps (in `RetentionPolicy`, enforced on
+flush):
 
 | Data | Policy | Rationale |
 | --- | --- | --- |
@@ -138,6 +139,9 @@ Storage is bounded regardless of how long the app runs. Caps (in `RetentionPolic
 Pruning uses a `FetchDescriptor` with `fetchOffset = cap` sorted newest-first, deleting everything past
 the cap — touching only the series written in the batch. A test caps a series at 10, appends 25, and
 asserts exactly the 10 most recent survive.
+
+The file is **not** bounded: SwiftData records every insert and delete in its persistent history, and
+nothing prunes that history. See [§21.9](#219-write-path-cost-and-store-growth).
 
 ## 21.6 Concurrency model
 
@@ -183,3 +187,68 @@ CI stays deterministic: in-memory storage, stable seed-derived ids, no wall-cloc
 UI state (selected device, search text, sort/filter, navigation) is **not** persisted — it belongs to
 the presentation layer and SwiftUI restores it where appropriate. Persistence is for *facts*: the
 fleet, its telemetry, and what was alerted/observed/inferred.
+
+## 21.9 Write-path cost and store growth
+
+**How it was measured.** `swift run -c release PersistenceWriteBenchmark`
+([source](../Benchmarks/PersistenceWriteBenchmark/main.swift)) writes to an on-disk store through
+`PersistenceStore.appendReadings`. The live shape is 10 devices × 3 metrics in batches of 256, with the
+default retention of 2,000 per series, so 60,000 rows at steady state. It reports medians of 20–21
+batches. `--extra N` writes N more readings and prints the file size as it goes; `--keep` leaves the
+store on disk for inspection. Numbers are from an M1 Pro, release build, two runs; no iPhone has been
+measured.
+
+| Batch of 256 readings | Median | Per reading |
+| --- | ---: | ---: |
+| Empty store | 135–141 ms | ~0.54 ms |
+| Steady state, 30 series (the live case) | 314–329 ms | ~1.25 ms |
+| The same batch again (a retry: every id found, nothing inserted) | 177–183 ms | ~0.70 ms |
+| Steady state, one series (one prune) | 156–162 ms | ~0.62 ms |
+
+- **Lookup by id.** `appendReadings` fetches each id before inserting, to stay idempotent. `id` is
+  `@Attribute(.unique)`, so SQLite already has an index on it (`Z_ReadingRecord_UNIQUE_id`). The cost is
+  ~0.5 ms per fetch, and it is the same on an empty store as at 60,000 rows. It is the overhead of one
+  `FetchDescriptor` round trip, not a missing index. An `#Index` on `id` would duplicate the existing
+  one, so it is not added.
+- **Insert throughput.** ~780–820 readings/s in the live case, against 300 readings/s produced, so
+  ~2.6× headroom. A flush takes ~320 ms of the ~850 ms that 256 readings take to arrive.
+- **Retry overhead.** A full retry of a committed batch costs ~55% of a fresh one and inserts nothing,
+  so idempotency holds.
+- **Pruning.** It adds ~175 ms to a 30-series batch: the difference between the empty store, where
+  nothing is pruned, and the steady state.
+- **Memory.** The process footprint stays at ~8 MB through the fill and steady state; batches don't
+  accumulate in memory.
+
+**Decision.** No schema change or migration. The id index already exists, and the write path has
+headroom at the live rate. If it is ever needed, the cheaper change is in code: one fetch per batch
+(`ids.contains($0.id)`) instead of one per reading. It is not done now because nothing needs it.
+
+### Persistent history grows without bound
+
+The row count stays at 60,000, but the file keeps growing, by ~3.6 MB per 51,200 readings written
+(~70 bytes per reading). It reached 37.9 MB after ~390,000 readings. The kept store shows why:
+
+| Table (with its indexes) | Size | Rows |
+| --- | ---: | ---: |
+| `ACHANGE`, SwiftData's persistent history | 24.9 MB | 724,092 (392,046 inserts, 332,046 deletes) |
+| `ZREADINGRECORD` | 10.5 MB | 60,000 |
+
+SwiftData enables persistent history tracking by default, and records one change for each insert and
+each prune delete. Nothing in SignalFlow reads that history: there is no `fetchHistory` call and no
+history token. Nothing deletes it either. At the live rate of 300 readings/s, this extrapolates to
+roughly 75 MB per hour of foreground use, in the App Group store that the widgets also open. Write cost
+moved little over the measured range (314 → 329 ms from 21 to 38 MB), so the problem is disk use, not
+speed.
+
+**Proposed fix, not applied (it needs approval).** After each flush, or on a timer, delete history
+older than a few minutes with `ModelContext.deleteHistory(_:)` and a `HistoryDescriptor` filtered by
+timestamp. It needs no schema change and no migration.
+
+- **Compatibility risk.** SwiftData can use history to merge changes between contexts and processes.
+  The widget, App Intents and watch readers each fetch fresh and don't consume history, but this has
+  to be confirmed on device. Keeping a recent window instead of deleting everything limits the risk.
+- **Testing.** A test that writes past retention and asserts the history count stays bounded. The
+  benchmark's `--extra` run must show a flat file size. A device run must show widgets still update.
+
+Until then, the file grows as described, and [§11.2](11-portfolio-value.md#112-known-limitations) lists
+it as a known limitation.

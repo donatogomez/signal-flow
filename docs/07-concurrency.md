@@ -73,11 +73,22 @@ Rule of thumb: **mutable shared state ⇒ actor; data ⇒ `Sendable` value type;
 ### Buffering and back-pressure — an explicit non-goal
 
 The streams use `AsyncStream`'s **`.unbounded`** buffering policy, and there is **no back-pressure**.
-That is a conscious trade-off for this data source: the producer is paced by the simulation clock
-(one tick per device every 100 ms at the default 600× time scale) and the consumer is an in-memory
-actor fold that is far faster than that, so the buffer stays near empty in practice. A real network
-source would change this: it would need a bounded policy (e.g. `.bufferingNewest(n)` per device,
-keeping the latest values) and coalescing before the store.
+The producer is paced by the simulation clock: one tick per device every 100 ms at the default 600×
+time scale, so 300 readings/s from 10 devices × 3 metrics.
+
+The consumer is slower than an in-memory fold suggests. `ingestLoop` awaits the sink for every item,
+and every 256th item `PersistenceCoordinator.enqueue` awaits a full SwiftData flush. While that flush
+runs, nothing is read from the stream and items queue up. Measured on an M1 Pro
+([SwiftData Persistence §21.9](21-swiftdata-persistence.md#219-write-path-cost-and-store-growth)), a
+flush takes ~320 ms, and 256 readings take ~850 ms to arrive. So ~100 items queue during each flush,
+and the queue drains before the next one. The buffer is bounded in practice by that ~2.6× headroom,
+not by construction.
+
+**Status: accepted risk.** Nothing enforces the bound, and nothing measures the queue. It would grow
+without limit if a flush took longer than ~850 ms: on a device much slower than the one measured, or
+if SwiftData writes slowed down. Two things would reopen this: an on-device measurement close to that
+budget, or a real network source, which needs a bounded policy (e.g. `.bufferingNewest(n)` per
+device, keeping the latest values) and coalescing before the store anyway.
 
 ## 7.3 Lifecycle and actor reentrancy
 
