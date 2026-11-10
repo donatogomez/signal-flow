@@ -129,6 +129,8 @@ public final class InsightsModel {
                 for await item in group where item != nil { out.append(item!) }
                 return out
             }
+            // A cancelled load (the screen went away) is incomplete, not empty: keep the last state.
+            guard !Task.isCancelled else { return }
             items = collected.sorted(by: Self.attentionOrder)
             phase = items.isEmpty ? .empty : .ready
         } catch {
@@ -138,7 +140,7 @@ public final class InsightsModel {
 
     /// The first metric (in priority order) with enough data to yield an insight, paired with that
     /// metric's recent trend for the sparkline. Per-device failures are swallowed so one device never
-    /// breaks the feed.
+    /// breaks the feed; cancellation stops trying further metrics.
     nonisolated private static func firstObservation(
         generate: GenerateDeviceInsightUseCase,
         fetchHistory: FetchTelemetryHistoryUseCase,
@@ -147,6 +149,7 @@ public final class InsightsModel {
         range: TimeRange
     ) async -> InsightFeedItem? {
         for metric in insightFeedMetrics {
+            if Task.isCancelled { return nil }
             if let insight = try? await generate(deviceID: deviceID, metric: metric, range: range) {
                 let history = (try? await fetchHistory(deviceID: deviceID, metric: metric, range: range)) ?? []
                 return InsightFeedItem(insight: insight, deviceID: deviceID, deviceName: deviceName, metric: metric, history: history)

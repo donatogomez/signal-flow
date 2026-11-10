@@ -1,5 +1,6 @@
 import Foundation
 import FoundationModels
+import os
 import DomainKit
 
 /// An `InsightsProviding` implementation backed by Apple's on-device Foundation Models.
@@ -11,6 +12,9 @@ import DomainKit
 /// Availability and errors degrade gracefully to an injected deterministic `fallback`, and the
 /// resulting `DeviceInsight.source` tells the UI which path produced it. Availability is injectable so
 /// tests are deterministic on machines without Apple Intelligence.
+///
+/// Cancellation is not an error to recover from: a cancelled request throws `CancellationError`
+/// instead of falling back, so no insight is produced (or recorded) for a screen that has gone away.
 public struct FoundationModelsInsightProvider: InsightsProviding {
     private let fallback: any InsightsProviding
     private let isModelAvailable: @Sendable () -> Bool
@@ -33,6 +37,7 @@ public struct FoundationModelsInsightProvider: InsightsProviding {
             return try await fallback.insight(for: context)
         }
         do {
+            try Task.checkCancellation()
             let session = LanguageModelSession(instructions: Self.instructions)
             let draft = try await session.respond(
                 to: Self.prompt(for: context),
@@ -49,10 +54,21 @@ public struct FoundationModelsInsightProvider: InsightsProviding {
                 source: .foundationModel
             )
         } catch {
-            // Any model/availability error → graceful deterministic fallback.
+            guard Self.shouldFallBack(after: error) else { throw CancellationError() }
+            // Generation failed (including output that doesn't decode into the guided type): the
+            // deterministic provider phrases the same facts. Generated content is never logged.
+            Self.log.warning("On-device generation failed; using the deterministic fallback: \(String(describing: error), privacy: .private)")
             return try await fallback.insight(for: context)
         }
     }
+
+    /// Whether a failed generation should fall back: any error except cancellation, whether the
+    /// framework reports it as `CancellationError` or the task was cancelled while it failed.
+    static func shouldFallBack(after error: any Error) -> Bool {
+        !(error is CancellationError) && !Task.isCancelled
+    }
+
+    private static let log = Logger(subsystem: "com.signalflow.SignalFlow", category: "insights")
 
     // MARK: - Grounding
 

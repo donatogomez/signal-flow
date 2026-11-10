@@ -11,13 +11,21 @@ struct PersistingInsightsProvider: InsightsProviding {
     let persistence: any PersistenceStoring
     let store: InMemoryTelemetryStore
 
+    /// A request cancelled while the base provider was working records nothing: nobody will see that
+    /// result, so it would only add a stale entry to the history.
     func insight(for context: InsightContext) async throws -> DeviceInsight {
         let result = try await base.insight(for: context)
+        try Task.checkCancellation()
         let record = InsightRecord(
             deviceID: context.deviceID, metric: context.metric, insight: result, createdAt: Date()
         )
         await store.recordInsight(record)
-        try? await persistence.appendInsight(record)
+        do {
+            try await persistence.appendInsight(record)
+        } catch {
+            // Still in the in-memory history for this session; not retried (insights are regenerated).
+            Log.persistence.error("Saving an insight failed: \(String(describing: error), privacy: .private)")
+        }
         return result
     }
 }
