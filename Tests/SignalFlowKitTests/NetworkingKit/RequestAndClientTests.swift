@@ -4,6 +4,7 @@ import Testing
 
 private struct Echo: Codable, Sendable, Equatable { let message: String }
 private struct EchoEndpoint: Endpoint { typealias Response = Echo; let path = "echo" }
+private struct MethodEndpoint: Endpoint { typealias Response = EmptyResponse; let path = "write"; let method: HTTPMethod }
 
 @Suite("Request construction")
 struct RequestBuilderTests {
@@ -91,9 +92,19 @@ struct APIClientTests {
         #expect(attempts == 2)
     }
 
-    @Test("Decoding errors and 4xx client errors are not retried")
+    @Test("Decoding errors, 4xx client errors and non-idempotent requests are not retried")
     func nonRetryable() async {
         let retry = RetryPolicy(maxAttempts: 3, baseDelay: .zero)
+
+        // A lost response to a POST or PATCH may hide a request the server already applied.
+        for method in [HTTPMethod.post, .patch] {
+            let (writeApi, writeStub) = client([.transportError(URLError(.networkConnectionLost))], retry: retry)
+            await #expect(throws: NetworkError.self) { try await writeApi.sendIgnoringResponse(MethodEndpoint(method: method)) }
+            #expect(await writeStub.requestCount == 1)
+        }
+        let (putApi, putStub) = client([.transportError(URLError(.networkConnectionLost))], retry: retry)
+        await #expect(throws: NetworkError.self) { try await putApi.sendIgnoringResponse(MethodEndpoint(method: .put)) }
+        #expect(await putStub.requestCount == 3)
 
         let (decodeApi, decodeStub) = client([.ok(Data(#"{"nope":1}"#.utf8))], retry: retry)
         await #expect(throws: NetworkError.self) { _ = try await decodeApi.send(EchoEndpoint()) }
