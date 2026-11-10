@@ -251,10 +251,11 @@ open App/SignalFlow.xcodeproj
 Select the **SignalFlow** scheme and an iOS Simulator, then Run (⌘R). The app launches into the
 Dashboard/Fleet/Alerts/Insights tabs with live simulated telemetry; tap a device to push Device Detail.
 
-From the command line (what CI runs):
+From the command line (what CI runs; `test` builds the app, then runs the app-hosted
+`SignalFlowTests` bundle in the simulator):
 
 ```bash
-xcodebuild build \
+xcodebuild test \
   -project App/SignalFlow.xcodeproj \
   -scheme SignalFlow \
   -destination 'platform=iOS Simulator,id=<paired iPhone simulator udid>' \
@@ -305,7 +306,8 @@ The same three commands run locally and in CI, so a green local run means a gree
 `main`**, with two jobs on a `macos-26` runner:
 
 - **`verify`** — `./Scripts/check-boundaries.sh` → `swift build` → `swift test`.
-- **`ios-app`** — `xcodebuild` builds `SignalFlow.app` for the iOS Simulator.
+- **`ios-app`** — `xcodebuild test` builds `SignalFlow.app` for the iOS Simulator and runs the
+  app-hosted ActivityKit tests.
 
 `main` is always green and always buildable; full policy in
 [Git Workflow & CI](docs/14-git-workflow-and-ci.md).

@@ -133,9 +133,9 @@ contract shared with widgets and App Intents) and adds `case device(DeviceID)` �
 ## 26.7 Simulator / device limitations
 
 - Live Activities run on a real device or the iOS Simulator; they require the app to call
-  `Activity.request(...)`, which the macOS host build (CI) can't exercise — hence ActivityKit code is
-  `#if os(iOS)`-guarded and **not** unit-tested. CI tests the deterministic logic instead, so **no
-  physical device is required** for `swift test`.
+  `Activity.request(...)`, which the macOS host build can't exercise — hence ActivityKit code is
+  `#if os(iOS)`-guarded. `swift test` covers the deterministic logic, and the app-hosted tests (§26.8)
+  run the service against ActivityKit in the simulator, so **no physical device is required**.
 - The app declares `NSSupportsLiveActivities = YES` (set via `INFOPLIST_KEY_NSSupportsLiveActivities` on
   the app target). Users can disable Live Activities in Settings; `start()` checks
   `ActivityAuthorizationInfo().areActivitiesEnabled` and quietly does nothing when disabled.
@@ -160,4 +160,22 @@ contract shared with widgets and App Intents) and adds `case device(DeviceID)` �
 | `adoptsAfterRelaunch` | after a relaunch: which running activity is taken over, which are duplicates |
 | `deepLinkGeneration` | deep-link route generation (tabs + device, round-trip) |
 
-All run on the macOS host — no device, no ActivityKit — satisfying the CI constraint.
+These run on the macOS host, with no device and no ActivityKit.
+
+### On the simulator
+
+`App/SignalFlowTests/CriticalAlertActivityServiceTests.swift` runs the real
+`CriticalAlertActivityService` against ActivityKit. It is a unit-test bundle hosted by the app,
+because ActivityKit only serves an app that declares `NSSupportsLiveActivities`. While it hosts tests
+(`XCTestConfigurationFilePath` is set), the app shows nothing and starts nothing, so the activities a
+test inspects are its own. CI runs it in the `ios-app` job with `xcodebuild test`.
+
+| Test | Requirement |
+| --- | --- |
+| `startsWithStaleDate` | starting requests one activity whose content goes stale `staleAfter` from now |
+| `relaunchAdopts` | a new service instance takes over the running activity instead of starting a second |
+| `relaunchEndsDuplicates` | after a relaunch, duplicates end and the activity for the live alert stays |
+| `acknowledgementEnds` | acknowledging ends the activity on an Acknowledged frame |
+
+The first three fail if their behavior is removed: a run without the stale date, or without the
+adoption after a relaunch (which is also what ends duplicates), fails them.
