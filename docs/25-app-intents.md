@@ -126,14 +126,3 @@ seam are process-global):
 | `summaryGeneration` | summary generation — `spokenSummary` reads naturally across fleet states |
 | `providerReadsPersistedSnapshot` | intent data provider behavior — the provider aggregates a **real in-memory SwiftData** snapshot via SnapshotKit |
 | `showFleetSummaryIntentUsesProvider` | the data intent resolves its provider and returns the spoken summary |
-
-## 25.7 Portfolio value
-
-- **Modern Apple integration done correctly:** App Intents + `AppShortcutsProvider` for zero-setup
-  Shortcuts/Siri/Spotlight, with a clean deep-link model shared across widgets and intents.
-- **Architecture under pressure:** rather than let a new surface reach into the data layer, the shared
-  read model was factored into `SnapshotKit` and the boundary enforced in CI — showing how clean
-  architecture scales as integration surfaces multiply.
-- **Swift 6 judgement:** worked *with* strict concurrency (a `@MainActor` DI seam and navigation
-  bridge) instead of escaping it, and recognised/avoided a real `@Dependency` sharp edge rather than
-  papering over it.
