@@ -148,16 +148,30 @@ asserts exactly the 10 most recent survive.
   `Sendable` `DomainKit` value type.
 - The coordinator's background flush task captures only Sendable values and is cancelled on stop, then
   performs a final flush — the same leak-free, cancellation-safe pattern as the ingestion adapter.
+- **Containers are created one at a time.** `PersistenceController` holds a lock around
+  `ModelContainer(...)`, because creating new stores on two threads at once could crash the process
+  inside Core Data ([#30](https://github.com/donatogomez/signal-flow/issues/30)). While building a
+  new store's tables, Core Data lazily generates trigger SQL for its persistent-history entities
+  (`TRANSACTION`, `CHANGE`, `TRANSACTIONSTRING`). Those entities' metadata is shared by every
+  container in the process, whatever its schema or configuration, and the lazy step isn't
+  synchronized. Only the first new-store creations in a process were exposed; opening an existing
+  store doesn't generate triggers. The lock covers only creation, which is synchronous and rare in
+  the app, so reads and writes are unaffected.
+  [`ContainerCreationStress`](../Benchmarks/ContainerCreationStress/main.swift) reproduces it: on an
+  M1 Pro with macOS 26.3 and 8 threads, 8 of 1,000 processes crashed with in-memory stores and 19 of 500 with on-disk ones
+  before the lock, and none in the same counts after it.
 
 ## 21.7 Testing
 
-15 deterministic tests, all using an **in-memory** `ModelContainer` (no disk):
+16 deterministic tests, all using an **in-memory** `ModelContainer` (no disk):
 
 - **Model mapping** — every entity round-trips domain → record → domain, including custom metric/event
   kinds and alert acknowledgement state.
 - **Persistence round-trip** — written entities come back through `loadSnapshot`; idempotent re-append,
   including a batch re-sent after part of it was committed; a failed save leaves nothing pending.
 - **Actor isolation** — 200 concurrent appends, serialized, nothing lost.
+- **Concurrent creation** — stores created at the same time are independent and usable. It can't
+  catch the creation crash itself (see §21.6), which only a process's first creations were exposed to.
 - **Restoration** — a second data source over the same store restores the fleet, latest telemetry, and
   last-known connectivity end-to-end; insight history survives.
 - **Retention** — a capped series prunes to the most recent N.

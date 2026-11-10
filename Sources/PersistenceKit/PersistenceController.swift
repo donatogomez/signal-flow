@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import Synchronization
 
 /// Builds the SwiftData `ModelContainer`. The container is `Sendable` and is handed to a
 /// ``PersistenceStore`` (a `ModelActor`) which performs all work off the main actor.
@@ -25,7 +26,7 @@ public enum PersistenceController {
     public static func makeContainer(url: URL? = nil) throws -> ModelContainer {
         let configuration = url.map { ModelConfiguration(schema: schema, url: $0) }
             ?? ModelConfiguration(schema: schema)
-        return try ModelContainer(for: schema, configurations: configuration)
+        return try makeContainer(configuration)
     }
 
     /// The on-disk URL of the shared store inside the App Group container, or `nil` when the App Group
@@ -52,6 +53,17 @@ public enum PersistenceController {
     /// An in-memory container for tests and previews — deterministic, leaves no files on disk.
     public static func makeInMemoryContainer() throws -> ModelContainer {
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-        return try ModelContainer(for: schema, configurations: configuration)
+        return try makeContainer(configuration)
+    }
+
+    /// Containers are created one at a time. Creating stores on two threads at once can crash the
+    /// process (issue #30): building a new store's tables, Core Data lazily generates trigger SQL for
+    /// its persistent-history entities without synchronization, and those entities are shared by
+    /// every container in the process, whatever its schema or configuration. Creation is synchronous
+    /// and doesn't call back into this type, so a lock can't deadlock; reads and writes aren't affected.
+    private static let creation = Mutex(())
+
+    private static func makeContainer(_ configuration: ModelConfiguration) throws -> ModelContainer {
+        try creation.withLock { _ in try ModelContainer(for: schema, configurations: configuration) }
     }
 }

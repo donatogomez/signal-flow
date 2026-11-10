@@ -227,6 +227,15 @@ let package = Package(
             swiftSettings: swift6
         ),
 
+        // Reproduction harness for concurrent store creation (issue #30). Not a product; see its
+        // header for how to run it.
+        .executableTarget(
+            name: "ContainerCreationStress",
+            dependencies: ["PersistenceKit"],
+            path: "Benchmarks/ContainerCreationStress",
+            swiftSettings: swift6
+        ),
+
         // Benchmark for the periodic history reads (watch snapshot, device detail). Not a product; run
         // with `swift run -c release HistoryReadBenchmark`.
         .executableTarget(

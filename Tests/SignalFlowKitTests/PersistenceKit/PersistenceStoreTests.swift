@@ -113,6 +113,28 @@ struct PersistenceStoreTests {
         #expect(try await store.readingCount() == failed.count + later.count)
     }
 
+    /// Containers are created one at a time (issue #30), so concurrent callers must each still get
+    /// their own working store. This can't catch the crash itself: only a process's first creations
+    /// were exposed, and other tests have usually created containers already. The
+    /// `ContainerCreationStress` harness measures that in fresh processes.
+    @Test("Stores created concurrently are independent and usable")
+    func concurrentCreation() async throws {
+        let counts = try await withThrowingTaskGroup(of: Int.self) { group in
+            for size in 1...8 {
+                group.addTask {
+                    let store = try makeStore()
+                    let deviceID = DeviceID()
+                    try await store.appendReadings(try (0..<size).map {
+                        try PX.reading(device: deviceID, .temperature, Double($0), at: TimeInterval($0))
+                    })
+                    return try await store.readingCount()
+                }
+            }
+            return try await group.reduce(into: []) { $0.append($1) }
+        }
+        #expect(counts.sorted() == Array(1...8))
+    }
+
     @Test("Concurrent appends are serialized by the actor with no loss")
     func actorIsolation() async throws {
         let store = try makeStore()
