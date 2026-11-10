@@ -211,6 +211,24 @@ struct WatchConnectivitySyncTests {
         #expect(store.load()?.lastUpdated == Date(timeIntervalSince1970: 200))
     }
 
+    @Test("A snapshot that can't be saved isn't reported as stored")
+    func ingestReportsFailedSave() {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "missing-\(UUID().uuidString)")
+        let store = WatchSyncSnapshotStore(fileURL: directory.appending(path: "snapshot.json")) // no such folder
+        #expect(store.ingest(sampleSnapshot(lastUpdated: Date(timeIntervalSince1970: 100))) == false)
+        #expect(store.load() == nil)
+    }
+
+    @Test("A corrupt saved snapshot loads as nil and is replaced by the next one received")
+    func corruptSnapshotIsReplaced() throws {
+        let url = FileManager.default.temporaryDirectory.appending(path: "watch-\(UUID().uuidString).json")
+        try Data("not json".utf8).write(to: url)
+        let store = WatchSyncSnapshotStore(fileURL: url)
+        #expect(store.load() == nil)
+        #expect(store.ingest(sampleSnapshot(lastUpdated: Date(timeIntervalSince1970: 100))) == true)
+        #expect(store.load()?.lastUpdated == Date(timeIntervalSince1970: 100))
+    }
+
     // MARK: - Watch provider (no-data fallback + synced data)
 
     @Test("Watch shows the empty state when nothing has synced yet")

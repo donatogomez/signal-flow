@@ -14,9 +14,16 @@ public final class WatchSyncSnapshotStore: Sendable {
         self.fileURL = fileURL
     }
 
+    /// The saved snapshot, or `nil` if none has been received yet or the file can't be decoded (then
+    /// the next received snapshot replaces it).
     public func load() -> WatchSyncSnapshot? {
-        guard let data = try? Data(contentsOf: fileURL) else { return nil }
-        return try? WatchSnapshotCodec.decode(data)
+        guard let data = try? Data(contentsOf: fileURL) else { return nil } // no snapshot received yet
+        do {
+            return try WatchSnapshotCodec.decode(data)
+        } catch {
+            Log.watchSync.error("Saved watch snapshot couldn't be decoded: \(String(describing: error), privacy: .private)")
+            return nil
+        }
     }
 
     public func save(_ snapshot: WatchSyncSnapshot) throws {
@@ -25,12 +32,18 @@ public final class WatchSyncSnapshotStore: Sendable {
     }
 
     /// Stores `snapshot` only if it's **newer** than what's already saved (latest-wins; stale snapshots
-    /// from out-of-order delivery are ignored). Returns whether it was stored.
+    /// from out-of-order delivery are ignored). Returns whether it was stored: `false` for a stale
+    /// snapshot and for one that couldn't be written.
     @discardableResult
     public func ingest(_ snapshot: WatchSyncSnapshot) -> Bool {
         if let existing = load(), existing.lastUpdated >= snapshot.lastUpdated { return false }
-        try? save(snapshot)
-        return true
+        do {
+            try save(snapshot)
+            return true
+        } catch {
+            Log.watchSync.error("Saving the watch snapshot failed: \(String(describing: error), privacy: .private)")
+            return false
+        }
     }
 
     private static let appGroupIdentifier = "group.com.signalflow.shared"
