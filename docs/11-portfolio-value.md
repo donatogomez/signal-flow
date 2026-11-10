@@ -8,7 +8,7 @@ do. If a claim here can't be traced to a file, it shouldn't be here.
 
 | Area | What is implemented | Where to look |
 | --- | --- | --- |
-| Module boundaries | 24 SwiftPM targets; features can't import the data layer because they don't declare it, plus a CI script that rejects forbidden imports | [`Package.swift`](../Package.swift), [`check-boundaries.sh`](../Scripts/check-boundaries.sh), [ADR-0001](adr/0001-clean-architecture-with-spm-modules.md) |
+| Module boundaries | 24 SwiftPM module targets; features can't import the data layer because they don't declare it, plus a CI script that rejects forbidden imports | [`Package.swift`](../Package.swift), [`check-boundaries.sh`](../Scripts/check-boundaries.sh), [ADR-0001](adr/0001-clean-architecture-with-spm-modules.md) |
 | Concurrency model | One owner per piece of mutable state (device actors, store actor, `@ModelActor`); `TaskGroup` fan-out; cancellation via `onTermination` and `.task`; reentrancy-safe lifecycle | [Concurrency](07-concurrency.md), `SimulationKit/Actors`, `DataKit/Adapter`, `SignalFlowApp/AppContainer.swift` |
 | Domain modeling | Phantom-typed ids, validating value objects, forward-only alert acknowledgement, pure rules and health policy | `DomainKit/Identifiers`, `DomainKit/ValueObjects`, `DomainKit/Entities`, `DomainKit/Policies` |
 | Deterministic simulation | Seeded RNG, simulated clock separating instants from pacing, stable seeded identities | `CoreKit`, `SimulationKit/Clock`, [SimulationKit](15-simulation-kit.md) |

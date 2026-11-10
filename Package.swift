@@ -219,6 +219,15 @@ let package = Package(
             swiftSettings: swift6
         ),
 
+        // Benchmark for the telemetry store's history. Not a product; run with
+        // `swift run -c release TelemetryStoreBenchmark`.
+        .executableTarget(
+            name: "TelemetryStoreBenchmark",
+            dependencies: ["DomainKit", "SimulationKit", "DataKit"],
+            path: "Benchmarks/TelemetryStoreBenchmark",
+            swiftSettings: swift6
+        ),
+
         // MARK: - Testing
 
         // Shared test utilities (fakes, builders, fixtures). Intentionally empty for now.
