@@ -21,8 +21,10 @@ IMPORT='^\s*(@[A-Za-z_]+(\([^)]*\))?\s+)*((public|package|internal|fileprivate|p
 fail=0
 report() { echo "❌ boundary violation: $1"; fail=1; }
 
-# Rule 1 — DomainKit is pure: it must not import any other first-party module.
-if grep -REn "${IMPORT}(CoreKit|DesignSystemKit|DataKit|PersistenceKit|NetworkingKit|SimulationKit|Feature[A-Za-z]+|SignalFlowApp|TestingSupportKit)\b" \
+# Rule 1 — DomainKit is pure: it must not import any other first-party module. The list is every
+# other directory under Sources, so a module added later is covered without editing this rule.
+first_party=$(find Sources -mindepth 1 -maxdepth 1 -type d ! -name DomainKit -exec basename {} \; | paste -sd '|' -)
+if grep -REn "${IMPORT}(${first_party})\b" \
         Sources/DomainKit 2>/dev/null; then
     report "DomainKit must not depend on any other SignalFlow target"
 fi
