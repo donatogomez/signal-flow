@@ -6,7 +6,7 @@ macOS host with no device, no network, no real model and no sleeps. The suite us
 Testing** only.
 
 ```bash
-swift test   # 284 tests, 44 suites, ~0.7 s on an M-series Mac
+swift test   # 285 tests, 44 suites, ~0.7 s on an M-series Mac
 ```
 
 ## 9.1 What is covered

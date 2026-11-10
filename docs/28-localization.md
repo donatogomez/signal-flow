@@ -9,7 +9,9 @@ Activities / Dynamic Island. It uses Apple's **modern** localization stack only:
 ```
 swift build ✅   swift test → 190 tests, 39 suites ✅   ./Scripts/check-boundaries.sh ✅
 xcodebuild -scheme SignalFlow -sdk iphonesimulator … → ** BUILD SUCCEEDED ** ✅
-~152 localized keys across 11 string catalogs, each with a complete Spanish translation.
+16 String Catalogs (14 modules, the app and the widget extension). A test checks that every user-facing
+key has a Spanish translation in each catalog strings resolve from (all but `AppIntentsKit`'s, whose
+intent metadata resolves from the app's); format-only keys, the brand name and chart identifiers are exempt.
 ```
 
 ## 28.1 Architecture: localization lives in the presentation layer
