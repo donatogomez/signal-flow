@@ -13,6 +13,10 @@ struct SignalFlowApp: App {
     @State private var container = AppContainer.live()
     @Environment(\.scenePhase) private var scenePhase
 
+    /// Whether this launch only hosts the app's unit tests (App/SignalFlowTests). The host then shows
+    /// nothing and starts nothing, so tests own the ActivityKit state they inspect.
+    private static let isTestHost = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+
     init() {
         // App Intents run in this process; register their dependencies once at launch so `@Dependency`
         // resolves the persisted-data provider for Shortcuts/Siri invocations.
@@ -21,9 +25,12 @@ struct SignalFlowApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView(container: container)
+            if !Self.isTestHost {
+                RootView(container: container)
+            }
         }
         .onChange(of: scenePhase) { _, phase in
+            guard !Self.isTestHost else { return }
             switch phase {
             // Recorded synchronously, in the order the phases change. Wrapping these calls in a
             // `Task {}` would make the order depend on when each task runs.

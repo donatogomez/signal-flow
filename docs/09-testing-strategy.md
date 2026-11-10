@@ -69,10 +69,13 @@ creations were exposed, no test inside the suite can detect it reliably; it is m
 
 ## 9.4 What is deliberately not tested here
 
-- **Platform-only code paths.** ActivityKit, the `WCSessionDelegate` bridges and watchOS WidgetKit
-  views are behind `#if os(...)`/`#if canImport(...)`. They are compiled by the CI `xcodebuild` job,
-  but no tests run on a simulator. Their decision logic is extracted into platform-neutral types
-  (e.g. `LiveActivityDecision`, `WatchComplicationEntry`) that *are* tested.
+- **Most platform-only code paths.** ActivityKit, the `WCSessionDelegate` bridges and watchOS
+  WidgetKit views are behind `#if os(...)`/`#if canImport(...)`. They are compiled by the CI
+  `xcodebuild` job, and their decision logic is extracted into platform-neutral types (e.g.
+  `LiveActivityDecision`, `WatchComplicationEntry`) that *are* tested here. Only the ActivityKit
+  service also runs on a simulator, in the app-hosted `SignalFlowTests` bundle
+  ([Live Activities §26.8](26-live-activities.md#268-tests)); WatchConnectivity needs a paired watch
+  and the widget views need snapshot tooling, so neither runs in CI.
 - **UI rendering.** There are no snapshot or UI tests; presentation is tested at the model level.
 - **The real on-device model.** Output is non-deterministic and availability-dependent; only the
   grounding inputs, the draft mapping and the fallback are tested.

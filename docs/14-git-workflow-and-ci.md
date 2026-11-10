@@ -179,9 +179,11 @@ exactly the `main` contract from §14.1.
   2. `swift build --build-tests -Xswiftc -warnings-as-errors` — every target in Swift 6 mode with
      complete strict concurrency; any warning fails the build.
   3. `swift test --skip-build` — the Swift Testing suite.
-- **Build iOS app (simulator)** — `xcodebuild` of the app with the embedded watchOS app. The app
-  project sets `SWIFT_TREAT_WARNINGS_AS_ERRORS`; Xcode builds package dependencies with warnings
-  suppressed, so the package's warnings are enforced by the SwiftPM job instead.
+- **Build & test iOS app (simulator)** — `xcodebuild test` of the app with the embedded watchOS app,
+  which also runs the app-hosted `SignalFlowTests` bundle (ActivityKit in the simulator; see
+  [Live Activities §26.8](26-live-activities.md#268-tests)). The app project sets
+  `SWIFT_TREAT_WARNINGS_AS_ERRORS`; Xcode builds package dependencies with warnings suppressed, so the
+  package's warnings are enforced by the SwiftPM job instead.
 
 Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml). The same commands run locally,
 so "works on my machine" and "passes CI" are the same statement.
