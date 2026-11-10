@@ -167,7 +167,14 @@ public actor InMemoryTelemetryStore {
     /// Folds one simulated telemetry item into the store: updates snapshots/history/events and
     /// evaluates alert rules. Unknown devices are ignored.
     public func ingest(_ telemetry: DeviceTelemetry) {
-        guard var record = devices[telemetry.deviceID] else { return }
+        guard let index = devices.index(forKey: telemetry.deviceID) else { return }
+        // Mutate the stored record in place. Copying it into a local and writing it back would keep a
+        // second reference to its history while it changes, so each append would copy the whole
+        // series (docs/16 §16.9).
+        fold(telemetry, into: &devices.values[index])
+    }
+
+    private func fold(_ telemetry: DeviceTelemetry, into record: inout DeviceRecord) {
         switch telemetry {
         case .reading(let reading):
             apply(reading, to: &record)
@@ -178,17 +185,16 @@ public actor InMemoryTelemetryStore {
             record.lastSeenAt = latest(record.lastSeenAt, date)
             assets[record.descriptor.assetID]?.location = location
         }
-        devices[telemetry.deviceID] = record
     }
 
     private func apply(_ reading: TelemetryReading, to record: inout DeviceRecord) {
         record.connectivity = .online
         record.latestByMetric[reading.metric] = reading
 
-        var series = record.history[reading.metric, default: []]
-        series.append(reading)
-        if series.count > historyLimit { series.removeFirst(series.count - historyLimit) }
-        record.history[reading.metric] = series
+        // Appended and trimmed through the dictionary accessor, so the series is never copied.
+        record.history[reading.metric, default: []].append(reading)
+        let count = record.history[reading.metric]?.count ?? 0
+        if count > historyLimit { record.history[reading.metric]?.removeFirst(count - historyLimit) }
 
         record.lastSeenAt = latest(record.lastSeenAt, reading.recordedAt)
         if reading.metric == .signalStrength {
