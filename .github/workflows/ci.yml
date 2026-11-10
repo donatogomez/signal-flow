@@ -80,6 +80,10 @@ jobs:
             xcrun simctl pair "$WATCH_UDID" "$PHONE_UDID" || true
           fi
 
+          # Start booting the iPhone now so the boot overlaps the build; `xcodebuild test` waits for it.
+          # Tolerate the error when it is already booted.
+          xcrun simctl boot "$PHONE_UDID" || true
+
           xcodebuild test \
             -project App/SignalFlow.xcodeproj \
             -scheme SignalFlow \
