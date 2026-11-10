@@ -96,6 +96,30 @@ Availability is an **injectable closure** on the provider, so tests force the un
 deterministically and **CI stays green on machines without Apple Intelligence** — no test ever invokes
 the real model.
 
+### Concurrent generations
+
+The Insights feed starts one generation per device at once (10 in the simulated fleet). Whether that
+should be capped was measured rather than assumed. `swift run -c release InsightsConcurrencyProbe`
+([source](../Benchmarks/InsightsConcurrencyProbe/main.swift)) generates the feed's insights through
+`FoundationModelsInsightProvider` with at most 1, 2, 3 or 10 in flight. The figures below are 3 rounds
+each after a warm-up, on an Apple M1 Pro (macOS 26.3):
+
+| In flight | Wall time (s) | Median call (s) | Model / fallback |
+| ---: | ---: | ---: | --- |
+| 1 | 37.4–40.5 | 3.4–4.1 | 10 / 0 |
+| 2 | 35.7–39.2 | 7.4–7.8 | 10 / 0 |
+| 3 | 36.9–45.0 | 10.7–13.5 | 10 / 0 |
+| 10 | 34.7–37.9 | 21.5–24.1 | 10 / 0 |
+
+The system model runs one request at a time, and the others wait. Starting all 10 neither speeds
+the feed up nor makes any request fail or fall back. A cap would only spread the same ~37 s
+differently, and the screen shows the feed once every insight is back, so the user waits the same
+time either way. The fan-out stays uncapped.
+
+What the numbers do show is that the first on-device feed takes over half a minute to appear. Showing
+insights as they arrive would bring the first one to ~4 s, at the cost of a feed that reorders while it
+fills. That is a presentation change, not a concurrency fix, and is not made here.
+
 ## 20.5 Privacy model
 
 - **On-device only.** Insights run through Apple's on-device system model. There is no networking in
