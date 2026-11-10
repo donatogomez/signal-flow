@@ -30,6 +30,8 @@ public struct InsightsScreen: View {
             }
             .padding(Spacing.lg)
             .animation(.default, value: model.phase)
+            // The first load inserts cards as they're generated; animate them into place.
+            .animation(.default, value: model.items)
         }
         .background(Color.signalFlowGroupedBackground.ignoresSafeArea())
         .navigationTitle(loc("Insights"))

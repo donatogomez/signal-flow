@@ -86,7 +86,8 @@ Apple Intelligence isn't on every device or simulator. Degradation is graceful a
   `CancellationError` instead of falling back, whether the framework reports it as such or fails
   because the task was cancelled. `PersistingInsightsProvider` checks for cancellation once the
   result is back and then records nothing, and the Insights screen keeps its previous state rather
-  than showing an empty feed. Cancellation is cooperative: one that arrives after that check doesn't
+  than showing an empty feed. A first load cancelled after some cards appeared goes back to loading, so
+  a partial feed is never left on screen as if it were complete. Cancellation is cooperative: one that arrives after that check doesn't
   undo the save, which then holds a valid insight nobody is waiting for.
 - **The UI is honest**: every `DeviceInsight` carries a `source` (`.foundationModel` /
   `.deterministic`). The Insights screen shows a banner — *"Generated on-device by Apple Intelligence"*
@@ -102,23 +103,41 @@ The Insights feed starts one generation per device at once (10 in the simulated 
 should be capped was measured rather than assumed. `swift run -c release InsightsConcurrencyProbe`
 ([source](../Benchmarks/InsightsConcurrencyProbe/main.swift)) generates the feed's insights through
 `FoundationModelsInsightProvider` with at most 1, 2, 3 or 10 in flight. The figures below are 3 rounds
-each after a warm-up, on an Apple M1 Pro (macOS 26.3):
+each after a warm-up, on an Apple M1 Pro (macOS 26.3), from two runs of the probe. *First result* is
+from the second run, which added it:
 
-| In flight | Wall time (s) | Median call (s) | Model / fallback |
-| ---: | ---: | ---: | --- |
-| 1 | 37.4–40.5 | 3.4–4.1 | 10 / 0 |
-| 2 | 35.7–39.2 | 7.4–7.8 | 10 / 0 |
-| 3 | 36.9–45.0 | 10.7–13.5 | 10 / 0 |
-| 10 | 34.7–37.9 | 21.5–24.1 | 10 / 0 |
+| In flight | Wall time (s) | First result (s) | Median call (s) | Model / fallback |
+| ---: | ---: | ---: | ---: | --- |
+| 1 | 37.4–40.5 | 2.7–3.0 | 3.4–4.1 | 10 / 0 |
+| 2 | 35.7–40.7 | 3.4–4.2 | 7.3–9.0 | 10 / 0 |
+| 3 | 36.9–45.0 | 3.1–5.2 | 10.7–13.5 | 10 / 0 |
+| 10 | 34.7–40.2 | 3.6–5.6 | 20.9–24.8 | 10 / 0 |
 
 The system model runs one request at a time, and the others wait. Starting all 10 neither speeds
 the feed up nor makes any request fail or fall back. A cap would only spread the same ~37 s
-differently, and the screen shows the feed once every insight is back, so the user waits the same
-time either way. The fan-out stays uncapped.
+differently. The fan-out stays uncapped.
 
-What the numbers do show is that the first on-device feed takes over half a minute to appear. Showing
-insights as they arrive would bring the first one to ~4 s, at the cost of a feed that reorders while it
-fills. That is a presentation change, not a concurrency fix, and is not made here.
+### Progressive first load
+
+The numbers also show that a feed shown only once every insight is back takes over half a minute to
+appear on device. So the **first** load shows each observation as soon as it is generated: the first
+card at 3.6–5.6 s instead of 35–40 s, then about one more every 3.5 s, so 10 screen updates for 10
+devices instead of one.
+
+- **Order.** Each card is inserted at its place in the attention order: severity, then confidence,
+  then device name, then id. Cards already shown never swap with each other; a more urgent one can
+  appear above them. The finished feed is the same as if it had appeared at once.
+- **Ties.** The tiebreak by name matters, because confidence saturates at 1 once a series has 50
+  samples, so most cards tie on severity and confidence. Before, ties came out in whichever order
+  generations finished, which changed from one load to the next.
+- **Refresh.** A refresh is not progressive. It keeps the current feed until the new one is complete,
+  then replaces it, so old and new observations never mix and a device never shows twice.
+- **What stays the same.** Cancellation and persistence are unchanged: each insight is still recorded
+  by `PersistingInsightsProvider` when its own generation finishes, unless that request was
+  cancelled. A cancelled first load goes back to loading (see above).
+- **Memory.** The model holds at most one item per device in both modes.
+
+With the deterministic provider, the whole feed is ready within milliseconds either way.
 
 ## 20.5 Privacy model
 

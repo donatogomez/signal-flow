@@ -102,9 +102,15 @@ public final class InsightsModel {
     }
 
     /// Builds the feed: one observation per device that has enough data, sorted attention-first. Devices
-    /// without enough data simply don't contribute an item. Keeps the current feed on refresh.
+    /// without enough data simply don't contribute an item.
+    ///
+    /// The first load is **progressive**: each observation appears as soon as it is generated, inserted at
+    /// its place in ``attentionOrder(_:_:)``, so cards already shown never swap with each other and the
+    /// finished feed is the same as if it had appeared at once. A refresh keeps the current feed until the
+    /// new one is complete, then replaces it, so old and new observations never mix.
     public func load() async {
-        if items.isEmpty { phase = .loading }
+        let progressive = items.isEmpty
+        if progressive { phase = .loading }
         do {
             let fleet = try await fetchFleet()
             let subjects = fleet.flatMap { overview in
@@ -126,12 +132,25 @@ public final class InsightsModel {
                     }
                 }
                 var out: [InsightFeedItem] = []
-                for await item in group where item != nil { out.append(item!) }
+                for await case let item? in group {
+                    out.insert(item, at: out.firstIndex { Self.attentionOrder(item, $0) } ?? out.endIndex)
+                    if progressive, !Task.isCancelled {
+                        items = out
+                        phase = .ready
+                    }
+                }
                 return out
             }
-            // A cancelled load (the screen went away) is incomplete, not empty: keep the last state.
-            guard !Task.isCancelled else { return }
-            items = collected.sorted(by: Self.attentionOrder)
+            // A cancelled load (the screen went away) is incomplete, not empty. A refresh keeps the last
+            // feed; a first load goes back to loading, so a partial feed is never left as if complete.
+            guard !Task.isCancelled else {
+                if progressive {
+                    items = []
+                    phase = .loading
+                }
+                return
+            }
+            items = collected
             phase = items.isEmpty ? .empty : .ready
         } catch {
             phase = .failed(String(describing: error))
@@ -159,12 +178,17 @@ public final class InsightsModel {
     }
 
     /// Most noteworthy first: concern over watch over nominal, then by confidence. Reuses the insight's own
-    /// severity + confidence — no new ranking is invented.
+    /// severity + confidence — no new ranking is invented. Ties, which are common because confidence
+    /// saturates at 1 with enough samples, go by device name and then id, so the order doesn't depend on
+    /// which generation finished first.
     nonisolated private static func attentionOrder(_ a: InsightFeedItem, _ b: InsightFeedItem) -> Bool {
         if a.severity.attentionRank != b.severity.attentionRank {
             return a.severity.attentionRank > b.severity.attentionRank
         }
-        return a.confidence > b.confidence
+        if a.confidence != b.confidence { return a.confidence > b.confidence }
+        let byName = a.deviceName.localizedStandardCompare(b.deviceName)
+        if byName != .orderedSame { return byName == .orderedAscending }
+        return a.id < b.id
     }
 }
 
