@@ -12,6 +12,12 @@ import DomainKit
 public actor PersistenceStore: PersistenceStoring {
     private var retentionPolicy = RetentionPolicy.default
     private var saveFailure: (any Error)?
+    private var historyTrimFailure: (any Error)?
+    /// The newest history token seen when the previous ``trimHistory()`` caught up; trims delete what precedes it.
+    private var historyCutoff: DefaultHistoryToken?
+    /// The most history transactions one ``trimHistory()`` deletes, so a large backlog (a store from
+    /// before trimming existed) is deleted in short steps instead of one long transaction. Tests lower it.
+    private var maxTransactionsPerTrim: Int64 = 1_000
 
     /// Overrides the retention caps (used by tests to exercise pruning cheaply).
     public func setRetention(_ policy: RetentionPolicy) { retentionPolicy = policy }
@@ -176,10 +182,58 @@ public actor PersistenceStore: PersistenceStoring {
     /// fail on demand).
     func failSaves(with error: (any Error)?) { saveFailure = error }
 
+    /// Makes every history deletion fail with `error` until called with `nil` (tests).
+    func failHistoryTrims(with error: (any Error)?) { historyTrimFailure = error }
+    func setMaxTransactionsPerTrim(_ count: Int64) { maxTransactionsPerTrim = count }
+
+    // MARK: Persistent history
+
+    /// Deletes SwiftData persistent history older than the cutoff, at most ``maxTransactionsPerTrim``
+    /// transactions per call, and returns `true` while older history remains. Once none remains, the
+    /// newest transaction becomes the cutoff for the next trims.
+    ///
+    /// SwiftData records a history transaction for every save, alongside the data, and never removes
+    /// it; Apple leaves the clean-up strategy to the app (docs/21 §21.9). Nothing in SignalFlow reads
+    /// history, so what a trim keeps is a margin: every transaction since the cutoff was taken. The
+    /// first call after launch only takes the cutoff. Only history is deleted, never records. Each call
+    /// is one save, so an interrupted or failed call loses nothing and the next call carries on from the
+    /// same cutoff.
+    @discardableResult
+    public func trimHistory() throws -> Bool {
+        guard let cutoff = historyCutoff else {
+            historyCutoff = try edgeTransaction(newest: true)?.token
+            return false
+        }
+        if let historyTrimFailure { throw historyTrimFailure }
+        if let oldest = try edgeTransaction(newest: false), oldest.token < cutoff {
+            let bound = oldest.transactionIdentifier + maxTransactionsPerTrim
+            try modelContext.deleteHistory(HistoryDescriptor<DefaultHistoryTransaction>(
+                predicate: #Predicate { $0.token < cutoff && $0.transactionIdentifier < bound }
+            ))
+            if let next = try edgeTransaction(newest: false), next.token < cutoff { return true }
+        }
+        historyCutoff = try edgeTransaction(newest: true)?.token ?? cutoff
+        return false
+    }
+
+    /// The newest or the oldest history transaction, or `nil` when there is no history.
+    private func edgeTransaction(newest: Bool) throws -> DefaultHistoryTransaction? {
+        var descriptor = HistoryDescriptor<DefaultHistoryTransaction>(
+            sortBy: [SortDescriptor(\.transactionIdentifier, order: newest ? .reverse : .forward)]
+        )
+        descriptor.fetchLimit = 1
+        return try modelContext.fetchHistory(descriptor).first
+    }
+
     // MARK: Diagnostics (for tests)
 
     public func readingCount() throws -> Int {
         try modelContext.fetchCount(FetchDescriptor<ReadingRecord>())
+    }
+
+    /// Persistent-history transactions currently in the store. Loads them all, so small stores only.
+    func historyTransactionCount() throws -> Int {
+        try modelContext.fetchHistory(HistoryDescriptor<DefaultHistoryTransaction>()).count
     }
 
     // MARK: Retention

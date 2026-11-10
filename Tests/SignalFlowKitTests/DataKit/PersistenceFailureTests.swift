@@ -14,9 +14,14 @@ struct PersistenceFailureTests {
         try (start..<(start + count)).map { try DataKitFixtures.reading(deviceID: device, .temperature, 4, at: Double($0) * 60) }
     }
 
-    private func coordinator(_ persistence: FaultyPersistence, retryLimit: Int = 16_384) -> PersistenceCoordinator {
+    private func coordinator(
+        _ persistence: FaultyPersistence, retryLimit: Int = 16_384, historyTrimInterval: Duration = .seconds(60)
+    ) -> PersistenceCoordinator {
         // A batch size no test reaches, so only explicit flushes write.
-        PersistenceCoordinator(persistence: persistence, store: InMemoryTelemetryStore(), batchSize: 10_000, retryLimit: retryLimit)
+        PersistenceCoordinator(
+            persistence: persistence, store: InMemoryTelemetryStore(), batchSize: 10_000, retryLimit: retryLimit,
+            historyTrimInterval: historyTrimInterval
+        )
     }
 
     @Test("A failed write keeps the batch, and the next flush writes it")
@@ -153,6 +158,44 @@ struct PersistenceFailureTests {
             range: try TimeRange(start: Date(timeIntervalSince1970: 0), end: Date(timeIntervalSince1970: 1_000))
         )
     }
+
+    // MARK: - Persistent history (docs/21 §21.9)
+
+    @Test("History is trimmed on the first flush and then once per interval, not on every flush")
+    func historyTrimmedOnInterval() async throws {
+        let rarely = FaultyPersistence(failing: false)
+        let hourly = coordinator(rarely, historyTrimInterval: .seconds(3_600))
+        for _ in 0..<4 { await hourly.flush() }
+        #expect(await rarely.trimCalls == 1)
+
+        let always = FaultyPersistence(failing: false)
+        let everyFlush = coordinator(always, historyTrimInterval: .zero)
+        for _ in 0..<4 { await everyFlush.flush() }
+        #expect(await always.trimCalls == 4)
+    }
+
+    @Test("While a history backlog remains, every flush trims one more step; then the interval applies again")
+    func historyBacklogTrimmedEveryFlush() async throws {
+        let persistence = FaultyPersistence(failing: false, trimBacklogSteps: 3)
+        let coordinator = coordinator(persistence, historyTrimInterval: .seconds(3_600))
+        for _ in 0..<6 { await coordinator.flush() }
+        // Three trims that leave more behind, the one that finishes, then nothing until the next hour.
+        #expect(await persistence.trimCalls == 4)
+    }
+
+    @Test("A failed history trim doesn't affect writes, and the next interval tries again")
+    func failedTrimKeepsWriting() async throws {
+        let persistence = FaultyPersistence(failing: false, failTrims: true)
+        let coordinator = coordinator(persistence, historyTrimInterval: .zero)
+        let batch = try readings(3)
+        for reading in batch { await coordinator.enqueue(.reading(reading)) }
+        await coordinator.flush()
+        #expect(await persistence.storedReadings == Set(batch.map(\.id)))
+        #expect(await coordinator.unsavedCounts == (0, 0))
+
+        await coordinator.flush()
+        #expect(await persistence.trimCalls == 2)
+    }
 }
 
 /// A `PersistenceStoring` that keeps ids only and fails on demand. Like the real store, appends are
@@ -163,6 +206,9 @@ private actor FaultyPersistence: PersistenceStoring {
     private(set) var storedEvents: Set<EventID> = []
     private(set) var successfulWritesPerReading: [ReadingID: Int] = [:]
     private(set) var insightCount = 0
+    private(set) var trimCalls = 0
+    private let failTrims: Bool
+    private var trimBacklogSteps: Int
     private var failing: Bool
     private var failAfterWriting: Int?
     private var failFirstCall: Bool
@@ -170,9 +216,11 @@ private actor FaultyPersistence: PersistenceStoring {
     private let holdFirstCallUntil: Latch?
     private var calls = 0
 
-    init(failing: Bool, failAfterWriting: Int? = nil, failFirstCall: Bool = false,
-         firstCallEntered: Latch? = nil, holdFirstCallUntil: Latch? = nil) {
+    init(failing: Bool, failAfterWriting: Int? = nil, failFirstCall: Bool = false, failTrims: Bool = false,
+         trimBacklogSteps: Int = 0, firstCallEntered: Latch? = nil, holdFirstCallUntil: Latch? = nil) {
         self.failing = failing
+        self.failTrims = failTrims
+        self.trimBacklogSteps = trimBacklogSteps
         self.failAfterWriting = failAfterWriting
         self.failFirstCall = failFirstCall
         self.firstCallEntered = firstCallEntered
@@ -218,5 +266,13 @@ private actor FaultyPersistence: PersistenceStoring {
     }
     func replaceActiveAlerts(_ alerts: [Alert], forDevice deviceID: DeviceID) async throws {
         if failing { throw CocoaError(.fileWriteOutOfSpace) }
+    }
+    /// Reports a backlog on the first `trimBacklogSteps` calls.
+    func trimHistory() async throws -> Bool {
+        trimCalls += 1
+        if failTrims { throw CocoaError(.fileWriteUnknown) }
+        guard trimBacklogSteps > 0 else { return false }
+        trimBacklogSteps -= 1
+        return true
     }
 }
