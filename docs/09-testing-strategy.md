@@ -6,7 +6,7 @@ macOS host with no device, no network, no real model and no sleeps. The suite us
 Testing** only.
 
 ```bash
-swift test   # 266 tests, 43 suites, ~0.6 s on an M-series Mac
+swift test   # 268 tests, 43 suites, ~0.6 s on an M-series Mac
 ```
 
 ## 9.1 What is covered
@@ -23,7 +23,7 @@ One test target (`SignalFlowKitTests`), organized by module:
 | Watch / WatchConnectivity / WatchWidgets | 41 | Snapshot building, codec round-trip, latest-wins store (a failed save isn't reported as stored), complication entries, relevance |
 | PersistenceKit | 16 | Mapping round-trips, idempotent appends (also after a partial commit), a failed save leaving nothing pending, concurrently created stores, retention pruning, latest-per-series restore, end-to-end restoration through DataKit |
 | Localization | 12 | Every catalog key has a Spanish translation; labels resolve per locale |
-| LiveActivities / Widgets / AppIntents | 25 | Live Activity decision state machine, widget timelines and summaries, intent results |
+| LiveActivities / Widgets / AppIntents | 27 | Live Activity decision state machine, freshness and takeover after relaunch, widget timelines and summaries, intent results |
 | CoreKit, IntelligenceKit, AppShell | 23 | RNG, Foundation Models fallback path, cancellation without fallback and grounded prompt, composition-root lifecycle (request ordering with an operation in flight, cancellation, overlapping starts, failed restore, failed bootstrap and retry, stop during a retry, degraded modes) |
 
 ## 9.2 Test doubles — plain types, no framework
