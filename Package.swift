@@ -258,7 +258,7 @@ let package = Package(
         // with `swift run -c release PersistenceWriteBenchmark`.
         .executableTarget(
             name: "PersistenceWriteBenchmark",
-            dependencies: ["DomainKit", "PersistenceKit"],
+            dependencies: ["DomainKit", "PersistenceKit", "SnapshotKit"],
             path: "Benchmarks/PersistenceWriteBenchmark",
             swiftSettings: swift6
         ),
