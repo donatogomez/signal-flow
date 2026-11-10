@@ -25,13 +25,18 @@ struct SimulationCancellationTests {
         let clock = AcceleratedSimulationClock(tick: .seconds(60), timeScale: 120) // 0.5s per tick
         let device = makeTruck(clock: clock)
 
+        // Cancel only once the stream has produced, so the test exercises cancelling a live stream.
+        let (producing, signal) = AsyncStream<Void>.makeStream()
         let task = Task { () -> Int in
             var count = 0
-            for await _ in device.makeTelemetryStream(clock: clock) { count += 1 }
+            for await _ in device.makeTelemetryStream(clock: clock) {
+                count += 1
+                if count == 1 { signal.finish() }
+            }
             return count
         }
 
-        try await Task.sleep(for: .milliseconds(50))
+        for await _ in producing {}
         task.cancel()
 
         // If cancellation propagated, the task returns promptly rather than running forever.
@@ -45,7 +50,7 @@ struct SimulationCancellationTests {
             group.cancelAll()
             return result
         }
-        #expect(collected >= 0)
+        #expect(collected >= 1)   // finished after producing, before the 3 s safety net
     }
 
     @Test("prefix takes a fixed number of items from an unbounded stream")
