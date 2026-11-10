@@ -307,10 +307,6 @@
 				1A00000000000000000000DB /* PBXTargetDependency */,
 			);
 			name = SignalFlowTests;
-			packageProductDependencies = (
-				1A00000000000000000000DC /* LiveActivityKit */,
-				1A00000000000000000000DD /* DomainKit */,
-			);
 			productName = SignalFlowTests;
 			productReference = 1A00000000000000000000D1 /* SignalFlowTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -815,16 +811,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 1A0000000000000000000014 /* XCLocalSwiftPackageReference "SignalFlowKit" */;
 			productName = WatchWidgetSupportKit;
-		};
-		1A00000000000000000000DC /* LiveActivityKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 1A0000000000000000000014 /* XCLocalSwiftPackageReference "SignalFlowKit" */;
-			productName = LiveActivityKit;
-		};
-		1A00000000000000000000DD /* DomainKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 1A0000000000000000000014 /* XCLocalSwiftPackageReference "SignalFlowKit" */;
-			productName = DomainKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 
