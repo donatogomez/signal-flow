@@ -26,6 +26,8 @@ public final class DeviceDetailModel {
 
     /// Metrics charted on the detail screen, in display order.
     private static let chartedMetrics: [MetricKind] = [.temperature, .humidity, .batteryLevel]
+    /// Buckets per chart: at most `2 * chartBuckets + 2` points, a few per point of a phone-width chart.
+    static let chartBuckets = 120
 
     private let deviceID: DeviceID
     private let fetchDeviceDetail: FetchDeviceDetailUseCase
@@ -111,9 +113,34 @@ public final class DeviceDetailModel {
             series.append(TrendSeries(
                 metric: metric,
                 unitSymbol: history.first?.value.unit.symbol ?? metric.canonicalUnit.symbol,
-                points: history.map { TrendPoint(id: $0.id, date: $0.recordedAt, value: $0.value.magnitude) }
+                points: ChartDownsampling.extremes(of: history, buckets: Self.chartBuckets) { $0.value.magnitude }
+                    .map { TrendPoint(id: $0.id, date: $0.recordedAt, value: $0.value.magnitude) }
             ))
         }
         return series
+    }
+}
+
+/// Thins a long series for a chart without hiding what matters on it. The chart is a few hundred points
+/// wide, so thousands of samples add rendering work, not detail.
+enum ChartDownsampling {
+    /// Keeps the first and last samples and, from each of `buckets` equal-count runs in between, its
+    /// lowest and highest samples, in their original order. Spikes, the value range and the time span
+    /// therefore survive; at most `2 * buckets + 2` samples are returned. A series already that short
+    /// is returned unchanged.
+    static func extremes<Sample>(of samples: [Sample], buckets: Int, value: (Sample) -> Double) -> [Sample] {
+        guard buckets > 0, samples.count > 2 * buckets + 2 else { return samples }
+        let interior = 1..<(samples.count - 1)
+        var kept = [samples[0]]
+        kept.reserveCapacity(2 * buckets + 2)
+        for bucket in 0..<buckets {
+            let run = (interior.lowerBound + interior.count * bucket / buckets)..<(interior.lowerBound + interior.count * (bucket + 1) / buckets)
+            guard let low = run.min(by: { value(samples[$0]) < value(samples[$1]) }),
+                  let high = run.max(by: { value(samples[$0]) < value(samples[$1]) }) else { continue }
+            if low != high { kept.append(samples[min(low, high)]) }
+            kept.append(samples[max(low, high)])
+        }
+        kept.append(samples[samples.count - 1])
+        return kept
     }
 }

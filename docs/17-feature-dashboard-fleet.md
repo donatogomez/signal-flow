@@ -97,7 +97,10 @@ names from the same overview.
 
 Device Detail renders temperature, humidity, and battery trends with Swift Charts. The model prepares
 chart-ready `TrendSeries` (a metric + unit + `[TrendPoint]`), only including a series when it has ≥2
-points — so a truck with no humidity sensor simply shows no humidity chart. The chart itself is
+points — so a truck with no humidity sensor simply shows no humidity chart. A series longer than
+242 points is thinned before it reaches the view: the first and last readings stay, and each of 120
+equal runs in between keeps its lowest and highest reading, so spikes, the value range and the time
+span are drawn as before ([DataKit §16.10](16-data-kit.md#1610-periodic-history-reads)). The chart itself is
 deliberately plain (one `LineMark`, native axes, the metric's semantic tint), matching the
 "data, not decoration" brief:
 
