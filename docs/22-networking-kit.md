@@ -101,11 +101,17 @@ never silently swallowed.
 
 ## 22.5 Retry strategy
 
-`RetryPolicy` (configurable `maxAttempts`, exponential backoff from `baseDelay`) retries **only safe,
-transient failures**:
+`RetryPolicy` (configurable `maxAttempts`, exponential backoff from `baseDelay`) retries **only
+transient failures of idempotent requests**:
 
-- ✅ transport errors, `408`, `429`, `5xx`
+- ✅ `GET`, `PUT`, `DELETE` failing with a transport error, `408`, `429` or `5xx`
+- ❌ any `POST` or `PATCH`: a lost response may hide a request the server already applied, so a
+  retry could apply it twice (the gateway's acknowledge call is a `POST`)
 - ❌ cancellation, decoding errors, other `4xx`, invalid URL
+
+Backoff has no jitter and doesn't read `Retry-After`. The client isn't wired to a backend, so there is
+no traffic to tune against. Both would come with one, along with an idempotency key if writes had to
+be retried.
 
 It is **cancellation-aware** (`Task.checkCancellation` each attempt; cancellation is never retried)
 and the backoff delay is applied by an **injected sleeper** (`@Sendable (Duration) async throws ->
@@ -164,6 +170,6 @@ Enforced by `check-boundaries.sh`:
 
 25 deterministic tests, no backend: request construction; response decoding; status validation;
 transport-error mapping; DTO → Domain mapping (incl. custom metric keys and invalid-UUID rejection);
-retry (succeeds after transient failures, exhausts attempts, never retries decoding/4xx);
+retry (succeeds after transient failures, exhausts attempts, never retries decoding, 4xx, `POST` or `PATCH`);
 cancellation; remote-gateway behavior (paths, query items, acknowledge POST, server errors); and the
 DataKit `RemoteDataSource` serving mapped entities through the ports.

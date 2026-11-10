@@ -31,19 +31,19 @@ public struct APIClient: Sendable {
     /// Sends an endpoint and decodes its `Response`.
     public func send<E: Endpoint>(_ endpoint: E) async throws -> E.Response {
         let request = try RequestBuilder.makeRequest(endpoint, baseURL: baseURL, defaultHeaders: defaultHeaders)
-        let data = try await performWithRetry(request)
+        let data = try await performWithRetry(request, method: endpoint.method)
         return try decode(E.Response.self, from: data)
     }
 
     /// Sends an endpoint and ignores the response body (writes / `204 No Content`).
     public func sendIgnoringResponse<E: Endpoint>(_ endpoint: E) async throws {
         let request = try RequestBuilder.makeRequest(endpoint, baseURL: baseURL, defaultHeaders: defaultHeaders)
-        _ = try await performWithRetry(request)
+        _ = try await performWithRetry(request, method: endpoint.method)
     }
 
     // MARK: - Internals
 
-    private func performWithRetry(_ request: URLRequest) async throws -> Data {
+    private func performWithRetry(_ request: URLRequest, method: HTTPMethod) async throws -> Data {
         var attempt = 1
         while true {
             do {
@@ -51,7 +51,7 @@ public struct APIClient: Sendable {
                 return try await fetchValidated(request)
             } catch {
                 let mapped = NetworkError.map(error)
-                guard mapped != .cancelled, attempt < retry.maxAttempts, retry.isRetryable(mapped) else {
+                guard mapped != .cancelled, attempt < retry.maxAttempts, retry.isRetryable(mapped, method: method) else {
                     throw mapped
                 }
                 try await sleeper(retry.delay(forAttempt: attempt))
