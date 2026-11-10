@@ -236,6 +236,15 @@ let package = Package(
             swiftSettings: swift6
         ),
 
+        // Foundation Models concurrency probe for the Insights feed. Needs Apple Intelligence; run with
+        // `swift run -c release InsightsConcurrencyProbe`.
+        .executableTarget(
+            name: "InsightsConcurrencyProbe",
+            dependencies: ["DomainKit", "DataKit", "IntelligenceKit"],
+            path: "Benchmarks/InsightsConcurrencyProbe",
+            swiftSettings: swift6
+        ),
+
         // MARK: - Testing
 
         // The single test target, organized by module (see docs/09-testing-strategy.md).
