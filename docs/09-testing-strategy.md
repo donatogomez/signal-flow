@@ -6,7 +6,7 @@ macOS host with no device, no network, no real model and no sleeps. The suite us
 Testing** only.
 
 ```bash
-swift test   # 263 tests, 44 suites, ~0.6 s on an M-series Mac
+swift test   # 264 tests, 44 suites, ~0.6 s on an M-series Mac
 ```
 
 ## 9.1 What is covered
@@ -21,7 +21,7 @@ One test target (`SignalFlowKitTests`), organized by module:
 | NetworkingKit | 20 | Request building, status/decoding error mapping, retry/backoff (with an injected sleeper), DTO ↔ domain mapping |
 | SimulationKit | 19 | Seed determinism, clock pacing, event generation, fleet composition, stream cancellation |
 | Watch / WatchConnectivity / WatchWidgets | 41 | Snapshot building, codec round-trip, latest-wins store (a failed save isn't reported as stored), complication entries, relevance |
-| PersistenceKit | 15 | Mapping round-trips, idempotent appends (also after a partial commit), a failed save leaving nothing pending, retention pruning, latest-per-series restore, end-to-end restoration through DataKit |
+| PersistenceKit | 16 | Mapping round-trips, idempotent appends (also after a partial commit), a failed save leaving nothing pending, concurrently created stores, retention pruning, latest-per-series restore, end-to-end restoration through DataKit |
 | Localization | 12 | Every catalog key has a Spanish translation; labels resolve per locale |
 | LiveActivities / Widgets / AppIntents | 25 | Live Activity decision state machine, widget timelines and summaries, intent results |
 | CoreKit, IntelligenceKit, AppShell, smoke | 24 | RNG, Foundation Models fallback path, cancellation without fallback and grounded prompt, composition-root lifecycle (request ordering with an operation in flight, cancellation, overlapping starts, failed restore, failed bootstrap and retry, stop during a retry, degraded modes) |
@@ -58,13 +58,14 @@ Tests assert on outcomes, not on recorded calls.
   cancelling a slow stream), with generous bounds.
 
 The lifecycle, persistence-failure, insights and watch suites have been run 100 times in a row
-without a failure. One known flake remains outside them: the test process occasionally crashes
-(`SIGSEGV` inside Core Data's `_generateTriggerSQL`) while several tests create in-memory
-`ModelContainer`s in parallel. It reproduces on `main` too (2 of 60 runs of the SwiftData-heavy
-suites) and is not an assertion failure. It hasn't been seen outside tests, but it isn't ruled out
-there either: the app, a widget timeline and an App Intent each create a container through
-`PersistenceController`, and two of those could overlap in one process. Serializing container
-creation there is the smallest place to isolate it; that is tracked separately.
+without a failure. The test process used to crash now and then (`SIGSEGV` inside Core Data's
+`_generateTriggerSQL`) when several tests created their first `ModelContainer`s at the same time.
+That was a race inside Core Data that every new store in a process is exposed to, not a test-only
+problem, so container creation is now serialized where containers are made
+([SwiftData §21.6](21-swiftdata-persistence.md#216-concurrency-model),
+[#30](https://github.com/donatogomez/signal-flow/issues/30)). Because only a process's first
+creations were exposed, no test inside the suite can detect it reliably; it is measured by running
+`ContainerCreationStress` in fresh processes.
 
 ## 9.4 What is deliberately not tested here
 

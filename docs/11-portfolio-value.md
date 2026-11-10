@@ -16,7 +16,7 @@ do. If a claim here can't be traced to a file, it shouldn't be here.
 | On-device AI | Foundation Models guided generation over facts computed in Swift; severity and confidence computed in Swift too; deterministic fallback; alerting never depends on the model | `IntelligenceKit`, `DomainKit/Insights`, [ADR-0004](adr/0004-foundation-models-on-device.md) |
 | Networking | `URLSession` client with typed endpoints, DTO mapping, error mapping and retry; behind a gateway, not wired by default | `NetworkingKit`, [NetworkingKit](22-networking-kit.md) |
 | Platform surfaces | Widgets, App Intents, Live Activity, watchOS app + complications — all read persisted or synced state only | `WidgetSupportKit`, `AppIntentsKit`, `LiveActivityKit`, `Watch*Kit` |
-| Testing | 263 Swift Testing tests; stub ports; in-memory SwiftData; deterministic concurrency tests | [Testing Strategy](09-testing-strategy.md), `Tests/` |
+| Testing | 264 Swift Testing tests; stub ports; in-memory SwiftData; deterministic concurrency tests | [Testing Strategy](09-testing-strategy.md), `Tests/` |
 | Decisions | ADRs with rejected alternatives and consequences | [`docs/adr`](adr) |
 
 ## 11.2 Known limitations
