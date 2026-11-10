@@ -7,6 +7,8 @@ import DesignSystemKit
 /// derived headline with a change figure and a sparkline, not a wall of AI prose. Not a chat, not a report.
 public struct InsightsScreen: View {
     @State private var model: InsightsModel
+    /// Bumped by "Try Again"; reruns the load task, tied to the view like the first one.
+    @State private var loadAttempt = 0
 
     public init(
         assets: any AssetRepository,
@@ -31,7 +33,7 @@ public struct InsightsScreen: View {
         }
         .background(Color.signalFlowGroupedBackground.ignoresSafeArea())
         .navigationTitle(loc("Insights"))
-        .task { await model.load() }
+        .task(id: loadAttempt) { await model.load() }
     }
 
     @ViewBuilder
@@ -39,9 +41,15 @@ public struct InsightsScreen: View {
         switch model.phase {
         case .loading:
             feedSkeleton
-        case .failed(let message):
-            ContentUnavailableView(loc("Couldn't generate an insight"), systemImage: "exclamationmark.triangle", description: Text(message))
-                .frame(maxWidth: .infinity, minHeight: 320)
+        case .failed:
+            ContentUnavailableView {
+                Label(loc("Couldn't generate an insight"), systemImage: "exclamationmark.triangle")
+            } description: {
+                Text(loc("Something went wrong while preparing your insights."))
+            } actions: {
+                Button(loc("Try Again")) { loadAttempt += 1 }
+            }
+            .frame(maxWidth: .infinity, minHeight: 320)
         case .empty:
             ContentUnavailableView(
                 loc("No observations yet"),

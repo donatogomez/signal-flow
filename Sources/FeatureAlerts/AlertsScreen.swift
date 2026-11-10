@@ -58,8 +58,8 @@ public struct AlertsScreen: View {
                 }
             }
             .signalFlowGroupedList()
-        case .failed(let message):
-            ContentUnavailableView(loc("Couldn't load alerts"), systemImage: "exclamationmark.triangle", description: Text(message))
+        case .failed:
+            ContentUnavailableView(loc("Couldn't load alerts"), systemImage: "exclamationmark.triangle", description: Text(loc("SignalFlow will try again automatically.")))
         default:
             if model.visibleAlerts.isEmpty {
                 emptyState

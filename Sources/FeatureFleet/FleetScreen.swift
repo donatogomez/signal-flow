@@ -65,8 +65,8 @@ public struct FleetScreen: View {
                 ForEach(0..<6, id: \.self) { _ in
                     FleetRowPlaceholder().listRowSeparator(.hidden)
                 }
-            case .failed(let message):
-                ContentUnavailableView(loc("Couldn't load the fleet"), systemImage: "exclamationmark.triangle", description: Text(message))
+            case .failed:
+                ContentUnavailableView(loc("Couldn't load the fleet"), systemImage: "exclamationmark.triangle", description: Text(loc("SignalFlow will try again automatically.")))
                     .listRowSeparator(.hidden)
             default:
                 if visible.isEmpty {
