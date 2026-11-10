@@ -80,7 +80,12 @@ Apple Intelligence isn't on every device or simulator. Degradation is graceful a
   `InsightsProviding` port, so nothing downstream changes.
 - **Provider self-guards at call time**: even when wired, `FoundationModelsInsightProvider` re-checks
   availability and catches any model error, delegating to the deterministic fallback. So an
-  availability change or a transient failure never breaks the feature.
+  availability change or a transient failure never breaks the feature. Failures are logged (category
+  `insights`), never with the generated text.
+- **Cancellation is not a failure.** A cancelled request (the Insights screen went away) throws
+  `CancellationError` instead of falling back, whether the framework reports it as such or fails
+  because the task was cancelled. `PersistingInsightsProvider` records nothing for a cancelled
+  request, and the Insights screen keeps its previous state rather than showing an empty feed.
 - **The UI is honest**: every `DeviceInsight` carries a `source` (`.foundationModel` /
   `.deterministic`). The Insights screen shows a banner — *"Generated on-device by Apple Intelligence"*
   or *"On-device AI is unavailable — showing a deterministic insight instead."*

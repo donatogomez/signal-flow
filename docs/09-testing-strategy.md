@@ -2,11 +2,11 @@
 
 The architecture is what makes testing cheap: business rules are pure, collaborators are domain
 ports, and time and randomness are injected. So almost everything that matters can be tested on the
-macOS host with no device, no network, no real model and no flakiness. The suite uses **Swift
+macOS host with no device, no network, no real model and no sleeps. The suite uses **Swift
 Testing** only.
 
 ```bash
-swift test   # 243 tests, 43 suites, ~0.6 s on an M-series Mac
+swift test   # 262 tests, 44 suites, ~0.6 s on an M-series Mac
 ```
 
 ## 9.1 What is covered
@@ -16,15 +16,15 @@ One test target (`SignalFlowKitTests`), organized by module:
 | Area | Tests | What they pin down |
 | --- | ---: | --- |
 | DomainKit | 42 | Value-object validation, threshold/rule evaluation, health policy, alert lifecycle, insight statistics and grounded insight severity, use cases against stub ports |
-| DataKit | 34 | Store ingestion and alert raise/clear/archive, bounded history against a reference model, deterministic insights, simulated source ↔ use cases, remote data source, **concurrent ingestion, cancellation and lifecycle reentrancy** |
-| Features | 23 | `@MainActor` model state transitions (loading/loaded/failed), the dashboard verdict (never "all nominal" for an empty or degraded fleet), filtering, sorting, acknowledgement |
+| DataKit | 41 | Store ingestion and alert raise/clear/archive, bounded history against a reference model, deterministic insights, simulated source ↔ use cases, remote data source, **concurrent ingestion, cancellation and lifecycle reentrancy**, failed and partial persistence writes retried without loss or duplicates, cancelled insights not recorded |
+| Features | 24 | `@MainActor` model state transitions (loading/loaded/failed, a cancelled load never shown as empty), the dashboard verdict (never "all nominal" for an empty or degraded fleet), filtering, sorting, acknowledgement |
 | NetworkingKit | 20 | Request building, status/decoding error mapping, retry/backoff (with an injected sleeper), DTO ↔ domain mapping |
 | SimulationKit | 19 | Seed determinism, clock pacing, event generation, fleet composition, stream cancellation |
-| Watch / WatchConnectivity / WatchWidgets | 39 | Snapshot building, codec round-trip, latest-wins store, complication entries, relevance |
-| PersistenceKit | 13 | Mapping round-trips, idempotent appends, retention pruning, latest-per-series restore, end-to-end restoration through DataKit |
+| Watch / WatchConnectivity / WatchWidgets | 41 | Snapshot building, codec round-trip, latest-wins store (a failed save isn't reported as stored), complication entries, relevance |
+| PersistenceKit | 14 | Mapping round-trips, idempotent appends (also after a partial commit), retention pruning, latest-per-series restore, end-to-end restoration through DataKit |
 | Localization | 12 | Every catalog key has a Spanish translation; labels resolve per locale |
 | LiveActivities / Widgets / AppIntents | 25 | Live Activity decision state machine, widget timelines and summaries, intent results |
-| CoreKit, IntelligenceKit, AppShell, smoke | 16 | RNG, Foundation Models fallback path and grounded prompt, composition-root lifecycle (request ordering with an operation in flight, cancellation, overlapping starts, failed restore) |
+| CoreKit, IntelligenceKit, AppShell, smoke | 24 | RNG, Foundation Models fallback path, cancellation without fallback and grounded prompt, composition-root lifecycle (request ordering with an operation in flight, cancellation, overlapping starts, failed restore, failed bootstrap and retry, stop during a retry, degraded modes) |
 
 ## 9.2 Test doubles — plain types, no framework
 
@@ -57,7 +57,11 @@ Tests assert on outcomes, not on recorded calls.
 - **Real wall-clock time** is used only where pacing itself is under test (the accelerated clock and
   cancelling a slow stream), with generous bounds.
 
-The suite has been run repeatedly (10 consecutive runs) without a flaky result.
+The lifecycle, persistence-failure, insights and watch suites have been run 100 times in a row
+without a failure. One known flake remains outside them: the test process occasionally crashes
+(`SIGSEGV` inside Core Data's `_generateTriggerSQL`) while several tests create in-memory
+`ModelContainer`s in parallel. It reproduces on `main` too (2 of 60 runs of the SwiftData-heavy
+suites) and is not an assertion failure.
 
 ## 9.4 What is deliberately not tested here
 

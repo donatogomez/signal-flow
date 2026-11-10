@@ -51,6 +51,8 @@ sequenceDiagram
 3. `RootView` calls `container.requestStart()` on appear, which **bootstraps** the data layer (registering the
    fleet catalog so the UI has data immediately, even before telemetry) and **starts ingestion**.
 4. Scene-phase changes drive start/stop (below).
+5. The outcome is published as `AppContainer.startupState`: `.starting`, then `.ready`,
+   `.degraded(.restoreFailed | .persistenceUnavailable)` or `.failed` (see "Failure handling" below).
 
 ## 18.3 Dependency composition
 
@@ -104,6 +106,8 @@ Lifecycle is explicit and cancellation-safe:
   returns, no telemetry from the cancelled session can still mutate the store.
 - **Restart** works because `stop()` clears the ingestion task and `start()` relaunches it without
   re-bootstrapping.
+- **Failure** doesn't count as a start: a failed bootstrap begins no ingestion and is retried only by
+  a start requested after it ([Concurrency §7.3](07-concurrency.md#startup-failures-and-retry)).
 
 ```swift
 @main struct SignalFlowApp: App {
@@ -121,6 +125,42 @@ Lifecycle is explicit and cancellation-safe:
             }
     }
 }
+```
+
+### Failure handling
+
+Failures are classified once and handled where they can be interpreted:
+
+| Class | Example | Handling |
+| --- | --- | --- |
+| Expected absence | No watch paired, no saved snapshot yet, store read of an unknown id | Silent fallback (`try?`), no log |
+| Recoverable operational | Snapshot write, restore, insight save, watch send | Logged; bounded retry where safe (persistence), otherwise the next cycle |
+| Critical functional | Catalog can't be built, so the app can't start | `startupState = .failed`; full-screen state with **Try Again** |
+| Cancellation | View disappears during an insight request | Propagated; never a fallback, failure or saved result |
+| Programming invariant | Constant thresholds or units rejected | Treated as critical at startup (`.fault` log); `try?` on hot paths |
+
+What the user sees comes from `startupState`, not from error text:
+
+- **Starting / ready:** the tabs, with each screen's own loading state.
+- **Degraded:** the tabs, plus a discreet, dismissible note on the Overview tab ("Saved data couldn't
+  be restored…" or "Data isn't being saved on this device.").
+- **Failed:** a `ContentUnavailableView` instead of the tabs, since with no catalog they'd have nothing
+  to show; **Try Again** calls `requestStart()`.
+
+Screens never show raw errors. A screen that fails to load says what failed and that SignalFlow will
+try again automatically (the 3 s refresh does); Insights, which loads once on appear, offers **Try
+Again** instead.
+
+### Diagnostics
+
+Apple's unified logging (`os.Logger`), subsystem `com.signalflow.SignalFlow`, one category per
+concern: `lifecycle` (startup outcome), `persistence` (restore, writes, widget reads), `insights`
+(on-device generation falling back), `watch-sync`. Nothing is logged per reading. Repeated failures on
+a cadence (persistence flushes, watch sends) are logged when they start and when they recover, not on
+every attempt. Error descriptions are `privacy: .private`; generated insight text is never logged.
+
+```bash
+log stream --predicate 'subsystem == "com.signalflow.SignalFlow"' --level info
 ```
 
 ## 18.5 Navigation
@@ -141,6 +181,9 @@ shows" and "what the tests assert" come from one place.
 `AppContainerTests` verifies the composition root rather than pixels: starting the container boots the
 data layer and exposes a 10-device fleet through the ports, `start()` is idempotent, `stop()` tears
 down without hanging, and a `DomainKit` use case runs end-to-end purely through the container's ports.
+The failure paths are covered the same way: a failed bootstrap starts nothing and isn't recorded as
+done, queued starts don't retry it, a later start recovers, a stop requested during a retry wins,
+cancellation is neither failure nor success, and both degraded modes are reported.
 This is the meaningful seam to test — the `@main` shell itself is a handful of declarative lines.
 
 ## 18.8 Running it

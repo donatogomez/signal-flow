@@ -77,10 +77,13 @@ SwiftData is the durable backing.
 - **On launch** (`SimulatedDataSource.bootstrap()`): register the simulated catalog, then restore the
   last persisted **snapshot** — last-known device state, the *latest* reading per metric, active
   alerts, recent events, and recent insights — into the in-memory store. The fleet is therefore shown
-  with real data the instant the app opens, before any new telemetry arrives.
+  with real data the instant the app opens, before any new telemetry arrives. If the restore fails,
+  bootstrap reports `RestoreOutcome.failed` and the app runs degraded on fresh telemetry; if the
+  container itself can't be created, the app runs in memory only (both are visible, see
+  [App Shell §18.4](18-app-shell.md#failure-handling)).
 - **While running:** the `PersistenceCoordinator` buffers high-volume readings/events and flushes them
   in batches off the hot path; each flush also snapshots low-volume device state and active alerts. A
-  periodic flush keeps storage fresh; a final flush on stop loses nothing.
+  periodic flush keeps storage fresh, and a final flush runs on stop.
 - **Insights** are captured by a `PersistingInsightsProvider` decorator — every generated insight is
   recorded in memory and persisted, transparently wrapping either the Foundation Models or
   deterministic provider.
@@ -90,6 +93,33 @@ and persistence is keyed on stable ids, restore lines up exactly and re-ingestio
 relaunching reproduces the same dataset rather than duplicating it. Restore loads the *latest*
 snapshot for instant display; the full history is kept durably for retention and future use, and the
 charts rehydrate from the continuing simulation.
+
+### When a write fails
+
+A failed reading or event append is kept and sent again by the next flush (batch, periodic or the
+final one). Retrying is safe because appends are idempotent by id, which holds even after a partial
+write:
+
+- `save()` commits a context's pending changes in one SQLite transaction. `appendReadings` saves
+  twice (inserts, then retention pruning), so a failure can leave the inserts committed and the
+  pruning not; the retry finds those ids and only prunes.
+- Each insert is preceded by a fetch by id, and SwiftData fetches include unsaved changes, so a retry
+  after a failed `save()` (whose inserts stay pending in the context) doesn't insert them twice.
+- `id` is `@Attribute(.unique)` on every record, so the store itself refuses a second row.
+- A flush takes its batch before its first suspension, so overlapping flushes on the reentrant actor
+  never hold the same item.
+
+Tests pin this down: a retried batch after a partial commit stores each item once against a real
+in-memory store, and with an injected failing store a failed flush is retried, a partial write is
+re-sent without duplicates, overlapping flushes neither lose nor duplicate items, the retry buffer
+stays bounded, and `stopAndFlush()` returns while writes fail.
+
+**What this doesn't guarantee.** Unsaved items live only in memory: if the process ends while writes
+are failing, they are lost. The retry buffer keeps the newest 16,384 readings and 16,384 events;
+older ones are dropped and counted in the log. Device and alert snapshot writes aren't retained,
+since every flush rewrites them. A save that fails for a reason that persists (for example an invalid
+record) keeps failing, and its pending changes stay in the context. Failures are logged, not shown
+in the UI. Durable delivery would need an outbox, which is out of scope.
 
 ## 21.5 Retention strategy
 
@@ -118,11 +148,12 @@ asserts exactly the 10 most recent survive.
 
 ## 21.7 Testing
 
-12 deterministic tests, all using an **in-memory** `ModelContainer` (no disk, no flakiness):
+14 deterministic tests, all using an **in-memory** `ModelContainer` (no disk):
 
 - **Model mapping** — every entity round-trips domain → record → domain, including custom metric/event
   kinds and alert acknowledgement state.
-- **Persistence round-trip** — written entities come back through `loadSnapshot`; idempotent re-append.
+- **Persistence round-trip** — written entities come back through `loadSnapshot`; idempotent re-append,
+  including a batch re-sent after part of it was committed.
 - **Actor isolation** — 200 concurrent appends, serialized, nothing lost.
 - **Restoration** — a second data source over the same store restores the fleet, latest telemetry, and
   last-known connectivity end-to-end; insight history survives.
