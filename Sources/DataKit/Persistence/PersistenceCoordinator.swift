@@ -103,7 +103,7 @@ actor PersistenceCoordinator {
         await periodic?.value
         await flush()
         if !unsavedReadings.isEmpty || !unsavedEvents.isEmpty {
-            Log.persistence.error("Final flush left \(self.unsavedReadings.count) readings and \(self.unsavedEvents.count) events unsaved")
+            Log.persistence.error("Final flush left \(self.unsavedReadings.count) readings and \(self.unsavedEvents.count) events unsaved; \(self.droppedWhileFailing) were dropped")
         }
     }
 

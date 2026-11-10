@@ -103,23 +103,26 @@ write:
 - `save()` commits a context's pending changes in one SQLite transaction. `appendReadings` saves
   twice (inserts, then retention pruning), so a failure can leave the inserts committed and the
   pruning not; the retry finds those ids and only prunes.
-- Each insert is preceded by a fetch by id, and SwiftData fetches include unsaved changes, so a retry
-  after a failed `save()` (whose inserts stay pending in the context) doesn't insert them twice.
-- `id` is `@Attribute(.unique)` on every record, so the store itself refuses a second row.
+- A failed `save()` rolls the context back, so a failed write leaves nothing pending: the retry
+  starts from the last committed state, pending changes can't pile up while writes keep failing,
+  and items the coordinator has dropped are never committed by a later save.
+- Each insert is preceded by a fetch by id (which also sees inserts made earlier in the same call),
+  and `id` is `@Attribute(.unique)` on every record, so the store keeps at most one row per id.
 - A flush takes its batch before its first suspension, so overlapping flushes on the reentrant actor
   never hold the same item.
 
-Tests pin this down: a retried batch after a partial commit stores each item once against a real
-in-memory store, and with an injected failing store a failed flush is retried, a partial write is
+Tests pin this down: against a real in-memory store, a retried batch after a partial commit stores
+each item once and a failed save leaves nothing to be committed later; with an injected failing store a failed flush is retried, a partial write is
 re-sent without duplicates, overlapping flushes neither lose nor duplicate items, the retry buffer
 stays bounded, and `stopAndFlush()` returns while writes fail.
 
 **What this doesn't guarantee.** Unsaved items live only in memory: if the process ends while writes
 are failing, they are lost. The retry buffer keeps the newest 16,384 readings and 16,384 events;
 older ones are dropped and counted in the log. Device and alert snapshot writes aren't retained,
-since every flush rewrites them. A save that fails for a reason that persists (for example an invalid
-record) keeps failing, and its pending changes stay in the context. Failures are logged, not shown
-in the UI. Durable delivery would need an outbox, which is out of scope.
+since every flush rewrites them. A batch that fails for a reason that persists (for example an
+invalid record) keeps failing and stays in the retry buffer until it is dropped as the oldest.
+Overlapping flushes can commit in either order; reads sort by timestamp, so order doesn't matter to
+them. Failures are logged, not shown in the UI. Durable delivery would need an outbox, which is out of scope.
 
 ## 21.5 Retention strategy
 
@@ -148,12 +151,12 @@ asserts exactly the 10 most recent survive.
 
 ## 21.7 Testing
 
-14 deterministic tests, all using an **in-memory** `ModelContainer` (no disk):
+15 deterministic tests, all using an **in-memory** `ModelContainer` (no disk):
 
 - **Model mapping** — every entity round-trips domain → record → domain, including custom metric/event
   kinds and alert acknowledgement state.
 - **Persistence round-trip** — written entities come back through `loadSnapshot`; idempotent re-append,
-  including a batch re-sent after part of it was committed.
+  including a batch re-sent after part of it was committed; a failed save leaves nothing pending.
 - **Actor isolation** — 200 concurrent appends, serialized, nothing lost.
 - **Restoration** — a second data source over the same store restores the fleet, latest telemetry, and
   last-known connectivity end-to-end; insight history survives.

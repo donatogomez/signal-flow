@@ -11,6 +11,7 @@ import DomainKit
 @ModelActor
 public actor PersistenceStore: PersistenceStoring {
     private var retentionPolicy = RetentionPolicy.default
+    private var saveFailure: (any Error)?
 
     /// Overrides the retention caps (used by tests to exercise pruning cheaply).
     public func setRetention(_ policy: RetentionPolicy) { retentionPolicy = policy }
@@ -103,7 +104,7 @@ public actor PersistenceStore: PersistenceStoring {
                 modelContext.insert(Mapping.record(device))
             }
         }
-        try modelContext.save()
+        try save()
     }
 
     // MARK: Telemetry / events / alerts / insights
@@ -116,13 +117,13 @@ public actor PersistenceStore: PersistenceStoring {
             if try fetchReading(id: record.id) == nil { modelContext.insert(record) }
             touched.insert("\(record.deviceID)|\(record.metricKey)")
         }
-        try modelContext.save()
+        try save()
         for key in touched {
             let parts = key.split(separator: "|", maxSplits: 1)
             guard parts.count == 2 else { continue }
             try pruneReadings(deviceID: String(parts[0]), metricKey: String(parts[1]))
         }
-        try modelContext.save()
+        try save()
     }
 
     public func appendEvents(_ events: [DeviceEvent]) throws {
@@ -133,9 +134,9 @@ public actor PersistenceStore: PersistenceStoring {
             if try fetchEvent(id: record.id) == nil { modelContext.insert(record) }
             touched.insert(record.deviceID)
         }
-        try modelContext.save()
+        try save()
         for deviceID in touched { try pruneEvents(deviceID: deviceID) }
-        try modelContext.save()
+        try save()
     }
 
     public func replaceActiveAlerts(_ alerts: [Alert], forDevice deviceID: DeviceID) throws {
@@ -145,16 +146,35 @@ public actor PersistenceStore: PersistenceStoring {
         )
         for record in existing { modelContext.delete(record) }
         for alert in alerts { modelContext.insert(Mapping.record(alert)) }
-        try modelContext.save()
+        try save()
     }
 
     public func appendInsight(_ insight: InsightRecord) throws {
         let record = Mapping.record(insight)
         if try fetchInsight(id: record.id) == nil { modelContext.insert(record) }
-        try modelContext.save()
+        try save()
         try pruneInsights(deviceID: record.deviceID)
-        try modelContext.save()
+        try save()
     }
+
+    // MARK: Saving
+
+    /// Commits the context's pending changes. If that fails they are discarded, so every write starts
+    /// from what was last committed: a caller retries from its own copy, a failure can't pile up
+    /// pending changes, and an unrelated later save never commits changes the caller gave up on.
+    private func save() throws {
+        do {
+            if let saveFailure { throw saveFailure }
+            try modelContext.save()
+        } catch {
+            modelContext.rollback()
+            throw error
+        }
+    }
+
+    /// Makes every save fail with `error` until called with `nil` (tests: SwiftData can't be made to
+    /// fail on demand).
+    func failSaves(with error: (any Error)?) { saveFailure = error }
 
     // MARK: Diagnostics (for tests)
 
