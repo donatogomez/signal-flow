@@ -20,7 +20,9 @@ struct SimulationClockTests {
         let start = ContinuousClock().now
         for index in 0..<1000 { try await clock.awaitTick(index) }
         let elapsed = ContinuousClock().now - start
-        #expect(elapsed < .seconds(1))
+        // Had it waited, 1,000 ticks of 60 s would take ~17 hours. The bound only has to tell yielding
+        // from sleeping: 1,000 yields took 1.6 s on a loaded CI runner running the suite in parallel.
+        #expect(elapsed < .seconds(30))
     }
 
     @Test("Accelerated clock paces relative to the time scale")
