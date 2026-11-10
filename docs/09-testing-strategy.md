@@ -6,7 +6,7 @@ macOS host with no device, no network, no real model and no flakiness. The suite
 Testing** only.
 
 ```bash
-swift test   # 240 tests, 42 suites, ~0.6 s on an M-series Mac
+swift test   # 243 tests, 43 suites, ~0.6 s on an M-series Mac
 ```
 
 ## 9.1 What is covered
@@ -16,7 +16,7 @@ One test target (`SignalFlowKitTests`), organized by module:
 | Area | Tests | What they pin down |
 | --- | ---: | --- |
 | DomainKit | 42 | Value-object validation, threshold/rule evaluation, health policy, alert lifecycle, insight statistics and grounded insight severity, use cases against stub ports |
-| DataKit | 31 | Store ingestion and alert raise/clear/archive, deterministic insights, simulated source ↔ use cases, remote data source, **concurrent ingestion, cancellation and lifecycle reentrancy** |
+| DataKit | 34 | Store ingestion and alert raise/clear/archive, bounded history against a reference model, deterministic insights, simulated source ↔ use cases, remote data source, **concurrent ingestion, cancellation and lifecycle reentrancy** |
 | Features | 23 | `@MainActor` model state transitions (loading/loaded/failed), the dashboard verdict (never "all nominal" for an empty or degraded fleet), filtering, sorting, acknowledgement |
 | NetworkingKit | 20 | Request building, status/decoding error mapping, retry/backoff (with an injected sleeper), DTO ↔ domain mapping |
 | SimulationKit | 19 | Seed determinism, clock pacing, event generation, fleet composition, stream cancellation |

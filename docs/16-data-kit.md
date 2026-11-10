@@ -172,3 +172,63 @@ let live = SimulatedDataSource.live(seed: 42, timeScale: 600)
 try await live.bootstrap()
 await live.start()      // … await live.stop() to halt
 ```
+
+## 16.9 Telemetry history: mutating in place
+
+Each `(device, metric)` series in `InMemoryTelemetryStore` keeps its newest `historyLimit` readings
+(10,000 by default) in a plain `Array`, oldest first.
+
+**What was slow.** Ingestion used to copy the device record out of the `devices` dictionary, copy
+the series out of the record, append, trim, and write both back. While the local copies existed the
+series buffer had two owners, so the append had to copy it whole first. Every reading therefore
+allocated and copied the entire series: about 768 KB per reading at 10,000 readings, with a cost
+that grew linearly with history length even when nothing was evicted.
+
+**The fix.** `ingest` now looks up the record once and mutates it through
+`devices.values[index]`, and the series is appended and trimmed through
+`record.history[metric, default: []]`. Both accessors yield the stored value in place, so the
+buffer keeps a single owner and is never copied. Ordering, retention, device/metric isolation and
+the public API are unchanged. `TelemetryHistoryTests` checks the store against a keep-the-newest
+reference model (empty, first reading, below, at and over capacity, interleaved devices and
+metrics, range queries after eviction) and under concurrent ingestion. The same tests pass against
+the previous implementation.
+
+**How it was measured.** `swift run -c release TelemetryStoreBenchmark`
+([source](../Benchmarks/TelemetryStoreBenchmark/main.swift)). One series is prefilled to the
+history limit, then 2,000 readings are ingested, each evicting the oldest. Each figure is the median
+of 7 runs after 1 warm-up, and the table takes the median of 5 such invocations per build on an
+Apple M1 Pro (macOS 26.3, Swift 6.3.3). Allocations are counted through libmalloc's
+`malloc_logger` hook and include about one small allocation per call that comes from the
+benchmark's own cross-actor call.
+
+| History | Before, per reading | After, per reading | Improvement | Allocated per reading (before → after) |
+| ---: | ---: | ---: | ---: | ---: |
+| 100 | 3.30 µs | 0.89 µs | 73.2% | 10.3 KB → 0.2 KB |
+| 1,000 | 22.71 µs | 1.76 µs | 92.3% | 96.3 KB → 0.2 KB |
+| 2,000 | 44.17 µs | 3.68 µs | 91.7% | 192.3 KB → 0.2 KB |
+| 5,000 | 108.55 µs | 8.15 µs | 92.5% | 384.3 KB → 0.2 KB |
+| 10,000 | 217.93 µs | 16.22 µs | 92.6% | 768.3 KB → 0.2 KB |
+
+Appending without eviction went from linear (23–218 µs) to a flat 0.65 µs, which is amortized
+O(1). Reading a full 10,000-reading series (~1.04 ms) and the newest 10% (~0.36 ms) are unchanged
+within 1–2%. Peak memory footprint is unchanged too (~12 MB for the whole benchmark), because the
+old copies were freed straight away. The cost was allocation churn and copying, not retained
+memory.
+
+**What remains, and why it stays.** At capacity, ingestion still grows with history length because
+`removeFirst` shifts the remaining elements, roughly a 720 KB `memmove` at 10,000 readings of 72
+bytes each. Two alternatives were considered:
+
+- *Trimming in batches* (letting a series grow to `historyLimit + historyLimit / 8`, then cutting it
+  back) was prototyped and measured flat at ~1.07 µs per reading. It would make the stored array
+  longer than the logical history, so every reader (`readings`, `ingestedReadingCount`, any future
+  query) would have to clamp to the newest `historyLimit`.
+- *A ring buffer* would remove the shift too. It would mean a custom collection with its own index
+  arithmetic, conversions and tests.
+
+The live app produces about 300 readings per second (10 devices × 3 metrics, one tick every 0.1 s).
+At the 10,000-reading limit that is about 5 ms of work per second now, against about 65 ms before.
+The remaining saving (~0.5% of one core) doesn't justify either structure today. Batched trimming
+is the next step if the limit or the ingest rate grows substantially. `readings(in:)` still filters
+and sorts the whole series on every query, because arrival order isn't guaranteed to be time order
+for every source.
