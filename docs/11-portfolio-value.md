@@ -16,7 +16,7 @@ do. If a claim here can't be traced to a file, it shouldn't be here.
 | On-device AI | Foundation Models guided generation over facts computed in Swift; severity and confidence computed in Swift too; deterministic fallback; alerting never depends on the model | `IntelligenceKit`, `DomainKit/Insights`, [ADR-0004](adr/0004-foundation-models-on-device.md) |
 | Networking | `URLSession` client with typed endpoints, DTO mapping, error mapping and retry; behind a gateway, not wired by default | `NetworkingKit`, [NetworkingKit](22-networking-kit.md) |
 | Platform surfaces | Widgets, App Intents, Live Activity, watchOS app + complications — all read persisted or synced state only | `WidgetSupportKit`, `AppIntentsKit`, `LiveActivityKit`, `Watch*Kit` |
-| Testing | 268 Swift Testing tests; stub ports; in-memory SwiftData; deterministic concurrency tests | [Testing Strategy](09-testing-strategy.md), `Tests/` |
+| Testing | 268 Swift Testing tests, plus 4 app-hosted ActivityKit tests in the simulator; stub ports; in-memory SwiftData; deterministic concurrency tests | [Testing Strategy](09-testing-strategy.md), `Tests/` |
 | Decisions | ADRs with rejected alternatives and consequences | [`docs/adr`](adr) |
 
 ## 11.2 Known limitations
@@ -37,8 +37,10 @@ These are deliberate scope decisions, not oversights:
   not shown in the UI ([§21.4](21-swiftdata-persistence.md#when-a-write-fails)).
 - **Glance surfaces can't tell "no data" from "unreadable".** Widgets and App Intents fall back to an
   empty payload when the shared store can't be read; the failure is only logged.
-- **Host-only test execution.** Tests run on macOS. iOS/watchOS-only code (ActivityKit,
-  WatchConnectivity delegates, watch WidgetKit views) is compiled in CI but not exercised by tests.
+- **Mostly host-only test execution.** The suite runs on macOS. Of the iOS/watchOS-only code, only the
+  ActivityKit service runs in a simulator, in an app-hosted bundle
+  ([§26.8](26-live-activities.md#268-tests)). WatchConnectivity delegates and watch WidgetKit views are
+  compiled in CI but not exercised by tests.
 - **No UI or snapshot tests**, and no measured performance baselines on device.
 - **Insight severity is rule-based, not predictive.** An insight is a *concern* when the device has
   active alerts and a *watch* when its trend is volatile; it doesn't forecast a threshold crossing.
