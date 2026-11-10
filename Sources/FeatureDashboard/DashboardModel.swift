@@ -48,7 +48,7 @@ public final class DashboardModel {
                 EventRow(
                     id: event.id,
                     kind: event.kind,
-                    deviceName: namesByID[event.deviceID] ?? "Device",
+                    deviceName: namesByID[event.deviceID] ?? loc("Unknown device"),
                     occurredAt: event.occurredAt
                 )
             }

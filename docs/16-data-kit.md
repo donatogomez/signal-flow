@@ -232,3 +232,63 @@ The remaining saving (~0.5% of one core) doesn't justify either structure today.
 is the next step if the limit or the ingest rate grows substantially. `readings(in:)` still filters
 and sorts the whole series on every query, because arrival order isn't guaranteed to be time order
 for every source.
+
+## 16.10 Periodic history reads
+
+At about 300 readings per second, every series reaches the 10,000-reading limit about 30 seconds
+after launch, so a full series is the normal case for its two periodic readers.
+
+**What was slow.**
+
+- *Watch snapshot* (every 5 s): the app read the whole history of two metrics for each of the 10 devices
+  through `readings(in:)` and sorted it again, then `WatchSnapshotBuilder` kept the newest 8 of each.
+- *Device detail* (every 3 s): the model read the whole history of three metrics and handed all of
+  it to Swift Charts, which drew 30,000 Catmull-Rom line points for one screen a few hundred points
+  wide. The mapping to `TrendPoint` and the chart work ran on the main actor.
+
+**The fix.**
+
+- `TelemetryRepository` gains `recentReadings(forDevice:metric:limit:)`: the newest `limit` readings
+  by time, oldest-first. A protocol extension implements it for every conformer by reading the whole
+  history, so the remote and stub repositories are unchanged.
+- `InMemoryTelemetryStore` answers it in one backward pass over the series without copying it. It
+  keeps a buffer of `limit` readings, so readings that arrive in time order cost one comparison each.
+  Out-of-order arrival and ties are handled, and give the same result as sorting the series and
+  taking its suffix.
+- The watch snapshot asks for `WatchSnapshotBuilder.trendPointCount` readings.
+- Device detail thins each series to at most 242 points before mapping it (`ChartDownsampling`). It
+  keeps the first and last reading, and the lowest and highest of each of 120 equal-count runs in
+  between, in their original order. The chart therefore spans the same time, has the same y-range,
+  shows every spike, and ends on the same latest point. The hero's change caption reads the same
+  first and last values. A shorter series is left unchanged.
+
+**Tests.** The store's recent read is checked against the sorted history for out-of-order arrival,
+a tie at the cut, a limit of zero, a limit above the count, a missing metric and an unknown device.
+The default implementation is checked over an unordered stub. The detail model is checked at 2, 242,
+243 and 10,000 readings: the point count, the endpoints, the extremes and the time order.
+
+**How it was measured.** `swift run -c release HistoryReadBenchmark`
+([source](../Benchmarks/HistoryReadBenchmark/main.swift)). The setup is 10 devices × 3 metrics,
+one reading per simulated minute. The *watch read* is the 20 series the snapshot reads, and the
+*detail refresh* is one `DeviceDetailModel.refresh()`. Each figure is the median of 15 runs after 2
+warm-ups, and the table takes the median of 3 invocations per build on an Apple M1 Pro (macOS 26.3,
+Swift 6.3.3). "Before" is `main` at `347a168` running the same harness without the new call.
+
+| Readings per series | Watch read, before → after | Detail refresh, before → after | Chart points, before → after |
+| ---: | ---: | ---: | ---: |
+| 100 | 440 µs → 62 µs | 212 µs → 225 µs | 300 → 300 |
+| 1,000 | 3.56 ms → 0.23 ms | 1.09 ms → 0.87 ms | 3,000 → 726 |
+| 10,000 | 34.6 ms → 1.83 ms | 9.12 ms → 5.95 ms | 30,000 → 726 |
+
+At 100 readings, the detail refresh takes the same path as before, and the difference is noise.
+
+**What remains.**
+
+- The detail refresh still reads the whole series on the store actor. That accounts for most of the
+  5.95 ms, and it runs off the main actor.
+- A binary search over the series when it is already in time order brought the refresh to about
+  3.0 ms. It was left out: it needs an ordering check on every query plus a search, and it would only
+  save store-actor time.
+- Charts rendering itself was not measured, since there is no on-device baseline (see
+  [§11.2](11-portfolio-value.md#112-known-limitations)). What can be stated is the 41× drop in
+  points per screen.

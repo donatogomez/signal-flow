@@ -168,15 +168,23 @@ exactly the `main` contract from §14.1.
 - **Pull requests targeting `main`** — nothing merges without a green run.
 - **Pushes to `main`** — guarantees the integration branch is verified after every merge.
 
-**Steps (in order)**
-1. `./Scripts/check-boundaries.sh` — fail fast on architecture violations before spending build time
-   (closes SwiftPM's full-build module-cache gap; see
-   [Scaffolding §12.3](12-scaffolding.md#123-how-the-boundaries-are-actually-enforced)).
-2. `swift build` — all targets in Swift 6 mode with complete strict concurrency.
-3. `swift test` — the Swift Testing suite.
+**Jobs** (both on `macos-26`, with Xcode pinned through `DEVELOPER_DIR` and printed by a
+`Toolchain` step; the workflow token is read-only, `permissions: contents: read`):
 
-Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml). The same three commands run
-locally, so "works on my machine" and "passes CI" are the same statement.
+- **Build, test & enforce boundaries**
+  1. `./Scripts/check-boundaries.sh` — fail fast on architecture violations before spending build
+     time (closes SwiftPM's full-build module-cache gap; see
+     [Scaffolding §12.3](12-scaffolding.md#123-how-the-boundaries-are-actually-enforced)). It matches
+     every import form, including `@testable`, `@preconcurrency`, access-level and kind imports.
+  2. `swift build --build-tests -Xswiftc -warnings-as-errors` — every target in Swift 6 mode with
+     complete strict concurrency; any warning fails the build.
+  3. `swift test --skip-build` — the Swift Testing suite.
+- **Build iOS app (simulator)** — `xcodebuild` of the app with the embedded watchOS app. The app
+  project sets `SWIFT_TREAT_WARNINGS_AS_ERRORS`; Xcode builds package dependencies with warnings
+  suppressed, so the package's warnings are enforced by the SwiftPM job instead.
+
+Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml). The same commands run locally,
+so "works on my machine" and "passes CI" are the same statement.
 
 **Deliberately deferred (future CI):** DocC build & link-check, SwiftFormat/lint gate, code-coverage
 reporting, and — once there's an app target — UI tests and the Fastlane lanes described below. Each
@@ -191,8 +199,8 @@ not an omission.**
 
 Fastlane automates *app delivery* — code signing, build-number bumps, TestFlight/App Store uploads,
 screenshot generation, release lanes. SignalFlow is currently a **Swift Package: an architecture and
-demo layer**, not a signed, distributable app. There is no Xcode app target, no bundle identifier, no
-provisioning profile, and nothing to upload. Adding Fastlane now would be **configuration for a
+demo layer** with a thin Xcode app target for the simulator, not a signed, distributable app.
+There is no provisioning profile, signing setup, or anything to upload. Adding Fastlane now would be **configuration for a
 pipeline that has no destination** — ceremony that a reviewer would (rightly) read as cargo-culting.
 
 The current delivery surface is `swift build` / `swift test` / boundary check on GitHub Actions,
@@ -200,7 +208,6 @@ which is the correct and complete pipeline for a package at this stage.
 
 **Fastlane will be introduced when SignalFlow actually has a delivery pipeline** — specifically when
 the project gains:
-- an **Xcode app target** (the `@main` shell wrapping the `SignalFlowApp` composition root),
 - **app signing requirements** (bundle ID, provisioning, certificates),
 - **build-number automation**,
 - **TestFlight deployment**,

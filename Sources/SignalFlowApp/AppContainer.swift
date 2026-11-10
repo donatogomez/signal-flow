@@ -287,12 +287,9 @@ public final class AppContainer {
         return WatchSnapshotBuilder.build(from: persisted, now: Date(), history: historyByDevice)
     }
 
-    /// Recent readings for one metric, oldest-first, for the watch sparkline. Reads through the telemetry
-    /// port over a wide range (the simulated history is small in a session); the builder trims to its
-    /// point cap.
+    /// The newest readings of one metric, oldest-first, for the watch sparkline: only as many as the
+    /// builder draws, so the snapshot never reads a device's whole history.
     private func recentHistory(deviceID: DeviceID, metric: MetricKind) async -> [TelemetryReading] {
-        guard let range = try? TimeRange(start: Date(timeIntervalSince1970: 0), end: Date(timeIntervalSince1970: 4_000_000_000)),
-              let readings = try? await telemetry.readings(forDevice: deviceID, metric: metric, in: range) else { return [] }
-        return readings.sorted { $0.recordedAt < $1.recordedAt }
+        (try? await telemetry.recentReadings(forDevice: deviceID, metric: metric, limit: WatchSnapshotBuilder.trendPointCount)) ?? []
     }
 }

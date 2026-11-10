@@ -12,32 +12,45 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# The jobs only read the repository.
+permissions:
+  contents: read
+
+# Pin the toolchain instead of following the image's default Xcode, so a runner image update can't
+# change the compiler silently. Both jobs print the version they use.
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+
 jobs:
   verify:
     name: Build, test & enforce boundaries
-    runs-on: macos-26 # ships Xcode 26 / Swift 6.2 / iOS 26 SDK by default
+    runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - name: Swift version
-        run: swift --version
+      - name: Toolchain
+        run: xcodebuild -version && swift --version
 
       # Fail fast on architecture violations before spending build time.
       # Closes SwiftPM's shared-module-cache gap; see docs/12-scaffolding.md §12.3.
       - name: Enforce architecture boundaries
         run: ./Scripts/check-boundaries.sh
 
-      - name: Build (Swift 6, strict concurrency)
-        run: swift build
+      # Every target builds in Swift 6 mode (complete strict concurrency); warnings fail the build.
+      - name: Build (Swift 6, strict concurrency, warnings as errors)
+        run: swift build --build-tests -Xswiftc -warnings-as-errors
 
       - name: Test (Swift Testing)
-        run: swift test
+        run: swift test --skip-build
 
   ios-app:
     name: Build iOS app (simulator)
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      - name: Toolchain
+        run: xcodebuild -version
 
       # Builds the thin Xcode app target for the simulator, proving the runnable iOS app stays green.
       # The SwiftPM package (built/tested in `verify`) holds all the logic; this only adds the host.

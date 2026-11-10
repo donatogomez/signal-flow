@@ -50,6 +50,28 @@ struct TelemetryHistoryTests {
         #expect(await store.ingestedReadingCount() == retained)
     }
 
+    /// Arrival order differs from time order and two readings share a time, so the store's single pass
+    /// must agree with the definition: the time-sorted history (ties in arrival order), newest `limit`.
+    /// A limit of 7 cuts between the two readings at minute 1, keeping the later arrival.
+    @Test("Recent readings are the newest by time, whatever the arrival order", arguments: [0, 1, 3, 7, 9])
+    func recentReadingsMatchSortedHistory(limit: Int) async throws {
+        let store = InMemoryTelemetryStore()
+        let id = DeviceID()
+        await store.register([DataKitFixtures.entry(DataKitFixtures.descriptor(id: id))])
+        let minutes: [Double] = [3, 1, 4, 1, 5, 9, 2, 6]
+        for (index, minute) in minutes.enumerated() {
+            await store.ingest(.reading(try DataKitFixtures.reading(deviceID: id, .temperature, Double(index), at: minute * 60)))
+        }
+
+        let sorted = try await store.readings(forDevice: id, metric: .temperature, in: DataKitFixtures.wideRange())
+        let recent = try await store.recentReadings(forDevice: id, metric: .temperature, limit: limit)
+        #expect(recent == Array(sorted.suffix(limit)))
+        #expect(try await store.recentReadings(forDevice: id, metric: .humidity, limit: limit).isEmpty)
+        await #expect(throws: DomainError.self) {
+            try await store.recentReadings(forDevice: DeviceID(), metric: .temperature, limit: limit)
+        }
+    }
+
     @Test("Device events keep the newest ones when readings are interleaved")
     func eventsStayBounded() async throws {
         let store = InMemoryTelemetryStore(eventLimit: 3)

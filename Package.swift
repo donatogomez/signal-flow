@@ -8,7 +8,8 @@
 // e.g. a Feature target literally cannot `import DataKit`.
 //
 // Strict concurrency: every target builds in the Swift 6 language mode (see `swiftLanguageModes`),
-// under which complete strict-concurrency checking is the default. No `@unchecked Sendable` allowed.
+// under which complete strict-concurrency checking is the default. `@unchecked Sendable` appears only
+// on the two `WCSessionDelegate` bridges in WatchConnectivityKit, each with its reasoning documented.
 
 import PackageDescription
 
@@ -177,7 +178,6 @@ let package = Package(
         .target(name: "FeatureDeviceDetail", dependencies: ["DomainKit", "DesignSystemKit"], resources: [.process("Resources")], swiftSettings: swift6),
         .target(name: "FeatureAlerts", dependencies: ["DomainKit", "DesignSystemKit"], resources: [.process("Resources")], swiftSettings: swift6),
         .target(name: "FeatureInsights", dependencies: ["DomainKit", "DesignSystemKit"], resources: [.process("Resources")], swiftSettings: swift6),
-        .target(name: "FeatureSettings", dependencies: ["DomainKit", "DesignSystemKit"], swiftSettings: swift6),
 
         // MARK: - App (composition root — the ONLY target allowed to know concretes)
 
@@ -199,7 +199,6 @@ let package = Package(
                 "FeatureDeviceDetail",
                 "FeatureAlerts",
                 "FeatureInsights",
-                "FeatureSettings",
                 // glance surfaces: shared read model, widgets, App Intents, Live Activities, watch sync
                 "SnapshotKit",
                 "WidgetSupportKit",
@@ -237,16 +236,22 @@ let package = Package(
             swiftSettings: swift6
         ),
 
+        // Benchmark for the periodic history reads (watch snapshot, device detail). Not a product; run
+        // with `swift run -c release HistoryReadBenchmark`.
+        .executableTarget(
+            name: "HistoryReadBenchmark",
+            dependencies: ["DomainKit", "SimulationKit", "DataKit", "FeatureDeviceDetail"],
+            path: "Benchmarks/HistoryReadBenchmark",
+            swiftSettings: swift6
+        ),
+
         // MARK: - Testing
 
-        // Shared test utilities (fakes, builders, fixtures). Intentionally empty for now.
-        .target(name: "TestingSupportKit", dependencies: ["DomainKit"], swiftSettings: swift6),
-
-        // A single smoke test target proving the test stack + TestingSupportKit link and run.
+        // The single test target, organized by module (see docs/09-testing-strategy.md).
         .testTarget(
             name: "SignalFlowKitTests",
             dependencies: [
-                "DomainKit", "TestingSupportKit", "CoreKit", "SimulationKit", "DataKit",
+                "DomainKit", "CoreKit", "SimulationKit", "DataKit",
                 "PersistenceKit", "NetworkingKit", "IntelligenceKit", "DesignSystemKit",
                 "FeatureDashboard", "FeatureFleet", "FeatureDeviceDetail", "FeatureInsights",
                 "FeatureAlerts", "SnapshotKit", "WidgetSupportKit", "AppIntentsKit", "LiveActivityKit",

@@ -6,7 +6,7 @@ macOS host with no device, no network, no real model and no sleeps. The suite us
 Testing** only.
 
 ```bash
-swift test   # 264 tests, 44 suites, ~0.6 s on an M-series Mac
+swift test   # 266 tests, 43 suites, ~0.6 s on an M-series Mac
 ```
 
 ## 9.1 What is covered
@@ -15,16 +15,16 @@ One test target (`SignalFlowKitTests`), organized by module:
 
 | Area | Tests | What they pin down |
 | --- | ---: | --- |
-| DomainKit | 42 | Value-object validation, threshold/rule evaluation, health policy, alert lifecycle, insight statistics and grounded insight severity, use cases against stub ports |
-| DataKit | 41 | Store ingestion and alert raise/clear/archive, bounded history against a reference model, deterministic insights, simulated source ↔ use cases, remote data source, **concurrent ingestion, cancellation and lifecycle reentrancy**, failed and partial persistence writes retried without loss or duplicates, cancelled insights not recorded |
-| Features | 24 | `@MainActor` model state transitions (loading/loaded/failed, a cancelled load never shown as empty), the dashboard verdict (never "all nominal" for an empty or degraded fleet), filtering, sorting, acknowledgement |
+| DomainKit | 43 | Value-object validation, threshold/rule evaluation, health policy, alert lifecycle, insight statistics and grounded insight severity, use cases and the default recent-readings read against stub ports |
+| DataKit | 42 | Store ingestion and alert raise/clear/archive, bounded history and the newest-readings read against a reference model, deterministic insights, simulated source ↔ use cases, remote data source, **concurrent ingestion, cancellation and lifecycle reentrancy**, failed and partial persistence writes retried without loss or duplicates, cancelled insights not recorded |
+| Features | 25 | `@MainActor` model state transitions (loading/loaded/failed, a cancelled load never shown as empty), the dashboard verdict (never "all nominal" for an empty or degraded fleet), filtering, sorting, acknowledgement, chart thinning that keeps endpoints and extremes |
 | NetworkingKit | 20 | Request building, status/decoding error mapping, retry/backoff (with an injected sleeper), DTO ↔ domain mapping |
 | SimulationKit | 19 | Seed determinism, clock pacing, event generation, fleet composition, stream cancellation |
 | Watch / WatchConnectivity / WatchWidgets | 41 | Snapshot building, codec round-trip, latest-wins store (a failed save isn't reported as stored), complication entries, relevance |
 | PersistenceKit | 16 | Mapping round-trips, idempotent appends (also after a partial commit), a failed save leaving nothing pending, concurrently created stores, retention pruning, latest-per-series restore, end-to-end restoration through DataKit |
 | Localization | 12 | Every catalog key has a Spanish translation; labels resolve per locale |
 | LiveActivities / Widgets / AppIntents | 25 | Live Activity decision state machine, widget timelines and summaries, intent results |
-| CoreKit, IntelligenceKit, AppShell, smoke | 24 | RNG, Foundation Models fallback path, cancellation without fallback and grounded prompt, composition-root lifecycle (request ordering with an operation in flight, cancellation, overlapping starts, failed restore, failed bootstrap and retry, stop during a retry, degraded modes) |
+| CoreKit, IntelligenceKit, AppShell | 23 | RNG, Foundation Models fallback path, cancellation without fallback and grounded prompt, composition-root lifecycle (request ordering with an operation in flight, cancellation, overlapping starts, failed restore, failed bootstrap and retry, stop during a retry, degraded modes) |
 
 ## 9.2 Test doubles — plain types, no framework
 

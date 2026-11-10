@@ -148,11 +148,10 @@ Properties of this approach:
 
 ## 4.6 Build & CI
 
-A single GitHub Actions workflow gates every push:
-1. `swift build` of `SignalFlowKit` with `-strict-concurrency=complete` (warnings-as-errors).
-2. `swift test` (Swift Testing) across all test targets.
-3. Lint/format check (SwiftFormat config committed; no external dependency added to the package).
-4. DocC build to catch broken documentation (see [Documentation Strategy](10-documentation-strategy.md)).
+A single GitHub Actions workflow gates every pull request and every push to `main`: the boundary
+check, a Swift 6 strict-concurrency build with warnings as errors, the test suite, and an `xcodebuild`
+of the iOS app with its watchOS app. There is no lint or DocC step. Details:
+[Git workflow & CI](14-git-workflow-and-ci.md#ci-strategy).
 
 Fast incremental builds are a real benefit of the multi-target package: touching `FeatureAlerts`
 doesn't rebuild `DomainKit`.

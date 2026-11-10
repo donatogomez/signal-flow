@@ -3,7 +3,6 @@ import DomainKit
 
 /// Minimal, in-memory stub repositories for use-case tests. They return scripted data and record
 /// nothing — `DomainKit` ports are simple enough that hand-written stubs beat any mocking framework.
-/// (Reusable fakes will graduate to `TestingSupportKit` when more than this layer needs them.)
 
 struct StubDeviceRepository: DeviceRepository {
     var stubDevice: Device

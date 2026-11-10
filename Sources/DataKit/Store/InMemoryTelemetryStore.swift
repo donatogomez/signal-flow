@@ -266,6 +266,30 @@ public actor InMemoryTelemetryStore {
             .sorted { $0.recordedAt < $1.recordedAt }
     }
 
+    /// The newest `limit` readings of a series by `recordedAt`, oldest-first: the same result as
+    /// sorting the series and taking its suffix, with ties kept in arrival order. History is kept in
+    /// arrival order, which can differ from time order, so this still visits every reading, newest
+    /// arrival first: when readings arrive in time order the buffer fills from the tail and every other
+    /// reading costs one comparison. Only the selected readings are copied. Meant for short tails (the
+    /// watch sparkline).
+    public func recentReadings(forDevice id: DeviceID, metric: MetricKind, limit: Int) throws -> [TelemetryReading] {
+        guard let record = devices[id] else { throw DomainError.deviceNotFound(id) }
+        guard limit > 0 else { return [] }
+        var newest: [TelemetryReading] = []
+        newest.reserveCapacity(limit + 1)
+        let series = record.history[metric] ?? []
+        for index in series.indices.reversed() {
+            // A reading at the same time as the oldest kept one arrived earlier, so it ranks below it.
+            // Compared in place: the reading is only copied once it is kept.
+            if newest.count == limit, series[index].recordedAt <= newest[0].recordedAt { continue }
+            let reading = series[index]
+            let position = newest.firstIndex { $0.recordedAt >= reading.recordedAt } ?? newest.count
+            newest.insert(reading, at: position)
+            if newest.count > limit { newest.removeFirst() }
+        }
+        return newest
+    }
+
     /// Resolved alerts (cleared incidents) across the fleet, newest first.
     public func alertHistory(limit: Int) -> [Alert] {
         Array(archivedAlerts.sorted { $0.raisedAt > $1.raisedAt }.prefix(limit))

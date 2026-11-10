@@ -8,7 +8,7 @@ do. If a claim here can't be traced to a file, it shouldn't be here.
 
 | Area | What is implemented | Where to look |
 | --- | --- | --- |
-| Module boundaries | 24 SwiftPM module targets; features can't import the data layer because they don't declare it, plus a CI script that rejects forbidden imports | [`Package.swift`](../Package.swift), [`check-boundaries.sh`](../Scripts/check-boundaries.sh), [ADR-0001](adr/0001-clean-architecture-with-spm-modules.md) |
+| Module boundaries | 21 SwiftPM library targets; features can't import the data layer because they don't declare it, plus a CI script that rejects forbidden imports | [`Package.swift`](../Package.swift), [`check-boundaries.sh`](../Scripts/check-boundaries.sh), [ADR-0001](adr/0001-clean-architecture-with-spm-modules.md) |
 | Concurrency model | One owner per piece of mutable state (device actors, store actor, `@ModelActor`); `TaskGroup` fan-out; cancellation via `onTermination` and `.task`; reentrancy-safe lifecycle | [Concurrency](07-concurrency.md), `SimulationKit/Actors`, `DataKit/Adapter`, `SignalFlowApp/AppContainer.swift` |
 | Domain modeling | Phantom-typed ids, validating value objects, forward-only alert acknowledgement, pure rules and health policy | `DomainKit/Identifiers`, `DomainKit/ValueObjects`, `DomainKit/Entities`, `DomainKit/Policies` |
 | Deterministic simulation | Seeded RNG, simulated clock separating instants from pacing, stable seeded identities | `CoreKit`, `SimulationKit/Clock`, [SimulationKit](15-simulation-kit.md) |
@@ -16,7 +16,7 @@ do. If a claim here can't be traced to a file, it shouldn't be here.
 | On-device AI | Foundation Models guided generation over facts computed in Swift; severity and confidence computed in Swift too; deterministic fallback; alerting never depends on the model | `IntelligenceKit`, `DomainKit/Insights`, [ADR-0004](adr/0004-foundation-models-on-device.md) |
 | Networking | `URLSession` client with typed endpoints, DTO mapping, error mapping and retry; behind a gateway, not wired by default | `NetworkingKit`, [NetworkingKit](22-networking-kit.md) |
 | Platform surfaces | Widgets, App Intents, Live Activity, watchOS app + complications — all read persisted or synced state only | `WidgetSupportKit`, `AppIntentsKit`, `LiveActivityKit`, `Watch*Kit` |
-| Testing | 264 Swift Testing tests; stub ports; in-memory SwiftData; deterministic concurrency tests | [Testing Strategy](09-testing-strategy.md), `Tests/` |
+| Testing | 266 Swift Testing tests; stub ports; in-memory SwiftData; deterministic concurrency tests | [Testing Strategy](09-testing-strategy.md), `Tests/` |
 | Decisions | ADRs with rejected alternatives and consequences | [`docs/adr`](adr) |
 
 ## 11.2 Known limitations
