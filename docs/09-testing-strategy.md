@@ -61,7 +61,10 @@ The lifecycle, persistence-failure, insights and watch suites have been run 100 
 without a failure. One known flake remains outside them: the test process occasionally crashes
 (`SIGSEGV` inside Core Data's `_generateTriggerSQL`) while several tests create in-memory
 `ModelContainer`s in parallel. It reproduces on `main` too (2 of 60 runs of the SwiftData-heavy
-suites) and is not an assertion failure.
+suites) and is not an assertion failure. It hasn't been seen outside tests, but it isn't ruled out
+there either: the app, a widget timeline and an App Intent each create a container through
+`PersistenceController`, and two of those could overlap in one process. Serializing container
+creation there is the smallest place to isolate it; that is tracked separately.
 
 ## 9.4 What is deliberately not tested here
 

@@ -84,8 +84,10 @@ Apple Intelligence isn't on every device or simulator. Degradation is graceful a
   `insights`), never with the generated text.
 - **Cancellation is not a failure.** A cancelled request (the Insights screen went away) throws
   `CancellationError` instead of falling back, whether the framework reports it as such or fails
-  because the task was cancelled. `PersistingInsightsProvider` records nothing for a cancelled
-  request, and the Insights screen keeps its previous state rather than showing an empty feed.
+  because the task was cancelled. `PersistingInsightsProvider` checks for cancellation once the
+  result is back and then records nothing, and the Insights screen keeps its previous state rather
+  than showing an empty feed. Cancellation is cooperative: one that arrives after that check doesn't
+  undo the save, which then holds a valid insight nobody is waiting for.
 - **The UI is honest**: every `DeviceInsight` carries a `source` (`.foundationModel` /
   `.deterministic`). The Insights screen shows a banner — *"Generated on-device by Apple Intelligence"*
   or *"On-device AI is unavailable — showing a deterministic insight instead."*

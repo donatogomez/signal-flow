@@ -136,7 +136,7 @@ Failures are classified once and handled where they can be interpreted:
 | Expected absence | No watch paired, no saved snapshot yet, store read of an unknown id | Silent fallback (`try?`), no log |
 | Recoverable operational | Snapshot write, restore, insight save, watch send | Logged; bounded retry where safe (persistence), otherwise the next cycle |
 | Critical functional | Catalog can't be built, so the app can't start | `startupState = .failed`; full-screen state with **Try Again** |
-| Cancellation | View disappears during an insight request | Propagated; never a fallback, failure or saved result |
+| Cancellation | View disappears during an insight request | Propagated; no fallback or failure; nothing saved unless it arrives after the result is recorded |
 | Programming invariant | Constant thresholds or units rejected | Treated as critical at startup (`.fault` log); `try?` on hot paths |
 
 What the user sees comes from `startupState`, not from error text:
