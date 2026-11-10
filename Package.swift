@@ -254,6 +254,15 @@ let package = Package(
             swiftSettings: swift6
         ),
 
+        // SwiftData write-path benchmark (appendReadings at retention steady state). Not a product; run
+        // with `swift run -c release PersistenceWriteBenchmark`.
+        .executableTarget(
+            name: "PersistenceWriteBenchmark",
+            dependencies: ["DomainKit", "PersistenceKit"],
+            path: "Benchmarks/PersistenceWriteBenchmark",
+            swiftSettings: swift6
+        ),
+
         // MARK: - Testing
 
         // The single test target, organized by module (see docs/09-testing-strategy.md).
