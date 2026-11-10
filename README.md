@@ -2,14 +2,14 @@
 
 # SignalFlow
 
-### An offline-first IoT telemetry monitoring app for iOS 26 — built to showcase production-grade Swift 6, SwiftUI & app architecture.
+### An offline-first IoT telemetry monitoring app for iOS 26 and watchOS, built with Swift 6 strict concurrency, SwiftUI and SwiftData.
 
 [![CI](https://github.com/donatogomez/signal-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/donatogomez/signal-flow/actions/workflows/ci.yml)
 [![Platform](https://img.shields.io/badge/platform-iOS%2026%2B-black)](#)
 [![Swift](https://img.shields.io/badge/Swift-6-orange)](#)
 [![Strict Concurrency](https://img.shields.io/badge/strict%20concurrency-complete-green)](#)
 [![UI](https://img.shields.io/badge/UI-SwiftUI%20only-blue)](#)
-[![Tests](https://img.shields.io/badge/tests-284%20passing-success)](#how-to-run-the-tests)
+[![Tests](https://img.shields.io/badge/tests-285%20passing-success)](#how-to-run-the-tests)
 [![3rd-party deps](https://img.shields.io/badge/3rd--party%20deps-0-lightgrey)](#)
 [![License](https://img.shields.io/badge/license-Source%20Available-blue)](#license)
 
@@ -292,7 +292,7 @@ swift run SignalFlowHost
 
 ```bash
 swift build                    # compiles all 27 build targets (Swift 6, strict concurrency)
-swift test                     # Swift Testing suite — 284 tests, 44 suites
+swift test                     # Swift Testing suite — 285 tests, 44 suites
 ./Scripts/check-boundaries.sh  # statically enforces the architecture import rules
 ```
 
@@ -330,13 +330,13 @@ The same three commands run locally and in CI, so a green local run means a gree
 - ✅ **watchOS companion** — a thin `SignalFlow Watch App` over `WatchSupportKit`: glanceable _Fleet Summary → Active Alerts → Devices → Device Snapshot_, never running the data engine. **Embedded** in the iOS app (Embed Watch Content + target dependency). **Verified building on the watchOS 26.5 Simulator** (iPhone + watch). See [watchOS Companion](docs/27-watchos-companion.md).
 - ✅ **WatchConnectivity sync** — `WatchConnectivityKit` (the only module that imports WatchConnectivity, CI-enforced) sends a compact `Codable` fleet snapshot (summary · device snapshots · critical alerts · timestamp) from the iPhone to the paired Watch via `WCSession.updateApplicationContext` (latest-wins); the watch persists it locally and renders from it. Explains why App Groups don't cross the device boundary. See [watchOS Companion](docs/27-watchos-companion.md).
 - ✅ **watch complications & Smart Stack** — `WatchWidgetSupportKit` + a `SignalFlowWatchWidgets` WidgetKit extension embedded in the watch app: a glanceable _Fleet Health_ complication across all accessory families (circular · inline · rectangular · corner), reading the **synced** snapshot (never the data engine), with a severity-ranked, stale-damped **Smart Stack relevance** score and an honest stale/fresh treatment. See [watch Complications & Smart Stack](docs/29-watch-complications.md).
-- ✅ **Localization (English + Spanish)** — full localization across every surface via Apple's modern stack only (`String(localized:)`, `LocalizedStringResource`, **String Catalogs**), no `NSLocalizedString`/legacy `.strings`. Domain enums stay language-neutral; localized labels live in `DesignSystemKit` and per-module `.xcstrings`. ~152 keys, each with a complete Spanish translation. See [Localization](docs/28-localization.md).
-- ✅ Architecture boundaries enforced by a CI check; **284 Swift Testing tests** passing.
+- ✅ **Localization (English + Spanish)** — full localization across every surface via Apple's modern stack only (`String(localized:)`, `LocalizedStringResource`, **String Catalogs**), no `NSLocalizedString`/legacy `.strings`. Domain enums stay language-neutral; localized labels live in `DesignSystemKit` and per-module `.xcstrings`. 16 String Catalogs; a test checks that every user-facing key has a Spanish translation. See [Localization](docs/28-localization.md).
+- ✅ Architecture boundaries enforced by a CI check; **285 Swift Testing tests** passing.
 
 **Upcoming**
 - ⬜️ Real backend wiring + auth (swap `URLSessionHTTPClient` in at the composition root).
 - ⬜️ A settings surface (thresholds, units, data source).
-- ⬜️ App icon, UI-test/screenshot target & Fastlane release lanes.
+- ⬜️ UI-test/screenshot target & Fastlane release lanes.
 
 See [Functional Requirements](docs/02-functional-requirements.md) for the full scope.
 
@@ -378,8 +378,9 @@ The full design lives in [`/docs`](docs). Read in order, or jump to what you car
   but are lost if the app ends first; there is no durable outbox.
 - **Insight severity is rule-based** (active alerts ⇒ concern, volatile trend ⇒ watch), computed in
   Swift; the model only words it. It is regenerated when the Insights tab appears, not continuously.
-- **Tests run on the macOS host.** iOS/watchOS-only code is compiled in CI but not exercised by tests;
-  there are no UI or snapshot tests.
+- **Tests run mostly on the macOS host.** Of the iOS/watchOS-only code, only the ActivityKit service
+  runs in a simulator (app-hosted tests); WatchConnectivity delegates and watch widget views are
+  compiled in CI but not exercised by tests. There are no UI or snapshot tests.
 
 Each limitation and the reasoning behind it, plus a map from every claim above to the code that backs
 it, is in [Evidence Map & Known Limitations](docs/11-portfolio-value.md).

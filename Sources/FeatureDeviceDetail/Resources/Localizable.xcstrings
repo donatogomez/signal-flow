@@ -12,7 +12,14 @@
       }
     },
     "%@ trend" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tendencia de %@"
+          }
+        }
+      }
     },
     "Acknowledged" : {
       "localizations" : {

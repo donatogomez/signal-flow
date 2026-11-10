@@ -139,4 +139,38 @@ struct LocalizationTests {
             #expect(value != nil && !(value ?? "").isEmpty, "missing es translation for \"\(key)\"")
         }
     }
+
+    /// Any catalog's entries, including plural variations, which have no single `stringUnit`.
+    private struct AnyCatalog: Decodable {
+        let strings: [String: Entry]
+        struct Entry: Decodable { let localizations: [String: Localization]? }
+        struct Localization: Decodable { let stringUnit: Unit?; let variations: Variations? }
+        struct Unit: Decodable { let value: String }
+        struct Variations: Decodable {}
+    }
+
+    /// Keys that are not translated on purpose: the brand, Swift Charts plottable labels (identifiers,
+    /// not prose), and the widget gallery description, which resolves from the widget extension's own
+    /// catalog (docs/28, "App Intents & App Extensions"). `AppIntentsKit`'s catalog is skipped for the
+    /// same reason: intent metadata resolves from the app's catalog, which is checked here instead.
+    private static let untranslatedOnPurpose: Set<String> = ["SignalFlow", "i", "v", "Shows persisted fleet status and alerts."]
+
+    @Test("Every user-facing key in every module and app catalog has a Spanish translation")
+    func noMissingSpanishInAnyCatalog() throws {
+        let root = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "../../..").standardized
+        let modules = try FileManager.default.contentsOfDirectory(atPath: root.appending(path: "Sources").path)
+            .filter { $0 != "AppIntentsKit" }
+            .map { root.appending(path: "Sources/\($0)/Resources/Localizable.xcstrings") }
+        let apps = ["SignalFlow", "SignalFlowWidgets"].map { root.appending(path: "App/\($0)/Localizable.xcstrings") }
+        let catalogs = (modules + apps).filter { FileManager.default.fileExists(atPath: $0.path) }
+        #expect(catalogs.count >= 15)
+        for url in catalogs {
+            let catalog = try JSONDecoder().decode(AnyCatalog.self, from: Data(contentsOf: url))
+            for (key, entry) in catalog.strings where !Self.untranslatedOnPurpose.contains(key) {
+                guard key.replacing(/%(?:\d+\$)?\d*[@a-zA-Z]+|%%/, with: "").contains(where: \.isLetter) else { continue }
+                let spanish = entry.localizations?["es"]
+                #expect(spanish?.variations != nil || spanish?.stringUnit?.value.isEmpty == false, "missing es translation for \"\(key)\" in \(url.deletingLastPathComponent().deletingLastPathComponent().lastPathComponent)")
+            }
+        }
+    }
 }
