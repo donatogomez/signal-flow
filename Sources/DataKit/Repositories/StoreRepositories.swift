@@ -33,6 +33,9 @@ public struct StoreTelemetryRepository: TelemetryRepository {
     public func readings(forDevice deviceID: DeviceID, metric: MetricKind, in range: TimeRange) async throws -> [TelemetryReading] {
         try await store.readings(forDevice: deviceID, metric: metric, in: range)
     }
+    public func recentReadings(forDevice deviceID: DeviceID, metric: MetricKind, limit: Int) async throws -> [TelemetryReading] {
+        try await store.recentReadings(forDevice: deviceID, metric: metric, limit: limit)
+    }
 }
 
 public struct StoreAlertRepository: AlertRepository {

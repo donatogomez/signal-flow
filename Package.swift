@@ -227,6 +227,15 @@ let package = Package(
             swiftSettings: swift6
         ),
 
+        // Benchmark for the periodic history reads (watch snapshot, device detail). Not a product; run
+        // with `swift run -c release HistoryReadBenchmark`.
+        .executableTarget(
+            name: "HistoryReadBenchmark",
+            dependencies: ["DomainKit", "SimulationKit", "DataKit", "FeatureDeviceDetail"],
+            path: "Benchmarks/HistoryReadBenchmark",
+            swiftSettings: swift6
+        ),
+
         // MARK: - Testing
 
         // The single test target, organized by module (see docs/09-testing-strategy.md).
